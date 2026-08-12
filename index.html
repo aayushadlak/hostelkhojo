@@ -488,16 +488,23 @@
       <form id="auth-login-form" onsubmit="app.handleStudentLoginSubmit(event)">
         <div class="form-group text-left">
           <label><i class="fa-solid fa-mobile-screen"></i> Phone Number or Email ID</label>
-          <input type="text" placeholder="9876543210 or student@college.ac.in" required class="form-control" id="login-identifier" />
+          <input type="text" placeholder="9876543210 or student@hostelkhojo.in" required class="form-control" id="login-identifier" value="9876543210" />
         </div>
         <div class="form-group text-left">
           <label><i class="fa-solid fa-lock"></i> Password</label>
-          <input type="password" placeholder="••••••••" required class="form-control" id="login-password" />
+          <input type="password" placeholder="••••••••" required class="form-control" id="login-password" value="password123" />
         </div>
         <button type="submit" class="btn btn-accent btn-block btn-lg margin-top-md">
           <i class="fa-solid fa-shield-halved"></i> Sign In to Portal
         </button>
+
+        <div class="auth-demo-hint text-left" style="background: var(--bg-card); border: 1px dashed var(--border-color); border-radius: var(--radius-sm); padding: 10px; font-size: 0.82rem; color: var(--text-muted); margin-top: 14px;">
+          <i class="fa-solid fa-circle-info" style="color: var(--accent-primary);"></i> <strong>Instant Login Account:</strong><br>
+          Phone: <code style="color:var(--accent-secondary);">9876543210</code> or Email: <code style="color:var(--accent-secondary);">student@hostelkhojo.in</code><br>
+          Password: <code style="color:var(--accent-secondary);">password123</code>
+        </div>
       </form>
+
 
       <!-- FORM 2: REGISTER FORM -->
       <form id="auth-register-form" onsubmit="app.handleStudentRegisterSubmit(event)" style="display: none;">
