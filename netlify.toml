@@ -4,12 +4,13 @@
 [build]
   publish = "."
 
-# API Proxy Redirect (Uncomment and replace with your backend host URL when deployed on Render/Railway/Fly.io)
-# [[redirects]]
-#   from = "/api/*"
-#   to = "https://your-fastapi-backend.onrender.com/api/:splat"
-#   status = 200
-#   force = true
+# API Proxy Redirect to Render Backend
+[[redirects]]
+  from = "/api/*"
+  to = "https://hostelkhojo.onrender.com/api/:splat"
+  status = 200
+  force = true
+
 
 # Single Page Application SPA Redirect Fallback
 [[redirects]]
