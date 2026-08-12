@@ -37,7 +37,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# HEALTHCHECK
+# ROOT & HEALTHCHECK
+@app.get("/")
+def root():
+    return {
+        "status": "online",
+        "service": "Hostel Khojo India Backend API 🇮🇳",
+        "docs": "/docs",
+        "health": "/api/health",
+        "hostels": "/api/hostels"
+    }
+
 @app.get("/api/health")
 def health_check():
     return {
@@ -45,6 +55,7 @@ def health_check():
         "service": "Hostel Khojo India Backend API",
         "timestamp": time.time()
     }
+
 
 # AUTH ENDPOINTS
 @app.post("/api/auth/register", response_model=Token)
