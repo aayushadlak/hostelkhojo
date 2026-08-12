@@ -1,8 +1,9 @@
 import os
+import hashlib
+import secrets
 from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
@@ -15,9 +16,6 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7 # 7 days
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
-import hashlib
-
-import secrets
 
 def get_password_hash(password: str) -> str:
     # Use SHA-256 with salt for secure and clean cross-platform password hashing
