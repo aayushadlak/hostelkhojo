@@ -1,7 +1,12 @@
 import os
+from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+
+# Automatically load variables from .env file if present
+load_dotenv()
+
 
 # Default to SQLite file database, easily configurable to PostgreSQL via ENV
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./hostel_khojo.db")
