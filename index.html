@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hostel Khojo | Verified Student Hostels & PGs in India 🇮🇳</title>
+  <meta name="description" content="Search, compare, and book verified student hostels, luxury PGs, and co-living dorms across Delhi, Bengaluru, Pune, Mumbai, Kota & Hyderabad with zero brokerage." />
+  <meta name="theme-color" content="#4f46e5" />
+
+  <!-- Favicon & Tab Logo -->
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/images/favicon.png" />
+  <link rel="icon" type="image/x-icon" href="favicon.ico" />
+  <link rel="apple-touch-icon" href="assets/images/favicon.png" />
+
+  <!-- Open Graph / Social Media Preview -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Hostel Khojo | Verified Student Hostels & PGs in India 🇮🇳" />
+  <meta property="og:description" content="Search, compare, and book verified student hostels, luxury PGs, and co-living dorms across Delhi, Bengaluru, Pune, Mumbai, Kota & Hyderabad with zero brokerage." />
+  <meta property="og:image" content="assets/images/exterior1.png" />
+  
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Hostel Khojo | Verified Student Hostels & PGs in India 🇮🇳" />
+  <meta name="twitter:description" content="Search, compare, and book verified student hostels, luxury PGs, and co-living dorms across Delhi, Bengaluru, Pune, Mumbai, Kota & Hyderabad with zero brokerage." />
+  <meta name="twitter:image" content="assets/images/exterior1.png" />
+
+  <!-- Google Fonts: Outfit & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- FontAwesome 6 for rich icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <!-- Main Stylesheet -->
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- TOP NAVIGATION BAR -->
+  <nav class="navbar" id="main-nav">
+    <div class="nav-container">
+      <a href="#" class="brand-logo" id="brand-logo">
+        <div class="logo-icon"><i class="fa-solid fa-building-user"></i></div>
+        <span class="logo-text">Hostel<span class="logo-highlight">Khojo</span></span>
+        <span class="logo-badge">India Stay 🇮🇳</span>
+      </a>
+
+      <div class="nav-links">
+        <button class="nav-link active" id="nav-hostels-btn" onclick="app.switchTab('hostels')">
+          <i class="fa-solid fa-compass"></i> Explore Hostels & PGs
+        </button>
+        <button class="nav-link" id="nav-roommates-btn" onclick="app.switchTab('roommates')">
+          <i class="fa-solid fa-user-group"></i> Roommate Matcher
+          <span class="pulse-dot"></span>
+        </button>
+        <button class="nav-link" id="nav-saved-btn" onclick="app.showSavedHostels()">
+          <i class="fa-solid fa-bookmark"></i> Saved (<span id="saved-count">0</span>)
+        </button>
+      </div>
+
+      <div class="nav-actions">
+        <button class="theme-toggle" id="theme-toggle-btn" onclick="app.toggleTheme()" title="Toggle Light/Dark Theme">
+          <i class="fa-solid fa-moon" id="theme-icon"></i>
+        </button>
+
+        <button class="btn btn-outline" onclick="app.openModal('owner-modal')">
+          <i class="fa-solid fa-plus-circle"></i> List Your Hostel / PG
+        </button>
+
+        <div id="nav-auth-container">
+          <button class="btn btn-primary" onclick="app.openModal('auth-modal')" id="nav-login-btn">
+            <i class="fa-solid fa-circle-user"></i> Student Login
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </nav>
+
+  <!-- MAIN TAB: HOSTELS SEARCH & EXPLORE -->
+  <main id="tab-hostels" class="tab-content active">
+
+    <!-- HERO SEARCH SECTION -->
+    <section class="hero-section">
+      <div class="hero-overlay"></div>
+      <div class="hero-content">
+        <div class="hero-badge">
+          <i class="fa-solid fa-graduation-cap"></i> Verified Student Housing Platform in India 🇮🇳
+        </div>
+        <h1 class="hero-title">Find Your Ideal Hostel & PG <span class="gradient-text">Near Campus</span></h1>
+        <p class="hero-subtitle">
+          Search over 2,500+ verified student hostels, luxury PGs & co-living spaces in Delhi, Bengaluru, Pune, Mumbai, Kota & Hyderabad with 4-time homestyle mess meals, high-speed Wi-Fi & zero broker fee.
+        </p>
+
+        <!-- MAIN SEARCH BAR -->
+        <div class="search-box-card">
+          <div class="search-inputs-grid">
+            <div class="search-field">
+              <label for="search-input"><i class="fa-solid fa-location-dot"></i> Indian Campus, Area or City</label>
+              <input type="text" id="search-input" placeholder="e.g. DU North Campus, IIT Bombay, Christ Univ, Kota, BITS..." oninput="app.handleSearchInput()" />
+            </div>
+
+            <div class="search-field">
+              <label for="gender-filter"><i class="fa-solid fa-venus-mars"></i> Property Type</label>
+              <select id="gender-filter" onchange="app.applyFilters()">
+                <option value="all">All Types (Boys / Girls / Co-ed)</option>
+                <option value="Boys">Boys Only PG / Hostel</option>
+                <option value="Girls">Girls Only PG / Hostel</option>
+                <option value="Co-ed">Co-ed Co-Living</option>
+              </select>
+            </div>
+
+            <div class="search-field">
+              <label for="room-type-filter"><i class="fa-solid fa-bed"></i> Room Sharing</label>
+              <select id="room-type-filter" onchange="app.applyFilters()">
+                <option value="all">Any Room Sharing</option>
+                <option value="Single">Single Private Room</option>
+                <option value="Double">2-Bed Sharing</option>
+                <option value="Triple">3+ Bed Sharing</option>
+              </select>
+            </div>
+
+            <div class="search-field">
+              <label for="budget-range"><i class="fa-solid fa-indian-rupee-sign"></i> Max Monthly Rent: ₹<span id="budget-val">15000</span></label>
+              <input type="range" id="budget-range" min="5000" max="35000" step="500" value="15000" oninput="app.updateBudgetLabel(this.value)" onchange="app.applyFilters()" />
+            </div>
+          </div>
+
+          <div class="search-actions-row">
+            <div class="quick-pills-label">Popular Indian Student Filters:</div>
+            <div class="quick-pills">
+              <button class="pill-btn" data-filter="walkable" onclick="app.togglePillFilter(this, 'walkable')">
+                <i class="fa-solid fa-person-walking"></i> &lt; 0.5 km to Campus
+              </button>
+              <button class="pill-btn" data-filter="mess" onclick="app.togglePillFilter(this, 'mess')">
+                <i class="fa-solid fa-utensils"></i> 4-Time Mess
+              </button>
+              <button class="pill-btn" data-filter="ac" onclick="app.togglePillFilter(this, 'ac')">
+                <i class="fa-solid fa-snowflake"></i> AC Rooms
+              </button>
+              <button class="pill-btn" data-filter="wifi" onclick="app.togglePillFilter(this, 'wifi')">
+                <i class="fa-solid fa-wifi"></i> High-Speed Wi-Fi
+              </button>
+              <button class="pill-btn" data-filter="gym" onclick="app.togglePillFilter(this, 'gym')">
+                <i class="fa-solid fa-bolt"></i> 24x7 Power Backup
+              </button>
+            </div>
+
+            <button class="btn btn-accent search-submit-btn" onclick="app.applyFilters()">
+              <i class="fa-solid fa-magnifying-glass"></i> Search Hostels & PGs
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CONTENT & FILTER CONTAINER -->
+    <div class="main-container">
+      
+      <!-- TOOLBAR & VIEW TOGGLER -->
+      <div class="toolbar-card">
+        <div class="results-meta">
+          <h2 id="results-count-text">Found <span id="results-count-num">0</span> Hostels & PGs</h2>
+          <span class="location-tag" id="active-location-tag"><i class="fa-solid fa-circle-check"></i> Showing Verified Hostels & PGs in India</span>
+        </div>
+
+        <div class="toolbar-controls">
+          <!-- View switchers -->
+          <div class="view-toggle-group">
+            <button class="view-btn active" id="view-grid-btn" onclick="app.setViewMode('grid')" title="Grid View">
+              <i class="fa-solid fa-grip"></i> Grid
+            </button>
+            <button class="view-btn" id="view-split-btn" onclick="app.setViewMode('split')" title="Map & Grid View">
+              <i class="fa-solid fa-map-location-dot"></i> Split Map
+            </button>
+          </div>
+
+          <!-- Sort dropdown -->
+          <div class="sort-box">
+            <label for="sort-select"><i class="fa-solid fa-arrow-down-short-wide"></i> Sort By:</label>
+            <select id="sort-select" onchange="app.applySorting()">
+              <option value="recommended">Recommended & Featured</option>
+              <option value="price-asc">Rent: Low to High</option>
+              <option value="price-desc">Rent: High to Low</option>
+              <option value="rating-desc">Highest Rated</option>
+              <option value="distance-asc">Closest to Campus</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- HOSTELS DISPLAY LAYOUT (GRID / SPLIT MAP) -->
+      <div class="explorer-layout grid-view" id="explorer-layout">
+        
+        <!-- CARDS GRID -->
+        <div class="hostels-grid" id="hostels-grid">
+          <!-- Dynamically populated by JS -->
+        </div>
+
+        <!-- SIMULATED INTERACTIVE MAP -->
+        <div class="map-container" id="map-container">
+          <div class="map-header">
+            <div class="map-title">
+              <i class="fa-solid fa-map-pin"></i> Campus Proximity Map (Live Interactive Pins)
+            </div>
+            <div class="map-legend">
+              <span class="legend-item"><span class="dot pin-boys"></span> Boys</span>
+              <span class="legend-item"><span class="dot pin-girls"></span> Girls</span>
+              <span class="legend-item"><span class="dot pin-coed"></span> Co-ed</span>
+            </div>
+          </div>
+          
+          <div class="simulated-map" id="simulated-map">
+            <!-- Simulated Map Canvas Background & Campus Hubs -->
+            <div class="map-campus-center" style="top: 45%; left: 50%;">
+              <i class="fa-solid fa-university"></i>
+              <span>University Main Campus</span>
+            </div>
+
+            <div class="map-route-line route-1"></div>
+            <div class="map-route-line route-2"></div>
+            
+            <!-- Pins dynamically inserted here -->
+            <div id="map-pins-layer"></div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </main>
+
+  <!-- SECONDARY TAB: ROOMMATE MATCHER -->
+  <section id="tab-roommates" class="tab-content main-container">
+    <div class="section-header text-center">
+      <div class="hero-badge"><i class="fa-solid fa-handshake"></i> Indian Campus Roommate Finder</div>
+      <h2>Find Your Compatible <span class="gradient-text">Roommate Partner</span></h2>
+      <p class="section-sub">Connect with university students looking for room partners in Delhi, Bengaluru, Pune, Mumbai, Kota & Hyderabad based on budget, study habits & food preferences.</p>
+    </div>
+
+    <!-- ROOMMATE FILTERS BAR -->
+    <div class="filter-card flex-gap">
+      <div class="search-field">
+        <label><i class="fa-solid fa-graduation-cap"></i> Stream / Course</label>
+        <select id="rm-major-filter" onchange="app.renderRoommates()">
+          <option value="all">All Courses</option>
+          <option value="Computer Science">Computer Science & Engineering</option>
+          <option value="Commerce">Commerce & Finance (CA/SRCC)</option>
+          <option value="Engineering">Mechanical / ECE / Civil</option>
+          <option value="Medicine">Medical & Healthcare (MBBS/NEET)</option>
+        </select>
+      </div>
+
+      <div class="search-field">
+        <label><i class="fa-solid fa-moon"></i> Sleep Routine</label>
+        <select id="rm-habit-filter" onchange="app.renderRoommates()">
+          <option value="all">Any Preference</option>
+          <option value="Early Bird">Early Bird (Sleeps &lt; 10:30 PM)</option>
+          <option value="Night Owl">Night Owl (Late Night Exam Prep)</option>
+        </select>
+      </div>
+
+      <div class="search-field">
+        <label><i class="fa-solid fa-bowl-food"></i> Food Preference</label>
+        <select id="rm-diet-filter" onchange="app.renderRoommates()">
+          <option value="all">All Diets</option>
+          <option value="Pure Veg">Pure Veg Only</option>
+          <option value="Non-Veg">Non-Vegetarian</option>
+          <option value="Jain Veg">Jain Veg</option>
+        </select>
+      </div>
+
+      <button class="btn btn-primary" onclick="app.openModal('post-roommate-modal')">
+        <i class="fa-solid fa-plus"></i> Post Roommate Requirement
+      </button>
+    </div>
+
+    <!-- ROOMMATE CARDS GRID -->
+    <div class="roommates-grid" id="roommates-grid">
+      <!-- Populated by JS -->
+    </div>
+  </section>
+
+  <!-- STICKY COMPARISON TRAY -->
+  <div class="comparison-tray" id="comparison-tray">
+    <div class="comp-tray-inner">
+      <div class="comp-info">
+        <i class="fa-solid fa-scale-balanced"></i>
+        <span>Compare Properties (<strong id="comp-count">0</strong>/3 selected)</span>
+      </div>
+      <div class="comp-items-previews" id="comp-previews">
+        <!-- Thumbnails inserted here -->
+      </div>
+      <div class="comp-actions">
+        <button class="btn btn-outline btn-sm" onclick="app.clearComparison()">Clear All</button>
+        <button class="btn btn-accent btn-sm" onclick="app.openComparisonModal()" id="compare-now-btn" disabled>
+          Compare Now <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- MODAL 1: HOSTEL DETAIL MODAL -->
+  <div class="modal-backdrop" id="hostel-detail-modal">
+    <div class="modal-box modal-lg">
+      <button class="modal-close" onclick="app.closeModal('hostel-detail-modal')">&times;</button>
+      
+      <div id="modal-detail-content">
+        <!-- JS Renders full hostel detail here -->
+      </div>
+    </div>
+  </div>
+
+
+  <!-- MODAL 2: COMPARISON MODAL MATRIX -->
+  <div class="modal-backdrop" id="comparison-modal">
+    <div class="modal-box modal-xl">
+      <button class="modal-close" onclick="app.closeModal('comparison-modal')">&times;</button>
+      <h2 class="modal-title"><i class="fa-solid fa-scale-balanced"></i> Side-by-Side Property Comparison</h2>
+      <p class="text-muted">Compare rent prices, security deposit, mess food inclusions, and campus distance.</p>
+
+      <div class="table-responsive margin-top-md">
+        <table class="comparison-table" id="comparison-table">
+          <!-- Generated dynamically -->
+        </table>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- MODAL 3: SCHEDULE VISIT & BOOKING MODAL -->
+  <div class="modal-backdrop" id="booking-modal">
+    <div class="modal-box modal-md">
+      <button class="modal-close" onclick="app.closeModal('booking-modal')">&times;</button>
+      
+      <div id="booking-modal-content">
+        <!-- JS inserts form or confirmation -->
+      </div>
+    </div>
+  </div>
+
+
+  <!-- MODAL 4: LIST YOUR HOSTEL (OWNER FORM) -->
+  <div class="modal-backdrop" id="owner-modal">
+    <div class="modal-box modal-md">
+      <button class="modal-close" onclick="app.closeModal('owner-modal')">&times;</button>
+      <h2 class="modal-title"><i class="fa-solid fa-building-circle-check"></i> List Your Hostel or PG Property</h2>
+      <p class="text-muted">Partner with Hostel Khojo to reach 100,000+ verified college students near your campus.</p>
+
+      <form id="owner-listing-form" onsubmit="app.handleOwnerFormSubmit(event)">
+        <div class="form-group">
+          <label>Hostel / PG Name</label>
+          <input type="text" required placeholder="e.g. Royal Heights Student PG & Hostel" class="form-control" />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nearby University / Area</label>
+            <input type="text" required placeholder="e.g. DU North Campus, Kamla Nagar" class="form-control" />
+          </div>
+          <div class="form-group">
+            <label>Property Type</label>
+            <select class="form-control">
+              <option value="Boys">Boys Hostel / PG</option>
+              <option value="Girls">Girls Hostel / PG</option>
+              <option value="Co-ed">Co-ed Co-Living</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Monthly Rent Starting (₹)</label>
+            <input type="number" required placeholder="8500" class="form-control" />
+          </div>
+          <div class="form-group">
+            <label>Distance to Campus (km)</label>
+            <input type="number" step="0.1" required placeholder="0.3" class="form-control" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Key Student Amenities Provided</label>
+          <div class="checkbox-grid">
+            <label><input type="checkbox" checked /> High-Speed Wi-Fi</label>
+            <label><input type="checkbox" checked /> 4-Time Mess Food</label>
+            <label><input type="checkbox" checked /> Split AC / Air Cooler</label>
+            <label><input type="checkbox" /> In-house Gym</label>
+            <label><input type="checkbox" checked /> 24/7 CCTV & Biometric Security</label>
+            <label><input type="checkbox" checked /> 24x7 Power Backup</label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Owner Mobile / WhatsApp Contact</label>
+          <input type="tel" required placeholder="+91 98765 43210" class="form-control" />
+        </div>
+
+        <button type="submit" class="btn btn-accent btn-block btn-lg margin-top-md">
+          <i class="fa-solid fa-paper-plane"></i> Submit Property for Verification
+        </button>
+      </form>
+    </div>
+  </div>
+
+
+  <!-- MODAL 5: POST ROOMMATE PROFILE -->
+  <div class="modal-backdrop" id="post-roommate-modal">
+    <div class="modal-box modal-md">
+      <button class="modal-close" onclick="app.closeModal('post-roommate-modal')">&times;</button>
+      <h2 class="modal-title"><i class="fa-solid fa-user-plus"></i> Post Roommate Profile</h2>
+      <p class="text-muted">Fill in your preferences to find compatible room partners near your campus.</p>
+
+      <form id="post-roommate-form" onsubmit="app.handlePostRoommateSubmit(event)">
+        <div class="form-group">
+          <label>Your Name & Gender</label>
+          <div class="form-row">
+            <input type="text" required placeholder="Aarav Sharma" class="form-control" id="rm-name-input" />
+            <select class="form-control" id="rm-gender-input">
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Non-binary / Other</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>University & Course</label>
+            <input type="text" required placeholder="e.g. DU SRCC Econ 2nd Year" class="form-control" id="rm-major-input" />
+          </div>
+          <div class="form-group">
+            <label>Max Budget (₹/month)</label>
+            <input type="number" required placeholder="12000" class="form-control" id="rm-budget-input" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Sleep Habit</label>
+            <select class="form-control" id="rm-sleep-input">
+              <option value="Night Owl">Night Owl (Late Night Study)</option>
+              <option value="Early Bird">Early Bird (Early Riser)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Dietary Habit</label>
+            <select class="form-control" id="rm-diet-input">
+              <option value="Pure Veg">Pure Veg</option>
+              <option value="Non-Veg">Non-Vegetarian</option>
+              <option value="Jain Veg">Jain Veg</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Short Bio & Location Preference</label>
+          <textarea class="form-control" rows="3" placeholder="Studious BTech CS student at IIT Bombay. Looking for a neat, respectful roommate near Powai Gate 2..." id="rm-bio-input" required></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block btn-lg">
+          <i class="fa-solid fa-check-circle"></i> Publish Roommate Card
+        </button>
+      </form>
+    </div>
+  </div>
+
+
+  <!-- MODAL 6: AUTH LOGIN / REGISTER -->
+  <div class="modal-backdrop" id="auth-modal">
+    <div class="modal-box modal-sm text-center">
+      <button class="modal-close" onclick="app.closeModal('auth-modal')">&times;</button>
+      <div class="auth-icon" style="font-size: 2.2rem; color: var(--accent-primary); margin-bottom: 8px;"><i class="fa-solid fa-graduation-cap"></i></div>
+      <h2 class="modal-title">Student Portal</h2>
+      <p class="text-muted font-sm">Verified student access for instant bookings & roommate matching.</p>
+
+      <!-- AUTH TAB TOGGLE -->
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="auth-tab-login-btn" onclick="app.switchAuthTab('login')">
+          <i class="fa-solid fa-right-to-bracket"></i> Student Login
+        </button>
+        <button class="auth-tab" id="auth-tab-register-btn" onclick="app.switchAuthTab('register')">
+          <i class="fa-solid fa-user-plus"></i> New Student
+        </button>
+      </div>
+
+      <!-- FORM 1: LOGIN FORM -->
+      <form id="auth-login-form" onsubmit="app.handleStudentLoginSubmit(event)">
+        <div class="form-group text-left">
+          <label>College / Student Email ID</label>
+          <input type="email" placeholder="student@hostelkhojo.in" required class="form-control" id="login-email" value="student@hostelkhojo.in" />
+        </div>
+        <div class="form-group text-left">
+          <label>Password</label>
+          <input type="password" placeholder="••••••••" required class="form-control" id="login-password" value="password123" />
+        </div>
+        <button type="submit" class="btn btn-accent btn-block btn-lg margin-top-md">
+          <i class="fa-solid fa-shield-halved"></i> Sign In & Unlock Student Benefits
+        </button>
+
+        <div class="auth-demo-hint text-left">
+          <i class="fa-solid fa-key" style="color: var(--accent-primary);"></i> <strong>Demo Credentials:</strong><br>
+          Email: <code style="color:var(--accent-secondary);">student@hostelkhojo.in</code> | Pass: <code style="color:var(--accent-secondary);">password123</code>
+        </div>
+      </form>
+
+      <!-- FORM 2: REGISTER FORM -->
+      <form id="auth-register-form" onsubmit="app.handleStudentRegisterSubmit(event)" style="display: none;">
+        <div class="form-group text-left">
+          <label>Full Student Name</label>
+          <input type="text" placeholder="Aarav Sharma" required class="form-control" id="reg-name" />
+        </div>
+        <div class="form-group text-left">
+          <label>College / Personal Email</label>
+          <input type="email" placeholder="aarav.du@gmail.com" required class="form-control" id="reg-email" />
+        </div>
+        <div class="form-group text-left">
+          <label>WhatsApp / Phone Number</label>
+          <input type="tel" placeholder="+91 98765 43210" required class="form-control" id="reg-phone" />
+        </div>
+        <div class="form-group text-left">
+          <label>Set Password</label>
+          <input type="password" placeholder="Min 6 characters" required class="form-control" id="reg-password" minlength="6" />
+        </div>
+        <button type="submit" class="btn btn-primary btn-block btn-lg margin-top-md">
+          <i class="fa-solid fa-user-check"></i> Create Verified Account
+        </button>
+      </form>
+    </div>
+  </div>
+
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div id="toast-container"></div>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="main-container footer-content">
+      <div class="footer-col brand-col">
+        <div class="brand-logo">
+          <div class="logo-icon"><i class="fa-solid fa-building-user"></i></div>
+          <span class="logo-text">Hostel<span class="logo-highlight">Khojo</span></span>
+        </div>
+        <p class="footer-desc">
+          Empowering college students across India to discover safe, affordable, and vibrant student accommodation & co-living communities with zero brokerage.
+        </p>
+        <div class="social-links">
+          <a href="#" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+          <a href="#" aria-label="Twitter"><i class="fa-brands fa-twitter"></i></a>
+          <a href="#" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
+          <a href="#" aria-label="LinkedIn"><i class="fa-brands fa-linkedin"></i></a>
+        </div>
+      </div>
+
+      <div class="footer-col">
+        <h3>Top Student Hubs in India</h3>
+        <ul>
+          <li><a href="#" onclick="app.quickSearch('DU North')">DU North Campus (Delhi)</a></li>
+          <li><a href="#" onclick="app.quickSearch('IIT Bombay')">IIT Bombay & Powai (Mumbai)</a></li>
+          <li><a href="#" onclick="app.quickSearch('Christ')">Christ Univ & Koramangala (BLR)</a></li>
+          <li><a href="#" onclick="app.quickSearch('Symbiosis')">Symbiosis & Viman Nagar (Pune)</a></li>
+          <li><a href="#" onclick="app.quickSearch('Kota')">Kota Coaching Hub (Rajasthan)</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h3>Student Perks</h3>
+        <ul>
+          <li><a href="#" onclick="app.switchTab('roommates')">Roommate Matcher</a></li>
+          <li><a href="#" onclick="app.openModal('owner-modal')">Hostel Owner Verification</a></li>
+          <li><a href="#">Student Safety & Biometric Guarantee</a></li>
+          <li><a href="#">Virtual 360° Room Tours</a></li>
+          <li><a href="#">Zero Brokerage Guarantee</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h3>24/7 Student Helpline</h3>
+        <p class="helpline-num"><i class="fa-solid fa-headset"></i> 1800-102-KHOJO (54656)</p>
+        <p class="text-muted">Emergency Student Safety & Parent Assistance Line Available 24/7 across India</p>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <div class="main-container flex-between">
+        <p>&copy; 2026 Hostel Khojo Technologies India Pvt Ltd. All rights reserved.</p>
+        <div class="legal-links">
+          <a href="#">Privacy Policy</a> • <a href="#">Terms of Service</a> • <a href="#">Safety Guidelines</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- MOBILE BOTTOM NAVIGATION BAR FOR SMARTPHONES -->
+  <nav class="mobile-bottom-nav" id="mobile-bottom-nav">
+    <button class="mobile-nav-item active" id="mob-nav-hostels" onclick="app.switchTab('hostels')">
+      <i class="fa-solid fa-compass"></i>
+      <span>Explore</span>
+    </button>
+    <button class="mobile-nav-item" id="mob-nav-roommates" onclick="app.switchTab('roommates')">
+      <i class="fa-solid fa-user-group"></i>
+      <span>Roommates</span>
+    </button>
+    <button class="mobile-nav-item" id="mob-nav-saved" onclick="app.showSavedHostels()">
+      <i class="fa-solid fa-bookmark"></i>
+      <span>Saved</span>
+    </button>
+    <button class="mobile-nav-item" id="mob-nav-owner" onclick="app.openModal('owner-modal')">
+      <i class="fa-solid fa-plus-circle"></i>
+      <span>List PG</span>
+    </button>
+  </nav>
+
+  <!-- Main JavaScript App Logic -->
+  <script src="app.js"></script>
+</body>
+</html>
