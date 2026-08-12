@@ -869,17 +869,8 @@ class HostelKhojoApp {
     this.showToast(`Account Registered! Welcome ${full_name}!`, "success");
   }
 
-
-    // Local fallback
-    const fallbackUser = { id: "usr_" + Date.now(), email, full_name, role: "student" };
-    localStorage.setItem("hostelkhojo_user", JSON.stringify(fallbackUser));
-    this.currentUser = fallbackUser;
-    this.renderAuthNavUI();
-    this.closeModal("auth-modal");
-    this.showToast(`Student Account Registered! Welcome ${full_name}!`, "success");
-  }
-
   async checkUserSession() {
+
     const token = localStorage.getItem("hostelkhojo_token");
     if (!token) return;
 
