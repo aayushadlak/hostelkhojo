@@ -4,26 +4,27 @@ from datetime import datetime
 
 # AUTH SCHEMAS
 class UserRegister(BaseModel):
-    email: EmailStr
-    password: str
     full_name: str
+    password: str
+    email: Optional[str] = None
     phone: Optional[str] = None
     role: Optional[str] = "student"
 
 class UserLogin(BaseModel):
-    email: EmailStr
+    identifier: str # Email or Phone number
     password: str
 
 class UserResponse(BaseModel):
     id: str
-    email: str
     full_name: str
+    email: Optional[str] = None
     phone: Optional[str] = None
     role: str
     created_at: datetime
 
     class Config:
         from_attributes = True
+
 
 class Token(BaseModel):
     access_token: str

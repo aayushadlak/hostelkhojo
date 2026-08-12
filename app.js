@@ -7,333 +7,9 @@ const API_BASE_URL = (window.location.hostname === "localhost" || window.locatio
   : "/api";
 
 
-const INITIAL_HOSTELS = [
+const INITIAL_HOSTELS = [];
+const INITIAL_ROOMMATES = [];
 
-  {
-    id: "h1",
-    name: "The Stanza Living Alpha Residency",
-    university: "DU North Campus (Hudson Lane)",
-    city: "New Delhi",
-    gender: "Co-ed",
-    type: "Co-Living & Luxury PG",
-    rent: 14500,
-    deposit: 10000,
-    distance: 0.3, // km
-    rating: 4.9,
-    reviewsCount: 142,
-    verified: true,
-    featured: true,
-    imageMain: "assets/images/exterior1.png",
-    imageSingle: "assets/images/room_single.png",
-    imageShared: "assets/images/room_shared.png",
-    imageMess: "assets/images/mess.png",
-    address: "18 Hudson Lane, Kingsway Camp, DU North Campus, Delhi",
-    mapCoords: { top: 32, left: 42 },
-    amenities: ["Wi-Fi", "4-Time Mess", "AC", "Gym", "Biometric Security", "Laundry", "Study Lounge", "24x7 Power Backup"],
-    curfew: "11:00 PM",
-    roomSharing: ["Single", "Double", "Triple"],
-    description: "Ultra-modern student co-living residency located 3 minutes walk from SRCC, Hindu & Hansraj colleges. Features biometric security, 300Mbps fiber Wi-Fi, chef-curated North & South Indian buffet meals, and soundproof study pods.",
-    messMenu: {
-      breakfast: "Stuffed Aloo/Paneer Parathas, Curd, Masala Chai & Filter Coffee",
-      lunch: "Rajma Chawal, Seasonal Sabzi, Butter Roti, Green Salad & Boondi Raita",
-      snacks: "Samosas / Paneer Pakoras & Garam Cutting Chai",
-      dinner: "Paneer Butter Masala / Chicken Curry, Dal Makhani, Phulka & Hot Gulab Jamun"
-    },
-    reviews: [
-      { name: "Aarav Sharma", major: "DU SRCC B.Com '26", rating: 5, comment: "Best student stay in North Campus! High-speed internet and delicious daily food." },
-      { name: "Priya Malhotra", major: "DU Hindu English '27", rating: 4.9, comment: "Super safe with biometric access and 24/7 warden security." }
-    ]
-  },
-  {
-    id: "h2",
-    name: "Shree Durga Girls Sanctuary PG",
-    university: "DU South Campus (Satya Niketan)",
-    city: "New Delhi",
-    gender: "Girls",
-    type: "Girls PG & Hostel",
-    rent: 11000,
-    deposit: 9000,
-    distance: 0.2,
-    rating: 4.85,
-    reviewsCount: 98,
-    verified: true,
-    featured: true,
-    imageMain: "assets/images/room_single.png",
-    imageSingle: "assets/images/room_single.png",
-    imageShared: "assets/images/room_shared.png",
-    imageMess: "assets/images/mess.png",
-    address: "142 Satya Niketan, Opposite Venkateswara College, New Delhi",
-    mapCoords: { top: 22, left: 68 },
-    amenities: ["Wi-Fi", "4-Time Mess", "AC", "CCTV Security", "24x7 Power Backup", "RO Water", "Washing Machine"],
-    curfew: "10:00 PM",
-    roomSharing: ["Single", "Double"],
-    description: "Premium safe sanctuary for female college students. Full biometric & CCTV security, 24/7 resident lady warden, RO mineral drinking water, and hygienic North Indian home-cooked meals.",
-    messMenu: {
-      breakfast: "Masala Dosa / Poha, Coconut Chutney, Tea & Coffee",
-      lunch: "Kadhi Pakoda, Jeera Rice, Chapati, Salad",
-      snacks: "Veg Sandwich / Biscuit with Evening Chai",
-      dinner: "Shahi Paneer, Mix Veg, Phulka, Kheer"
-    },
-    reviews: [
-      { name: "Ananya Iyer", major: "DU Venky Econ '26", rating: 5, comment: "Walking distance to Venky College! Very safe environment and clean rooms." }
-    ]
-  },
-  {
-    id: "h3",
-    name: "Powai Tech Scholars Boys PG",
-    university: "IIT Bombay (Powai Lake)",
-    city: "Mumbai",
-    gender: "Boys",
-    type: "Boys Student PG",
-    rent: 15500,
-    deposit: 12000,
-    distance: 0.5,
-    rating: 4.8,
-    reviewsCount: 110,
-    verified: true,
-    featured: false,
-    imageMain: "assets/images/room_shared.png",
-    imageSingle: "assets/images/room_single.png",
-    imageShared: "assets/images/room_shared.png",
-    imageMess: "assets/images/mess.png",
-    address: "Main Gate Road, Opposite Hiranandani Gardens, Powai, Mumbai",
-    mapCoords: { top: 58, left: 28 },
-    amenities: ["Wi-Fi", "4-Time Mess", "AC", "Gym", "Power Backup", "Gaming Lounge", "Daily Housekeeping"],
-    curfew: "None (24/7 Access)",
-    roomSharing: ["Double", "Triple"],
-    description: "Vibrant boys student hostel for IIT Bombay engineering students and tech interns. Offers high-speed gaming fiber Wi-Fi, in-house gym, daily housekeeping, and 4-time meals.",
-    messMenu: {
-      breakfast: "Misal Pav / Eggs, Fresh Fruit, Filter Coffee",
-      lunch: "Maharashtrian Thali, Chapati, Dal Fry, Rice",
-      snacks: "Vada Pav & Cutting Chai",
-      dinner: "Chicken Biryani / Veg Biryani, Raita, Ice Cream"
-    },
-    reviews: [
-      { name: "Rohan Kulkarni", major: "IIT Bombay CS '26", rating: 4.8, comment: "Awesome Wi-Fi speed for hackathons and 24/7 access!" }
-    ]
-  },
-  {
-    id: "h4",
-    name: "Koramangala Green Co-Living",
-    university: "Christ University",
-    city: "Bengaluru",
-    gender: "Co-ed",
-    type: "Co-Living & PG",
-    rent: 16800,
-    deposit: 15000,
-    distance: 0.4,
-    rating: 4.95,
-    reviewsCount: 135,
-    verified: true,
-    featured: true,
-    imageMain: "assets/images/exterior1.png",
-    imageSingle: "assets/images/room_single.png",
-    imageShared: "assets/images/room_shared.png",
-    imageMess: "assets/images/mess.png",
-    address: "5th Block, Koramangala, Bengaluru, Karnataka",
-    mapCoords: { top: 38, left: 78 },
-    amenities: ["Wi-Fi", "4-Time Mess", "AC", "Gym", "Balcony", "Biometric Security", "Laundry"],
-    curfew: "11:30 PM",
-    roomSharing: ["Single", "Double"],
-    description: "Luxury private and twin-sharing co-living suites near Christ University Koramangala campus. Equipped with high-speed Wi-Fi, modern attached bathrooms, rooftop lounge, and gourmet dining.",
-    messMenu: {
-      breakfast: "Idli Vada / Eggs, Sambar, Filter Coffee",
-      lunch: "South Indian Special Thali / North Indian Thali",
-      snacks: "Banana Fritters & South Indian Filter Coffee",
-      dinner: "Butter Chicken / Paneer Makhani, Naan, Gulab Jamun"
-    },
-    reviews: [
-      { name: "Meera Nair", major: "Christ Univ BBA '27", rating: 5, comment: "Super serene rooftop study area and Koramangala food joints nearby!" }
-    ]
-  },
-  {
-    id: "h5",
-    name: "Kota Coaching Scholars Hub",
-    university: "Rajiv Gandhi Nagar (Allen & Motion)",
-    city: "Kota",
-    gender: "Boys",
-    type: "Boys PG & Hostel",
-    rent: 8500,
-    deposit: 6000,
-    distance: 0.1,
-    rating: 4.75,
-    reviewsCount: 88,
-    verified: true,
-    featured: false,
-    imageMain: "assets/images/room_shared.png",
-    imageSingle: "assets/images/room_single.png",
-    imageShared: "assets/images/room_shared.png",
-    imageMess: "assets/images/mess.png",
-    address: "CP Tower Road, Rajiv Gandhi Nagar, Kota, Rajasthan",
-    mapCoords: { top: 72, left: 62 },
-    amenities: ["Wi-Fi", "Silent Study Lounge", "4-Time Mess", "Air Cooler", "RO Water", "Power Backup"],
-    curfew: "10:30 PM",
-    roomSharing: ["Single", "Double", "Triple"],
-    description: "Focused academic residency tailored for JEE & NEET coaching aspirants in Kota. Features silent exam preparation booths, 4-time nutritious vegetarian mess meals, and 24x7 inverter backup.",
-    messMenu: {
-      breakfast: "Poha, Milk & Sprouts / Tea",
-      lunch: "Dal Baati Churma / North Indian Thali",
-      snacks: "Mathri & Garam Chai",
-      dinner: "Yellow Dal Tadka, Sev Tamatar, Chapati, Kheer"
-    },
-    reviews: [
-      { name: "Ishaan Gupta", major: "Allen JEE Aspirant", rating: 4.7, comment: "Very quiet environment for 12-hour study schedules!" }
-    ]
-  },
-  {
-    id: "h6",
-    name: "Viman Nagar Orchid Girls PG",
-    university: "Symbiosis International (Viman Nagar)",
-    city: "Pune",
-    gender: "Girls",
-    type: "Girls PG & Hostel",
-    rent: 13800,
-    deposit: 11000,
-    distance: 0.3,
-    rating: 4.9,
-    reviewsCount: 92,
-    verified: true,
-    featured: true,
-    imageMain: "assets/images/room_single.png",
-    imageSingle: "assets/images/room_single.png",
-    imageShared: "assets/images/room_shared.png",
-    imageMess: "assets/images/mess.png",
-    address: "Behind Symbiosis Law Campus, Viman Nagar, Pune",
-    mapCoords: { top: 64, left: 40 },
-    amenities: ["Wi-Fi", "4-Time Mess", "AC", "CCTV Security", "Laundry", "Housekeeping", "Study Lounge"],
-    curfew: "10:30 PM",
-    roomSharing: ["Single", "Double"],
-    description: "Boutique girls student residency near Symbiosis Law and Design institutes. Features biometric door access, daily room cleaning, high-speed Wi-Fi, and delicious multi-cuisine mess menu.",
-    messMenu: {
-      breakfast: "Upma / Uttapam, Fresh Fruit, Tea",
-      lunch: "Veg Thali, Bhakri, Matki Usal, Solkadhi",
-      snacks: "Cold Coffee & Veg Sandwich",
-      dinner: "Paneer Kadai, Dal Fry, Roti, Ice Cream"
-    },
-    reviews: [
-      { name: "Sanya Verma", major: "Symbiosis Design '26", rating: 4.9, comment: "Super safe and clean! Loving the Viman Nagar location." }
-    ]
-  },
-  {
-    id: "h7",
-    name: "BITS Pilani Tech Haven Dorms",
-    university: "BITS Pilani Hyderabad Campus",
-    city: "Hyderabad",
-    gender: "Co-ed",
-    type: "Co-Living PG",
-    rent: 12200,
-    deposit: 10000,
-    distance: 0.6,
-    rating: 4.8,
-    reviewsCount: 76,
-    verified: true,
-    featured: false,
-    imageMain: "assets/images/exterior1.png",
-    imageSingle: "assets/images/room_single.png",
-    imageShared: "assets/images/room_shared.png",
-    imageMess: "assets/images/mess.png",
-    address: "Shameerpet Road, Near BITS Main Gate, Hyderabad",
-    mapCoords: { top: 28, left: 24 },
-    amenities: ["Wi-Fi", "4-Time Mess", "AC", "Gym", "Power Backup", "Gaming Room"],
-    curfew: "11:00 PM",
-    roomSharing: ["Single", "Double"],
-    description: "Modern tech co-living space designed for engineering students in Shameerpet. Offers gigabit Wi-Fi, gaming consoles, gym membership, and Hyderabadi & North Indian food options.",
-    messMenu: {
-      breakfast: "Masala Dosa / Idli Sambar, Coffee",
-      lunch: "Hyderabadi Veg Biryani / Chicken Biryani, Mirchi Ka Salan",
-      snacks: "Punugulu & Irani Chai",
-      dinner: "Paneer Butter Masala, Chapati, Rasam Rice"
-    },
-    reviews: [
-      { name: "Karthik Reddy", major: "BITS ECE '27", rating: 4.8, comment: "Hyderabadi Biryani on Sundays is top tier!" }
-    ]
-  },
-  {
-    id: "h8",
-    name: "Manipal Ocean View Student PG",
-    university: "Manipal Academy (MAHE)",
-    city: "Manipal",
-    gender: "Boys",
-    type: "Boys Hostel",
-    rent: 10500,
-    deposit: 9000,
-    distance: 0.4,
-    rating: 4.7,
-    reviewsCount: 64,
-    verified: true,
-    featured: false,
-    imageMain: "assets/images/mess.png",
-    imageSingle: "assets/images/room_single.png",
-    imageShared: "assets/images/room_shared.png",
-    imageMess: "assets/images/mess.png",
-    address: "Vidyaratna Nagar, Near KMC Greens, Manipal",
-    mapCoords: { top: 48, left: 60 },
-    amenities: ["Wi-Fi", "4-Time Mess", "AC", "Attached Bath", "Power Backup", "Laundry"],
-    curfew: "11:00 PM",
-    roomSharing: ["Single", "Double"],
-    description: "Spacious student hostel near KMC Greens and MIT Manipal. Provides air-conditioned rooms, attached hot-water bathrooms, daily laundry service, and coastal Karnataka & North Indian food.",
-    messMenu: {
-      breakfast: "Neer Dosa / Eggs, Chutney, Tea",
-      lunch: "Mangalorean Fish Curry / Veg Meal, Rice, Chapati",
-      snacks: "Buns / Goli Baje & Filter Coffee",
-      dinner: "Dal Tadka, Mix Veg, Phulka, Payasam"
-    },
-    reviews: [
-      { name: "Varun Shetty", major: "MIT Manipal CSE '26", rating: 4.7, comment: "Walking distance to MIT college and peaceful coastal vibes." }
-    ]
-  }
-];
-
-const INITIAL_ROOMMATES = [
-  {
-    id: "r1",
-    name: "Aarav Sharma",
-    gender: "Male",
-    university: "IIT Bombay Powai",
-    major: "Computer Science",
-    budget: 14000,
-    sleepHabit: "Night Owl",
-    diet: "Pure Veg",
-    bio: "CS sophomore working on AI projects. Clean, respectful, loves coding hackathons & late-night study sessions.",
-    avatar: "AS"
-  },
-  {
-    id: "r2",
-    name: "Ananya Iyer",
-    gender: "Female",
-    university: "DU SRCC North Campus",
-    major: "Commerce",
-    budget: 11000,
-    sleepHabit: "Early Bird",
-    diet: "Pure Veg",
-    bio: "Studious Econ & CA aspirant. Loves filter coffee, yoga, and quiet study environments. Looking for a non-smoker female roommate.",
-    avatar: "AI"
-  },
-  {
-    id: "r3",
-    name: "Rohan Kulkarni",
-    gender: "Male",
-    university: "Symbiosis Viman Nagar",
-    major: "Engineering",
-    budget: 13500,
-    sleepHabit: "Night Owl",
-    diet: "Non-Veg",
-    bio: "BTech Mechanical student in Pune. Friendly, plays acoustic guitar (with headphones), keeps shared spaces tidy.",
-    avatar: "RK"
-  },
-  {
-    id: "r4",
-    name: "Meera Nair",
-    gender: "Female",
-    university: "Christ Univ Koramangala",
-    major: "Business",
-    budget: 15000,
-    sleepHabit: "Early Bird",
-    diet: "Non-Veg",
-    bio: "BBA scholar at Christ University. Quiet, organized, loves green plants and Filter Kaapi. Searching for a serene room partner near Koramangala.",
-    avatar: "MN"
-  }
-];
 
 class HostelKhojoApp {
   constructor() {
@@ -510,17 +186,23 @@ class HostelKhojoApp {
 
     if (this.filteredHostels.length === 0) {
       grid.innerHTML = `
-        <div class="empty-state">
-          <i class="fa-solid fa-house-circle-xmark"></i>
-          <h3>No Hostels or PGs Match Your Search</h3>
-          <p>Try adjusting your rent budget slider or clearing quick filters.</p>
-          <button class="btn btn-outline margin-top-md" onclick="app.resetFilters()">
-            Reset All Filters
-          </button>
+        <div class="empty-state" style="grid-column: 1 / -1; padding: 48px 24px; text-align: center; background: var(--bg-surface); border: 2px dashed var(--border-color); border-radius: var(--radius-lg); margin: 20px 0;">
+          <i class="fa-solid fa-building-circle-check" style="font-size: 3.5rem; color: var(--accent-primary); margin-bottom: 16px;"></i>
+          <h3>No Hostels Listed in This Search Yet</h3>
+          <p class="text-muted" style="max-width: 500px; margin: 8px auto 20px auto;">Are you a Hostel or PG Owner? List your property now to connect directly with 100,000+ verified college students near your campus!</p>
+          <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+            <button class="btn btn-accent btn-lg" onclick="app.openModal('owner-modal')">
+              <i class="fa-solid fa-plus-circle"></i> List Your Hostel / PG Property
+            </button>
+            <button class="btn btn-outline btn-lg" onclick="app.resetFilters()">
+              Reset Filters
+            </button>
+          </div>
         </div>
       `;
       return;
     }
+
 
     grid.innerHTML = this.filteredHostels.map(h => {
       const isSaved = this.savedIds.includes(h.id);
@@ -952,7 +634,22 @@ class HostelKhojoApp {
       return matchMajor && matchHabit && matchDiet;
     });
 
+    if (filtered.length === 0) {
+      grid.innerHTML = `
+        <div class="empty-state" style="grid-column: 1 / -1; padding: 48px 24px; text-align: center; background: var(--bg-surface); border: 2px dashed var(--border-color); border-radius: var(--radius-lg); margin: 20px 0;">
+          <i class="fa-solid fa-user-plus" style="font-size: 3.5rem; color: var(--accent-primary); margin-bottom: 16px;"></i>
+          <h3>No Roommate Cards Posted Yet</h3>
+          <p class="text-muted" style="max-width: 500px; margin: 8px auto 20px auto;">Be the first student to post your room partner requirements and find compatible roommates near your college!</p>
+          <button class="btn btn-primary btn-lg" onclick="app.openModal('post-roommate-modal')">
+            <i class="fa-solid fa-user-plus"></i> Post Roommate Profile
+          </button>
+        </div>
+      `;
+      return;
+    }
+
     grid.innerHTML = filtered.map(r => `
+
       <div class="roommate-card">
         <div class="rm-header">
           <div class="rm-avatar">${r.avatar || "ST"}</div>
@@ -1087,14 +784,15 @@ class HostelKhojoApp {
 
   async handleStudentLoginSubmit(e) {
     e.preventDefault();
-    const email = document.getElementById("login-email").value.trim();
+    const identifierInput = document.getElementById("login-identifier") || document.getElementById("login-email");
+    const identifier = identifierInput ? identifierInput.value.trim() : "";
     const password = document.getElementById("login-password").value.trim();
 
     try {
       const res = await fetch(`${API_BASE_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ identifier, password })
       });
       if (res.ok) {
         const data = await res.json();
@@ -1103,11 +801,11 @@ class HostelKhojoApp {
         this.currentUser = data.user;
         this.renderAuthNavUI();
         this.closeModal("auth-modal");
-        this.showToast(`Welcome back, ${data.user.full_name}! Verified Student Session Active.`, "success");
+        this.showToast(`Welcome back, ${data.user.full_name}! Session Active.`, "success");
         return;
       } else {
         const errorData = await res.json().catch(() => ({}));
-        this.showToast(errorData.detail || "Invalid login credentials. Please check email & password.", "warning");
+        this.showToast(errorData.detail || "Invalid login credentials. Please check Phone/Email & password.", "warning");
         return;
       }
     } catch (err) {
@@ -1117,25 +815,25 @@ class HostelKhojoApp {
     // Local fallback session
     const fallbackUser = {
       id: "usr_local",
-      email: email,
-      full_name: email.split("@")[0].replace(".", " ").toUpperCase(),
+      phone: identifier,
+      full_name: identifier.includes("@") ? identifier.split("@")[0].toUpperCase() : "STUDENT USER",
       role: "student"
     };
     localStorage.setItem("hostelkhojo_user", JSON.stringify(fallbackUser));
     this.currentUser = fallbackUser;
     this.renderAuthNavUI();
     this.closeModal("auth-modal");
-    this.showToast(`Welcome back, ${fallbackUser.full_name}! Instant Student verification unlocked.`, "success");
+    this.showToast(`Welcome back, ${fallbackUser.full_name}! User Session active.`, "success");
   }
 
   async handleStudentRegisterSubmit(e) {
     e.preventDefault();
     const full_name = document.getElementById("reg-name").value.trim();
-    const email = document.getElementById("reg-email").value.trim();
     const phone = document.getElementById("reg-phone").value.trim();
+    const email = document.getElementById("reg-email")?.value.trim() || null;
     const password = document.getElementById("reg-password").value.trim();
 
-    const payload = { full_name, email, phone, password, role: "student" };
+    const payload = { full_name, phone, email, password, role: "student" };
 
     try {
       const res = await fetch(`${API_BASE_URL}/auth/register`, {
@@ -1151,16 +849,26 @@ class HostelKhojoApp {
         this.currentUser = data.user;
         this.renderAuthNavUI();
         this.closeModal("auth-modal");
-        this.showToast(`Student Account Created! Welcome, ${data.user.full_name}!`, "success");
+        this.showToast(`Account Created Successfully! Welcome, ${data.user.full_name}!`, "success");
         return;
       } else {
         const errorData = await res.json().catch(() => ({}));
-        this.showToast(errorData.detail || "Registration failed. Email might already exist.", "warning");
+        this.showToast(errorData.detail || "Registration failed. Phone number might already exist.", "warning");
         return;
       }
     } catch (err) {
       console.log("FastAPI backend offline, using demo fallback registration.");
     }
+
+    // Local fallback
+    const fallbackUser = { id: "usr_" + Date.now(), phone, full_name, role: "student" };
+    localStorage.setItem("hostelkhojo_user", JSON.stringify(fallbackUser));
+    this.currentUser = fallbackUser;
+    this.renderAuthNavUI();
+    this.closeModal("auth-modal");
+    this.showToast(`Account Registered! Welcome ${full_name}!`, "success");
+  }
+
 
     // Local fallback
     const fallbackUser = { id: "usr_" + Date.now(), email, full_name, role: "student" };

@@ -487,45 +487,41 @@
       <!-- FORM 1: LOGIN FORM -->
       <form id="auth-login-form" onsubmit="app.handleStudentLoginSubmit(event)">
         <div class="form-group text-left">
-          <label>College / Student Email ID</label>
-          <input type="email" placeholder="student@hostelkhojo.in" required class="form-control" id="login-email" value="student@hostelkhojo.in" />
+          <label><i class="fa-solid fa-mobile-screen"></i> Phone Number or Email ID</label>
+          <input type="text" placeholder="9876543210 or student@college.ac.in" required class="form-control" id="login-identifier" />
         </div>
         <div class="form-group text-left">
-          <label>Password</label>
-          <input type="password" placeholder="••••••••" required class="form-control" id="login-password" value="password123" />
+          <label><i class="fa-solid fa-lock"></i> Password</label>
+          <input type="password" placeholder="••••••••" required class="form-control" id="login-password" />
         </div>
         <button type="submit" class="btn btn-accent btn-block btn-lg margin-top-md">
-          <i class="fa-solid fa-shield-halved"></i> Sign In & Unlock Student Benefits
+          <i class="fa-solid fa-shield-halved"></i> Sign In to Portal
         </button>
-
-        <div class="auth-demo-hint text-left">
-          <i class="fa-solid fa-key" style="color: var(--accent-primary);"></i> <strong>Demo Credentials:</strong><br>
-          Email: <code style="color:var(--accent-secondary);">student@hostelkhojo.in</code> | Pass: <code style="color:var(--accent-secondary);">password123</code>
-        </div>
       </form>
 
       <!-- FORM 2: REGISTER FORM -->
       <form id="auth-register-form" onsubmit="app.handleStudentRegisterSubmit(event)" style="display: none;">
         <div class="form-group text-left">
-          <label>Full Student Name</label>
+          <label><i class="fa-solid fa-user"></i> Full Name</label>
           <input type="text" placeholder="Aarav Sharma" required class="form-control" id="reg-name" />
         </div>
         <div class="form-group text-left">
-          <label>College / Personal Email</label>
-          <input type="email" placeholder="aarav.du@gmail.com" required class="form-control" id="reg-email" />
+          <label><i class="fa-solid fa-phone"></i> Mobile Phone Number</label>
+          <input type="tel" placeholder="9876543210" required class="form-control" id="reg-phone" />
         </div>
         <div class="form-group text-left">
-          <label>WhatsApp / Phone Number</label>
-          <input type="tel" placeholder="+91 98765 43210" required class="form-control" id="reg-phone" />
+          <label><i class="fa-solid fa-envelope"></i> Email Address (Optional)</label>
+          <input type="email" placeholder="aarav.du@gmail.com" class="form-control" id="reg-email" />
         </div>
         <div class="form-group text-left">
-          <label>Set Password</label>
+          <label><i class="fa-solid fa-key"></i> Set Password</label>
           <input type="password" placeholder="Min 6 characters" required class="form-control" id="reg-password" minlength="6" />
         </div>
         <button type="submit" class="btn btn-primary btn-block btn-lg margin-top-md">
-          <i class="fa-solid fa-user-check"></i> Create Verified Account
+          <i class="fa-solid fa-user-check"></i> Create Account
         </button>
       </form>
+
     </div>
   </div>
 

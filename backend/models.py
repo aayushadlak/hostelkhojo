@@ -8,12 +8,13 @@ class UserDB(Base):
     __tablename__ = "users"
 
     id = Column(String, primary_key=True, index=True)
-    email = Column(String, unique=True, index=True, nullable=False)
+    email = Column(String, unique=True, index=True, nullable=True)
+    phone = Column(String, unique=True, index=True, nullable=True)
     password_hash = Column(String, nullable=False)
     full_name = Column(String, nullable=False)
-    phone = Column(String, nullable=True)
     role = Column(String, default="student") # student, owner, admin
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
 
 class HostelDB(Base):
     __tablename__ = "hostels"
