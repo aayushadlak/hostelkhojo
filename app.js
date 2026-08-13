@@ -1063,14 +1063,12 @@ class HostelKhojoApp {
         .toUpperCase()
         .slice(0, 2);
 
-      const contactInfo = this.currentUser.email || this.currentUser.phone || "Student";
-
       container.innerHTML = `
         <div class="user-badge-container">
-          <button class="user-badge-btn" onclick="app.logoutUser()" title="Click to Logout (${contactInfo})">
+          <button class="user-badge-btn" onclick="app.openUserProfileModal()" title="View Student Profile">
             <div class="user-badge-avatar">${initials}</div>
             <span>${this.currentUser.full_name}</span>
-            <i class="fa-solid fa-right-from-bracket font-xs" style="margin-left: 4px; opacity: 0.7;"></i>
+            <i class="fa-solid fa-chevron-down font-xs" style="margin-left: 6px; opacity: 0.7;"></i>
           </button>
         </div>
       `;
@@ -1083,10 +1081,36 @@ class HostelKhojoApp {
     }
   }
 
+  openUserProfileModal() {
+    if (!this.currentUser) return;
+
+    const initials = (this.currentUser.full_name || "ST")
+      .split(" ")
+      .map(n => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+
+    const avatarEl = document.getElementById("prof-avatar");
+    const nameEl = document.getElementById("prof-name");
+    const emailEl = document.getElementById("prof-email");
+    const phoneEl = document.getElementById("prof-phone");
+    const roleEl = document.getElementById("prof-role");
+
+    if (avatarEl) avatarEl.innerText = initials;
+    if (nameEl) nameEl.innerText = this.currentUser.full_name || "Student Account";
+    if (emailEl) emailEl.innerText = this.currentUser.email || "Not Provided";
+    if (phoneEl) phoneEl.innerText = this.currentUser.phone || "Not Provided";
+    if (roleEl) roleEl.innerText = this.currentUser.role || "student";
+
+    this.openModal("user-profile-modal");
+  }
+
   logoutUser() {
     localStorage.removeItem("hostelkhojo_token");
     localStorage.removeItem("hostelkhojo_user");
     this.currentUser = null;
+    this.closeModal("user-profile-modal");
     this.renderAuthNavUI();
     this.showToast("Signed out of Student Session.", "info");
   }

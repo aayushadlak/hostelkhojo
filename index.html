@@ -543,6 +543,49 @@
     </div>
   </div>
 
+  <!-- STUDENT PROFILE MODAL -->
+  <div class="modal-backdrop" id="user-profile-modal">
+    <div class="modal-box modal-sm text-center">
+      <button class="modal-close" onclick="app.closeModal('user-profile-modal')">&times;</button>
+      
+      <div class="profile-header-badge margin-bottom-md">
+        <div class="profile-avatar-lg" id="prof-avatar">ST</div>
+        <h2 class="modal-title margin-top-xs" id="prof-name">Student Account</h2>
+        <span class="badge badge-accent margin-top-xs"><i class="fa-solid fa-circle-check"></i> Verified Student</span>
+      </div>
+
+      <div class="profile-details-card text-left margin-bottom-md" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 14px 16px;">
+        <div class="profile-info-row margin-bottom-xs">
+          <span class="text-muted font-xs"><i class="fa-solid fa-envelope"></i> Email Address:</span>
+          <div class="font-sm font-weight-600" id="prof-email">student@hostelkhojo.in</div>
+        </div>
+        <div class="profile-info-row margin-bottom-xs">
+          <span class="text-muted font-xs"><i class="fa-solid fa-phone"></i> Phone Number:</span>
+          <div class="font-sm font-weight-600" id="prof-phone">Not Provided</div>
+        </div>
+        <div class="profile-info-row">
+          <span class="text-muted font-xs"><i class="fa-solid fa-shield"></i> User Role:</span>
+          <div class="font-sm font-weight-600 text-capitalize" id="prof-role">Student / Aspirant</div>
+        </div>
+      </div>
+
+      <div class="profile-actions-grid margin-bottom-md">
+        <button class="btn btn-outline btn-block text-left" onclick="app.closeModal('user-profile-modal'); app.switchTab('saved');" style="margin-bottom: 8px;">
+          <i class="fa-solid fa-bookmark" style="color: var(--accent-primary);"></i> My Saved Stays
+        </button>
+        <button class="btn btn-outline btn-block text-left" onclick="app.closeModal('user-profile-modal'); app.openModal('post-roommate-modal');">
+          <i class="fa-solid fa-user-plus" style="color: var(--accent-secondary);"></i> Post Roommate Profile
+        </button>
+      </div>
+
+      <!-- LOGOUT BUTTON AT THE BOTTOM -->
+      <button class="btn btn-danger-outline btn-block btn-lg margin-top-sm" onclick="app.logoutUser()" style="border: 1.5px solid #ef4444; color: #ef4444; background: transparent; font-weight: 600; cursor: pointer;">
+        <i class="fa-solid fa-right-from-bracket"></i> Sign Out of Session
+      </button>
+    </div>
+  </div>
+
+
 
   <!-- TOAST NOTIFICATION CONTAINER -->
   <div id="toast-container"></div>
