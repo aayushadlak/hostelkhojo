@@ -893,14 +893,29 @@ class HostelKhojoApp {
   async handleGoogleLogin() {
     const clientId = "936417074161-p7hdahudddhmocudaufctg2f2g1u9gqi.apps.googleusercontent.com";
 
+    // Auto-load Google Identity Services SDK if not ready
+    if (!window.google || !window.google.accounts) {
+      this.showToast("Loading Google Sign-In SDK... Please try again in 2 seconds.", "info");
+      if (!document.getElementById("gsi-sdk")) {
+        const script = document.createElement("script");
+        script.id = "gsi-sdk";
+        script.src = "https://accounts.google.com/gsi/client";
+        script.async = true;
+        script.defer = true;
+        document.head.appendChild(script);
+      }
+      return;
+    }
+
     // 1. Standard Google OAuth2 Popup flow with Account Selector
-    if (window.google && window.google.accounts && window.google.accounts.oauth2) {
+    if (window.google.accounts.oauth2) {
       try {
         const tokenClient = window.google.accounts.oauth2.initTokenClient({
           client_id: clientId,
           scope: "https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email",
           callback: async (tokenResponse) => {
             if (tokenResponse && tokenResponse.access_token) {
+              this.showToast("Fetching Google Profile...", "info");
               try {
                 const userRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
                   headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
@@ -917,6 +932,16 @@ class HostelKhojoApp {
                 }
               } catch (err) {
                 console.error("Failed to fetch Google profile info", err);
+                this.showToast("Failed to read Google profile data.", "warning");
+              }
+            } else if (tokenResponse && tokenResponse.error) {
+              console.warn("Google OAuth popup error:", tokenResponse.error);
+              if (tokenResponse.error === "popup_closed_by_user") {
+                this.showToast("Google Sign-In popup closed.", "info");
+              } else if (tokenResponse.error === "access_denied") {
+                this.showToast("Google Sign-In permission denied.", "warning");
+              } else {
+                this.showToast("Google OAuth Error: " + tokenResponse.error, "warning");
               }
             }
           }
@@ -929,7 +954,7 @@ class HostelKhojoApp {
     }
 
     // 2. Fallback Google GIS One-Tap Prompt
-    if (window.google && window.google.accounts && window.google.accounts.id) {
+    if (window.google.accounts.id) {
       try {
         window.google.accounts.id.initialize({
           client_id: clientId,
@@ -942,7 +967,7 @@ class HostelKhojoApp {
       }
     }
 
-    this.showToast("Google Sign-In service is unavailable. Please sign in with Phone or Email.", "warning");
+    this.showToast("Google Sign-In is unavailable. Please try signing in with Phone or Email.", "warning");
   }
 
   async loginWithGoogleProfile(googleData) {
