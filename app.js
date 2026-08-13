@@ -900,70 +900,68 @@ class HostelKhojoApp {
   }
 
   async handleGoogleLogin() {
-    const demoGoogleUser = {
-      email: "student.aarav@gmail.com",
-      full_name: "Aarav Sharma (Google)",
-      avatar: "https://lh3.googleusercontent.com/a/default-user"
-    };
+    const clientId = "936417074161-p7hdahudddhmocudaufctg2f2g1u9gqi.apps.googleusercontent.com";
 
+    // 1. Standard Google OAuth2 Popup flow with Account Selector
+    if (window.google && window.google.accounts && window.google.accounts.oauth2) {
+      try {
+        const tokenClient = window.google.accounts.oauth2.initTokenClient({
+          client_id: clientId,
+          scope: "https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email",
+          callback: async (tokenResponse) => {
+            if (tokenResponse && tokenResponse.access_token) {
+              try {
+                const userRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+                  headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
+                });
+                if (userRes.ok) {
+                  const profile = await userRes.json();
+                  await this.loginWithGoogleProfile({
+                    id_token: tokenResponse.access_token,
+                    email: profile.email,
+                    full_name: profile.name || profile.given_name || "Google Student",
+                    avatar: profile.picture
+                  });
+                  return;
+                }
+              } catch (err) {
+                console.error("Failed to fetch Google profile info", err);
+              }
+            }
+          }
+        });
+        tokenClient.requestAccessToken({ prompt: "select_account" });
+        return;
+      } catch (err) {
+        console.warn("Google OAuth2 init error:", err);
+      }
+    }
+
+    // 2. Fallback Google GIS One-Tap Prompt
     if (window.google && window.google.accounts && window.google.accounts.id) {
       try {
         window.google.accounts.id.initialize({
-          client_id: "936417074161-p7hdahudddhmocudaufctg2f2g1u9gqi.apps.googleusercontent.com",
+          client_id: clientId,
           callback: (response) => this.processGoogleCredentialResponse(response)
         });
         window.google.accounts.id.prompt();
+        return;
       } catch (err) {
         console.warn("Google GIS prompt error:", err);
       }
     }
 
-    try {
-      const res = await apiFetch("/auth/google", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(demoGoogleUser)
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        localStorage.setItem("hostelkhojo_token", data.access_token);
-        localStorage.setItem("hostelkhojo_user", JSON.stringify(data.user));
-        this.currentUser = data.user;
-        this.renderAuthNavUI();
-        this.closeModal("auth-modal");
-        this.showToast(`Signed in with Google! Welcome ${data.user.full_name}! 🚀`, "success");
-        return;
-      }
-    } catch (err) {
-      console.log("Backend offline, using fallback Google session.");
-    }
-
-    // Local fallback
-    const googleUser = {
-      id: "usr_google_" + Date.now(),
-      email: demoGoogleUser.email,
-      full_name: demoGoogleUser.full_name,
-      role: "student"
-    };
-    localStorage.setItem("hostelkhojo_user", JSON.stringify(googleUser));
-    this.currentUser = googleUser;
-    this.renderAuthNavUI();
-    this.closeModal("auth-modal");
-    this.showToast(`Signed in with Google! Welcome ${googleUser.full_name}! 🚀`, "success");
+    // Demo fallback ONLY if Google SDK is blocked or unavailable
+    console.warn("Google SDK not available, using fallback.");
+    await this.loginWithGoogleProfile({
+      email: "student.aarav@gmail.com",
+      full_name: "Aarav Sharma (Demo)",
+      avatar: "https://lh3.googleusercontent.com/a/default-user"
+    });
   }
 
-  async processGoogleCredentialResponse(response) {
-    if (!response || !response.credential) return;
+  async loginWithGoogleProfile(googleData) {
     try {
-      const payload = JSON.parse(atob(response.credential.split('.')[1]));
-      const googleData = {
-        id_token: response.credential,
-        email: payload.email,
-        full_name: payload.name || payload.given_name || "Google Student",
-        avatar: payload.picture
-      };
-
       const res = await apiFetch("/auth/google", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -977,12 +975,42 @@ class HostelKhojoApp {
         this.currentUser = data.user;
         this.renderAuthNavUI();
         this.closeModal("auth-modal");
-        this.showToast(`Verified Google Sign-In! Welcome, ${data.user.full_name}!`, "success");
+        this.showToast(`Signed in as ${data.user.full_name}! 🚀`, "success");
+        return;
       }
+    } catch (err) {
+      console.log("Backend offline, using local fallback Google session.");
+    }
+
+    // Local fallback session
+    const googleUser = {
+      id: "usr_google_" + Date.now(),
+      email: googleData.email,
+      full_name: googleData.full_name,
+      role: "student"
+    };
+    localStorage.setItem("hostelkhojo_user", JSON.stringify(googleUser));
+    this.currentUser = googleUser;
+    this.renderAuthNavUI();
+    this.closeModal("auth-modal");
+    this.showToast(`Signed in as ${googleUser.full_name}! 🚀`, "success");
+  }
+
+  async processGoogleCredentialResponse(response) {
+    if (!response || !response.credential) return;
+    try {
+      const payload = JSON.parse(atob(response.credential.split('.')[1]));
+      await this.loginWithGoogleProfile({
+        id_token: response.credential,
+        email: payload.email,
+        full_name: payload.name || payload.given_name || "Google Student",
+        avatar: payload.picture
+      });
     } catch (e) {
       console.error("Failed to process Google Credential", e);
     }
   }
+
 
 
   async checkUserSession() {
