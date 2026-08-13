@@ -1,0 +1,19 @@
+{
+  "name": "hostelkhojo",
+  "version": "1.0.0",
+  "description": "Hostel Khojo India - Find Verified Hostels & PGs Near Indian Campuses",
+  "main": "index.html",
+  "scripts": {
+    "build": "echo 'Static build completed successfully'"
+  },
+  "keywords": [
+    "hostel",
+    "pg",
+    "student-residence",
+    "delhi-university",
+    "kota",
+    "bengaluru"
+  ],
+  "author": "Hostel Khojo Team",
+  "license": "MIT"
+}
