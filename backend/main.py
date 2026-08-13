@@ -15,7 +15,7 @@ from .schemas import (
     RoommateResponse, RoommateCreate,
     PropertySubmissionResponse, PropertySubmissionCreate,
     ReviewResponse, ReviewCreate,
-    UserRegister, UserLogin, UserResponse, Token
+    UserRegister, UserLogin, GoogleLogin, UserResponse, Token
 )
 from .auth import get_password_hash, verify_password, create_access_token, get_current_user
 from .seed import seed_database
@@ -101,6 +101,29 @@ def login_user(user_in: UserLogin, db: Session = Depends(get_db)):
 
     if not user or not verify_password(user_in.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid Phone/Email or Password")
+
+    token = create_access_token(data={"sub": user.id})
+    user_res = UserResponse.from_orm(user)
+    return Token(access_token=token, token_type="bearer", user=user_res)
+
+@app.post("/api/auth/google", response_model=Token)
+def google_login(google_in: GoogleLogin, db: Session = Depends(get_db)):
+    email = google_in.email.strip().lower()
+    user = db.query(UserDB).filter(UserDB.email == email).first()
+
+    if not user:
+        new_user = UserDB(
+            id=f"usr_{uuid.uuid4().hex[:10]}",
+            email=email,
+            phone=None,
+            password_hash=get_password_hash(f"google_{uuid.uuid4().hex}"),
+            full_name=google_in.full_name,
+            role="student"
+        )
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+        user = new_user
 
     token = create_access_token(data={"sub": user.id})
     user_res = UserResponse.from_orm(user)

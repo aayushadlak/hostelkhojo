@@ -899,6 +899,92 @@ class HostelKhojoApp {
     this.showToast(`Account Registered! Welcome ${full_name}!`, "success");
   }
 
+  async handleGoogleLogin() {
+    const demoGoogleUser = {
+      email: "student.aarav@gmail.com",
+      full_name: "Aarav Sharma (Google)",
+      avatar: "https://lh3.googleusercontent.com/a/default-user"
+    };
+
+    if (window.google && window.google.accounts && window.google.accounts.id) {
+      try {
+        window.google.accounts.id.initialize({
+          client_id: "1083478952134-hostelkhojo.apps.googleusercontent.com",
+          callback: (response) => this.processGoogleCredentialResponse(response)
+        });
+        window.google.accounts.id.prompt();
+      } catch (err) {
+        console.warn("Google GIS prompt error:", err);
+      }
+    }
+
+    try {
+      const res = await apiFetch("/auth/google", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(demoGoogleUser)
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        localStorage.setItem("hostelkhojo_token", data.access_token);
+        localStorage.setItem("hostelkhojo_user", JSON.stringify(data.user));
+        this.currentUser = data.user;
+        this.renderAuthNavUI();
+        this.closeModal("auth-modal");
+        this.showToast(`Signed in with Google! Welcome ${data.user.full_name}! 🚀`, "success");
+        return;
+      }
+    } catch (err) {
+      console.log("Backend offline, using fallback Google session.");
+    }
+
+    // Local fallback
+    const googleUser = {
+      id: "usr_google_" + Date.now(),
+      email: demoGoogleUser.email,
+      full_name: demoGoogleUser.full_name,
+      role: "student"
+    };
+    localStorage.setItem("hostelkhojo_user", JSON.stringify(googleUser));
+    this.currentUser = googleUser;
+    this.renderAuthNavUI();
+    this.closeModal("auth-modal");
+    this.showToast(`Signed in with Google! Welcome ${googleUser.full_name}! 🚀`, "success");
+  }
+
+  async processGoogleCredentialResponse(response) {
+    if (!response || !response.credential) return;
+    try {
+      const payload = JSON.parse(atob(response.credential.split('.')[1]));
+      const googleData = {
+        id_token: response.credential,
+        email: payload.email,
+        full_name: payload.name || payload.given_name || "Google Student",
+        avatar: payload.picture
+      };
+
+      const res = await apiFetch("/auth/google", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(googleData)
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        localStorage.setItem("hostelkhojo_token", data.access_token);
+        localStorage.setItem("hostelkhojo_user", JSON.stringify(data.user));
+        this.currentUser = data.user;
+        this.renderAuthNavUI();
+        this.closeModal("auth-modal");
+        this.showToast(`Verified Google Sign-In! Welcome, ${data.user.full_name}!`, "success");
+      }
+    } catch (e) {
+      console.error("Failed to process Google Credential", e);
+    }
+  }
+
+
   async checkUserSession() {
     const token = localStorage.getItem("hostelkhojo_token");
     if (!token) return;

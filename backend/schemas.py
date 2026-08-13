@@ -14,6 +14,13 @@ class UserLogin(BaseModel):
     identifier: str # Email or Phone number
     password: str
 
+class GoogleLogin(BaseModel):
+    id_token: Optional[str] = None
+    email: str
+    full_name: str
+    avatar: Optional[str] = None
+
+
 class UserResponse(BaseModel):
     id: str
     full_name: str
