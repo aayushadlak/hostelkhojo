@@ -1,5 +1,5 @@
 # API Proxy Redirect to Render Backend
-/api/*    https://hostelkhojo.onrender.com/api/:splat    200!
+/api/*    https://hostelkhojo.onrender.com/api/:splat    200
 
 # Single Page Application SPA Redirect Fallback
 /*        /index.html                                     200
