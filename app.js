@@ -46,15 +46,15 @@ class HostelKhojoApp {
     this.hostels = [...INITIAL_HOSTELS];
     this.filteredHostels = [...INITIAL_HOSTELS];
     this.roommates = [...INITIAL_ROOMMATES];
-    
+
     this.savedIds = JSON.parse(localStorage.getItem("hostelkhojo_saved") || localStorage.getItem("dormify_saved") || "[]");
     this.comparisonIds = [];
     this.activePills = new Set();
-    
+
     this.currentUser = JSON.parse(localStorage.getItem("hostelkhojo_user") || "null");
     this.currentViewMode = "grid"; // 'grid' or 'split'
     this.currentSort = "recommended";
-    
+
     this.init();
   }
 
@@ -66,7 +66,7 @@ class HostelKhojoApp {
     this.loadBackendData();
     this.checkUserSession();
     this.renderAuthNavUI();
-    
+
     // Check saved theme - default to Light theme
     const savedTheme = localStorage.getItem("hostelkhojo_theme") || localStorage.getItem("dormify_theme") || "light";
     document.documentElement.setAttribute("data-theme", savedTheme);
@@ -132,7 +132,7 @@ class HostelKhojoApp {
 
     this.filteredHostels = this.hostels.filter(h => {
       // Keyword search
-      const matchesText = !searchTerm || 
+      const matchesText = !searchTerm ||
         h.name.toLowerCase().includes(searchTerm) ||
         h.university.toLowerCase().includes(searchTerm) ||
         h.city.toLowerCase().includes(searchTerm) ||
@@ -313,7 +313,7 @@ class HostelKhojoApp {
              style="top: ${h.mapCoords.top}%; left: ${h.mapCoords.left}%;"
              onclick="app.openHostelDetail('${h.id}')"
              onmouseenter="app.highlightCard('${h.id}')">
-          ₹${(h.rent/1000).toFixed(1)}k
+          ₹${(h.rent / 1000).toFixed(1)}k
         </div>
       `;
     }).join('');
@@ -531,7 +531,7 @@ class HostelKhojoApp {
             ${h.roomSharing.map(type => `
               <div class="room-option-card">
                 <div class="room-type-title">${type} Room</div>
-                <div class="room-price">₹${(h.rent * (type==='Single'? 1.3 : type==='Double'? 1.0 : 0.8)).toFixed(0)}/mo</div>
+                <div class="room-price">₹${(h.rent * (type === 'Single' ? 1.3 : type === 'Double' ? 1.0 : 0.8)).toFixed(0)}/mo</div>
                 <ul class="room-specs">
                   <li><i class="fa-solid fa-check"></i> ${type === 'Single' ? 'Private Study Desk & Almirah' : 'Personal Wardrobe & Desk'}</li>
                   <li><i class="fa-solid fa-check"></i> Attached Balcony & Bath</li>
@@ -609,7 +609,7 @@ class HostelKhojoApp {
   switchMessTab(btn, paneId) {
     document.querySelectorAll(".mess-tab").forEach(t => t.classList.remove("active"));
     document.querySelectorAll(".mess-tab-pane").forEach(p => p.classList.remove("active"));
-    
+
     btn.classList.add("active");
     const pane = document.getElementById(paneId);
     if (pane) pane.classList.add("active");
@@ -736,12 +736,12 @@ class HostelKhojoApp {
         this.roommates.unshift(newRm);
         this.renderRoommates();
       } else {
-        const fallbackProfile = { ...payload, id: "r_" + Date.now(), sleepHabit, avatar: name.split(' ').map(n=>n[0]).join('').toUpperCase() };
+        const fallbackProfile = { ...payload, id: "r_" + Date.now(), sleepHabit, avatar: name.split(' ').map(n => n[0]).join('').toUpperCase() };
         this.roommates.unshift(fallbackProfile);
         this.renderRoommates();
       }
     } catch (err) {
-      const fallbackProfile = { ...payload, id: "r_" + Date.now(), sleepHabit, avatar: name.split(' ').map(n=>n[0]).join('').toUpperCase() };
+      const fallbackProfile = { ...payload, id: "r_" + Date.now(), sleepHabit, avatar: name.split(' ').map(n => n[0]).join('').toUpperCase() };
       this.roommates.unshift(fallbackProfile);
       this.renderRoommates();
     }
@@ -759,7 +759,7 @@ class HostelKhojoApp {
     e.preventDefault();
     const form = e.target;
     const inputs = form.querySelectorAll("input, select, textarea");
-    
+
     const owner_name = inputs[0]?.value || "Property Owner";
     const owner_phone = inputs[1]?.value || "+91 9876543210";
     const property_name = inputs[2]?.value || "Student PG Stay";
@@ -909,7 +909,7 @@ class HostelKhojoApp {
     if (window.google && window.google.accounts && window.google.accounts.id) {
       try {
         window.google.accounts.id.initialize({
-          client_id: "1083478952134-hostelkhojo.apps.googleusercontent.com",
+          client_id: "936417074161-p7hdahudddhmocudaufctg2f2g1u9gqi.apps.googleusercontent.com",
           callback: (response) => this.processGoogleCredentialResponse(response)
         });
         window.google.accounts.id.prompt();
@@ -1103,7 +1103,7 @@ class HostelKhojoApp {
 
     const toast = document.createElement("div");
     toast.className = `toast toast-${type}`;
-    
+
     let icon = "fa-circle-info";
     if (type === "success") icon = "fa-circle-check";
     if (type === "warning") icon = "fa-triangle-exclamation";
