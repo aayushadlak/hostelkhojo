@@ -870,7 +870,6 @@ class HostelKhojoApp {
   }
 
   async checkUserSession() {
-
     const token = localStorage.getItem("hostelkhojo_token");
     if (!token) return;
 
@@ -882,6 +881,12 @@ class HostelKhojoApp {
         const userData = await res.json();
         this.currentUser = userData;
         localStorage.setItem("hostelkhojo_user", JSON.stringify(userData));
+        this.renderAuthNavUI();
+      } else if (res.status === 401) {
+        // Clear invalid token & session
+        localStorage.removeItem("hostelkhojo_token");
+        localStorage.removeItem("hostelkhojo_user");
+        this.currentUser = null;
         this.renderAuthNavUI();
       }
     } catch (err) {
@@ -901,9 +906,11 @@ class HostelKhojoApp {
         .toUpperCase()
         .slice(0, 2);
 
+      const contactInfo = this.currentUser.email || this.currentUser.phone || "Student";
+
       container.innerHTML = `
         <div class="user-badge-container">
-          <button class="user-badge-btn" onclick="app.logoutUser()" title="Click to Logout (${this.currentUser.email})">
+          <button class="user-badge-btn" onclick="app.logoutUser()" title="Click to Logout (${contactInfo})">
             <div class="user-badge-avatar">${initials}</div>
             <span>${this.currentUser.full_name}</span>
             <i class="fa-solid fa-right-from-bracket font-xs" style="margin-left: 4px; opacity: 0.7;"></i>

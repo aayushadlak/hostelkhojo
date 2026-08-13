@@ -94,8 +94,9 @@ def register_user(user_in: UserRegister, db: Session = Depends(get_db)):
 @app.post("/api/auth/login", response_model=Token)
 def login_user(user_in: UserLogin, db: Session = Depends(get_db)):
     ident = user_in.identifier.strip()
+    ident_lower = ident.lower()
     user = db.query(UserDB).filter(
-        (UserDB.email == ident) | (UserDB.phone == ident)
+        (UserDB.email == ident) | (UserDB.email == ident_lower) | (UserDB.phone == ident)
     ).first()
 
     if not user or not verify_password(user_in.password, user.password_hash):
@@ -103,8 +104,6 @@ def login_user(user_in: UserLogin, db: Session = Depends(get_db)):
 
     token = create_access_token(data={"sub": user.id})
     user_res = UserResponse.from_orm(user)
-    return Token(access_token=token, token_type="bearer", user=user_res)
-
     return Token(access_token=token, token_type="bearer", user=user_res)
 
 @app.get("/api/auth/me", response_model=UserResponse)
@@ -388,7 +387,7 @@ def submit_property(sub_in: PropertySubmissionCreate, db: Session = Depends(get_
         curfew="11:00 PM",
         room_sharing_json=json.dumps(["Single", "Double", "Triple"]),
         description=f"Verified premium student stay managed by {sub_in.owner_name}. Located near key college campuses in {sub_in.city}. Contact owner directly: {sub_in.owner_phone}.",
-        messMenu_json=json.dumps({
+        mess_menu_json=json.dumps({
             "breakfast": "Nutritious Breakfast & Hot Chai / Coffee",
             "lunch": "Full North/South Indian Meals",
             "snacks": "Evening Tea & Snacks",
