@@ -831,7 +831,7 @@ class HostelKhojoApp {
         this.currentUser = data.user;
         this.renderAuthNavUI();
         this.closeModal("auth-modal");
-        this.showToast(`Welcome back, ${data.user.full_name}! Session Active.`, "success");
+        this.showToast(`Welcome back, ${data.user.full_name}!`, "success");
         return;
       } else {
         const errorData = await res.json().catch(() => ({}));
@@ -839,21 +839,9 @@ class HostelKhojoApp {
         return;
       }
     } catch (err) {
-      console.log("FastAPI backend offline, using demo fallback session.");
+      console.error("Login connection failed:", err);
+      this.showToast("Unable to connect to server. Please check your internet connection.", "warning");
     }
-
-    // Local fallback session
-    const fallbackUser = {
-      id: "usr_local",
-      phone: identifier,
-      full_name: identifier.includes("@") ? identifier.split("@")[0].toUpperCase() : "STUDENT USER",
-      role: "student"
-    };
-    localStorage.setItem("hostelkhojo_user", JSON.stringify(fallbackUser));
-    this.currentUser = fallbackUser;
-    this.renderAuthNavUI();
-    this.closeModal("auth-modal");
-    this.showToast(`Welcome back, ${fallbackUser.full_name}! User Session active.`, "success");
   }
 
   async handleStudentRegisterSubmit(e) {
@@ -883,20 +871,13 @@ class HostelKhojoApp {
         return;
       } else {
         const errorData = await res.json().catch(() => ({}));
-        this.showToast(errorData.detail || "Registration failed. Phone number might already exist.", "warning");
+        this.showToast(errorData.detail || "Registration failed. Phone or Email might already exist.", "warning");
         return;
       }
     } catch (err) {
-      console.log("FastAPI backend offline, using demo fallback registration.");
+      console.error("Registration connection failed:", err);
+      this.showToast("Unable to connect to server. Please try registering again.", "warning");
     }
-
-    // Local fallback
-    const fallbackUser = { id: "usr_" + Date.now(), phone, full_name, role: "student" };
-    localStorage.setItem("hostelkhojo_user", JSON.stringify(fallbackUser));
-    this.currentUser = fallbackUser;
-    this.renderAuthNavUI();
-    this.closeModal("auth-modal");
-    this.showToast(`Account Registered! Welcome ${full_name}!`, "success");
   }
 
   async handleGoogleLogin() {
@@ -951,13 +932,7 @@ class HostelKhojoApp {
       }
     }
 
-    // Demo fallback ONLY if Google SDK is blocked or unavailable
-    console.warn("Google SDK not available, using fallback.");
-    await this.loginWithGoogleProfile({
-      email: "student.aarav@gmail.com",
-      full_name: "Aarav Sharma (Demo)",
-      avatar: "https://lh3.googleusercontent.com/a/default-user"
-    });
+    this.showToast("Google Sign-In service is unavailable. Please sign in with Phone or Email.", "warning");
   }
 
   async loginWithGoogleProfile(googleData) {
@@ -977,23 +952,14 @@ class HostelKhojoApp {
         this.closeModal("auth-modal");
         this.showToast(`Signed in as ${data.user.full_name}! 🚀`, "success");
         return;
+      } else {
+        const errorData = await res.json().catch(() => ({}));
+        this.showToast(errorData.detail || "Google Sign-In failed. Please try again.", "warning");
       }
     } catch (err) {
-      console.log("Backend offline, using local fallback Google session.");
+      console.error("Google auth endpoint error:", err);
+      this.showToast("Server connection error during Google Sign-In.", "warning");
     }
-
-    // Local fallback session
-    const googleUser = {
-      id: "usr_google_" + Date.now(),
-      email: googleData.email,
-      full_name: googleData.full_name,
-      role: "student"
-    };
-    localStorage.setItem("hostelkhojo_user", JSON.stringify(googleUser));
-    this.currentUser = googleUser;
-    this.renderAuthNavUI();
-    this.closeModal("auth-modal");
-    this.showToast(`Signed in as ${googleUser.full_name}! 🚀`, "success");
   }
 
   async processGoogleCredentialResponse(response) {

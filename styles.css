@@ -1267,15 +1267,7 @@ a:hover {
   font-weight: 700;
 }
 
-.auth-demo-hint {
-  background: var(--bg-card);
-  border: 1px dashed var(--border-color);
-  border-radius: var(--radius-sm);
-  padding: 8px 12px;
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  margin-top: 14px;
-}
+
 
 
 .modal-close {
