@@ -12,14 +12,14 @@ let API_BASE_URL = (window.location.hostname === "localhost" || window.location.
  * If the relative /api proxy request returns HTML (due to SPA fallback misconfig)
  * or encounters a network error, it automatically falls back to the direct Render backend URL.
  */
-async function apiFetch(endpoint, options = {}) {
+async function apiFetch(endpoint, options = {}, retries = 2) {
   let url = `${API_BASE_URL}${endpoint}`;
   try {
     let res = await fetch(url, options);
     const contentType = res.headers.get("content-type") || "";
 
-    if (contentType.includes("text/html") && API_BASE_URL !== RENDER_BACKEND_URL && !url.includes("127.0.0.1")) {
-      console.warn(`API proxy returned HTML at ${url}. Retrying with direct backend URL: ${RENDER_BACKEND_URL}`);
+    if ((contentType.includes("text/html") || res.status === 502 || res.status === 503 || res.status === 504) && API_BASE_URL !== RENDER_BACKEND_URL && !url.includes("127.0.0.1")) {
+      console.warn(`API proxy returned HTML or status ${res.status} at ${url}. Retrying with direct Render backend URL: ${RENDER_BACKEND_URL}`);
       API_BASE_URL = RENDER_BACKEND_URL;
       url = `${API_BASE_URL}${endpoint}`;
       res = await fetch(url, options);
@@ -27,10 +27,15 @@ async function apiFetch(endpoint, options = {}) {
     return res;
   } catch (err) {
     if (API_BASE_URL !== RENDER_BACKEND_URL && !url.includes("127.0.0.1")) {
-      console.warn(`API request failed at ${url}. Retrying with direct backend URL: ${RENDER_BACKEND_URL}`, err);
+      console.warn(`API request failed at ${url}. Retrying with direct Render backend URL: ${RENDER_BACKEND_URL}`, err);
       API_BASE_URL = RENDER_BACKEND_URL;
       url = `${API_BASE_URL}${endpoint}`;
       return await fetch(url, options);
+    }
+    if (retries > 0) {
+      console.warn(`Retrying request to ${url}... (${retries} retries left)`);
+      await new Promise(r => setTimeout(r, 1500));
+      return await apiFetch(endpoint, options, retries - 1);
     }
     throw err;
   }
@@ -963,23 +968,35 @@ class HostelKhojoApp {
       }
     } catch (err) {
       console.error("Google auth endpoint error:", err);
-      this.showToast("Server connection error during Google Sign-In.", "warning");
+      this.showToast("Backend connection issue. If backend on Render is sleeping, please try again in 10 seconds.", "warning");
+    }
+  }
+
+  parseJwtPayload(token) {
+    try {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+      return JSON.parse(jsonPayload);
+    } catch (e) {
+      console.error("JWT parse error:", e);
+      return null;
     }
   }
 
   async processGoogleCredentialResponse(response) {
     if (!response || !response.credential) return;
-    try {
-      const payload = JSON.parse(atob(response.credential.split('.')[1]));
-      await this.loginWithGoogleProfile({
-        id_token: response.credential,
-        email: payload.email,
-        full_name: payload.name || payload.given_name || "Google Student",
-        avatar: payload.picture
-      });
-    } catch (e) {
-      console.error("Failed to process Google Credential", e);
+    const payload = this.parseJwtPayload(response.credential);
+    if (!payload || !payload.email) {
+      this.showToast("Could not retrieve email from Google credential. Please try again.", "warning");
+      return;
     }
+    await this.loginWithGoogleProfile({
+      id_token: response.credential,
+      email: payload.email,
+      full_name: payload.name || payload.given_name || "Google Student",
+      avatar: payload.picture
+    });
   }
 
 
