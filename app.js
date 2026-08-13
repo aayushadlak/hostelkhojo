@@ -1197,34 +1197,6 @@ class HostelKhojoApp {
       return;
     }
 
-  async savePhoneNumber() {
-    const input = document.getElementById("user-add-phone-input");
-    const phoneVal = input ? input.value.trim() : "";
-
-    if (!phoneVal || phoneVal.length < 10) {
-      this.showToast("Please enter a valid 10-digit mobile phone number.", "warning");
-      return;
-    }
-
-    if (!this.currentUser) return;
-
-    this.currentUser.phone = phoneVal;
-    localStorage.setItem("hostelkhojo_user", JSON.stringify(this.currentUser));
-
-    try {
-      await apiFetch("/auth/update-phone", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: this.currentUser.id, phone: phoneVal })
-      });
-    } catch (err) {
-      console.warn("Backend update phone failed, saved locally.");
-    }
-
-    this.switchTab("user");
-    this.showToast("Mobile phone number saved successfully to your student profile!", "success");
-  }
-
     // Reset URL to / if returning to main tabs
     if (window.location.pathname === "/user") {
       try {
@@ -1252,6 +1224,34 @@ class HostelKhojoApp {
       const hTab = document.getElementById("tab-hostels");
       if (hTab) hTab.style.display = "block";
     }
+  }
+
+  async savePhoneNumber() {
+    const input = document.getElementById("user-add-phone-input");
+    const phoneVal = input ? input.value.trim() : "";
+
+    if (!phoneVal || phoneVal.length < 10) {
+      this.showToast("Please enter a valid 10-digit mobile phone number.", "warning");
+      return;
+    }
+
+    if (!this.currentUser) return;
+
+    this.currentUser.phone = phoneVal;
+    localStorage.setItem("hostelkhojo_user", JSON.stringify(this.currentUser));
+
+    try {
+      await apiFetch("/auth/update-phone", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: this.currentUser.id, phone: phoneVal })
+      });
+    } catch (err) {
+      console.warn("Backend update phone failed, saved locally.");
+    }
+
+    this.switchTab("user");
+    this.showToast("Mobile phone number saved successfully to your student profile!", "success");
   }
 
   /* MODAL HELPERS */
