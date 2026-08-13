@@ -18,16 +18,16 @@ async function apiFetch(endpoint, options = {}, retries = 2) {
     let res = await fetch(url, options);
     const contentType = res.headers.get("content-type") || "";
 
-    if ((contentType.includes("text/html") || res.status === 502 || res.status === 503 || res.status === 504) && API_BASE_URL !== RENDER_BACKEND_URL && !url.includes("127.0.0.1")) {
-      console.warn(`API proxy returned HTML or status ${res.status} at ${url}. Retrying with direct Render backend URL: ${RENDER_BACKEND_URL}`);
+    if ((contentType.includes("text/html") || res.status === 502 || res.status === 503 || res.status === 504) && API_BASE_URL !== RENDER_BACKEND_URL) {
+      console.warn(`API proxy/local server returned status ${res.status} at ${url}. Retrying with direct Render backend URL: ${RENDER_BACKEND_URL}`);
       API_BASE_URL = RENDER_BACKEND_URL;
       url = `${API_BASE_URL}${endpoint}`;
       res = await fetch(url, options);
     }
     return res;
   } catch (err) {
-    if (API_BASE_URL !== RENDER_BACKEND_URL && !url.includes("127.0.0.1")) {
-      console.warn(`API request failed at ${url}. Retrying with direct Render backend URL: ${RENDER_BACKEND_URL}`, err);
+    if (API_BASE_URL !== RENDER_BACKEND_URL) {
+      console.warn(`Local request failed at ${url}. Retrying with direct Render backend URL: ${RENDER_BACKEND_URL}`);
       API_BASE_URL = RENDER_BACKEND_URL;
       url = `${API_BASE_URL}${endpoint}`;
       return await fetch(url, options);
