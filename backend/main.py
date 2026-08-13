@@ -369,6 +369,13 @@ def create_roommate(roommate_in: RoommateCreate, db: Session = Depends(get_db)):
         "avatar": new_rm.avatar
     }
 
+@app.delete("/api/roommates/all")
+def delete_all_roommates(db: Session = Depends(get_db)):
+    count = db.query(RoommateDB).delete()
+    db.commit()
+    return {"status": "success", "deleted_count": count}
+
+
 # OWNER PROPERTY SUBMISSIONS ENDPOINTS
 @app.post("/api/owner-submissions", response_model=PropertySubmissionResponse)
 def submit_property(sub_in: PropertySubmissionCreate, db: Session = Depends(get_db)):
