@@ -2,9 +2,39 @@
    HOSTEL KHOJO INDIA - APPLICATION ENGINE
    ========================================================================== */
 
-const API_BASE_URL = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+const RENDER_BACKEND_URL = "https://hostelkhojo.onrender.com/api";
+let API_BASE_URL = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
   ? "http://127.0.0.1:8000/api"
   : "/api";
+
+/**
+ * Smart fetch wrapper that handles API requests.
+ * If the relative /api proxy request returns HTML (due to SPA fallback misconfig)
+ * or encounters a network error, it automatically falls back to the direct Render backend URL.
+ */
+async function apiFetch(endpoint, options = {}) {
+  let url = `${API_BASE_URL}${endpoint}`;
+  try {
+    let res = await fetch(url, options);
+    const contentType = res.headers.get("content-type") || "";
+
+    if (contentType.includes("text/html") && API_BASE_URL !== RENDER_BACKEND_URL && !url.includes("127.0.0.1")) {
+      console.warn(`API proxy returned HTML at ${url}. Retrying with direct backend URL: ${RENDER_BACKEND_URL}`);
+      API_BASE_URL = RENDER_BACKEND_URL;
+      url = `${API_BASE_URL}${endpoint}`;
+      res = await fetch(url, options);
+    }
+    return res;
+  } catch (err) {
+    if (API_BASE_URL !== RENDER_BACKEND_URL && !url.includes("127.0.0.1")) {
+      console.warn(`API request failed at ${url}. Retrying with direct backend URL: ${RENDER_BACKEND_URL}`, err);
+      API_BASE_URL = RENDER_BACKEND_URL;
+      url = `${API_BASE_URL}${endpoint}`;
+      return await fetch(url, options);
+    }
+    throw err;
+  }
+}
 
 
 const INITIAL_HOSTELS = [];
@@ -46,7 +76,7 @@ class HostelKhojoApp {
 
   async loadBackendData() {
     try {
-      const res = await fetch(`${API_BASE_URL}/hostels`);
+      const res = await apiFetch("/hostels");
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) {
@@ -61,7 +91,7 @@ class HostelKhojoApp {
     }
 
     try {
-      const rmRes = await fetch(`${API_BASE_URL}/roommates`);
+      const rmRes = await apiFetch("/roommates");
       if (rmRes.ok) {
         const rmData = await rmRes.json();
         if (Array.isArray(rmData) && rmData.length > 0) {
@@ -601,7 +631,7 @@ class HostelKhojoApp {
     };
 
     try {
-      const res = await fetch(`${API_BASE_URL}/bookings`, {
+      const res = await apiFetch("/bookings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -696,7 +726,7 @@ class HostelKhojoApp {
     };
 
     try {
-      const res = await fetch(`${API_BASE_URL}/roommates`, {
+      const res = await apiFetch("/roommates", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -749,7 +779,7 @@ class HostelKhojoApp {
     };
 
     try {
-      await fetch(`${API_BASE_URL}/owner-submissions`, {
+      await apiFetch("/owner-submissions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -789,7 +819,7 @@ class HostelKhojoApp {
     const password = document.getElementById("login-password").value.trim();
 
     try {
-      const res = await fetch(`${API_BASE_URL}/auth/login`, {
+      const res = await apiFetch("/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ identifier, password })
@@ -836,7 +866,7 @@ class HostelKhojoApp {
     const payload = { full_name, phone, email, password, role: "student" };
 
     try {
-      const res = await fetch(`${API_BASE_URL}/auth/register`, {
+      const res = await apiFetch("/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -874,7 +904,7 @@ class HostelKhojoApp {
     if (!token) return;
 
     try {
-      const res = await fetch(`${API_BASE_URL}/auth/me`, {
+      const res = await apiFetch("/auth/me", {
         headers: { "Authorization": `Bearer ${token}` }
       });
       if (res.ok) {
