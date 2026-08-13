@@ -751,6 +751,11 @@ class HostelKhojoApp {
   }
 
   connectRoommate(name) {
+    if (!this.currentUser) {
+      this.showToast("Please log in or register first to connect with roommates.", "warning");
+      this.openModal("auth-modal");
+      return;
+    }
     this.showToast(`Connection request sent to ${name}! Check your student messages.`, "success");
   }
 
@@ -1065,6 +1070,20 @@ class HostelKhojoApp {
 
   /* MODAL HELPERS */
   openModal(id) {
+    if (id === "post-roommate-modal" && !this.currentUser) {
+      this.showToast("Please log in or register first to post your roommate requirement profile.", "warning");
+      const authModal = document.getElementById("auth-modal");
+      if (authModal) authModal.classList.add("active");
+      return;
+    }
+
+    if (id === "post-roommate-modal" && this.currentUser) {
+      const nameInput = document.getElementById("rm-name-input");
+      if (nameInput && !nameInput.value) {
+        nameInput.value = this.currentUser.full_name || "";
+      }
+    }
+
     const modal = document.getElementById(id);
     if (modal) modal.classList.add("active");
   }
