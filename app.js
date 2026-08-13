@@ -72,10 +72,22 @@ class HostelKhojoApp {
     this.checkUserSession();
     this.renderAuthNavUI();
 
+    // Handle URL routing for /user or #user
+    this.handleUrlRouting();
+    window.addEventListener("popstate", () => this.handleUrlRouting());
+
     // Check saved theme - default to Light theme
     const savedTheme = localStorage.getItem("hostelkhojo_theme") || localStorage.getItem("dormify_theme") || "light";
     document.documentElement.setAttribute("data-theme", savedTheme);
     this.updateThemeIcon(savedTheme);
+  }
+
+  handleUrlRouting() {
+    const path = window.location.pathname.toLowerCase();
+    const hash = window.location.hash.toLowerCase();
+    if (path.includes("/user") || path.includes("/profile") || hash === "#user" || hash === "#profile") {
+      this.switchTab("user");
+    }
   }
 
 
@@ -1065,10 +1077,10 @@ class HostelKhojoApp {
 
       container.innerHTML = `
         <div class="user-badge-container">
-          <button class="user-badge-btn" onclick="app.openUserProfileModal()" title="View Student Profile">
+          <button class="user-badge-btn" onclick="app.switchTab('user')" title="View Student Profile (/user)">
             <div class="user-badge-avatar">${initials}</div>
             <span>${this.currentUser.full_name}</span>
-            <i class="fa-solid fa-chevron-down font-xs" style="margin-left: 6px; opacity: 0.7;"></i>
+            <i class="fa-solid fa-user font-xs" style="margin-left: 6px; opacity: 0.7;"></i>
           </button>
         </div>
       `;
@@ -1111,26 +1123,88 @@ class HostelKhojoApp {
     localStorage.removeItem("hostelkhojo_user");
     this.currentUser = null;
     this.closeModal("user-profile-modal");
+    if (window.location.pathname === "/user") {
+      try { history.pushState(null, "", "/"); } catch(e) {}
+    }
+    this.switchTab("hostels");
     this.renderAuthNavUI();
     this.showToast("Signed out of Student Session.", "info");
   }
 
-
-
-  /* GENERAL TAB SWITCHER */
+  /* GENERAL TAB SWITCHER & /user ROUTER */
   switchTab(tabName) {
-    document.querySelectorAll(".tab-content").forEach(t => t.classList.remove("active"));
+    if (tabName === "user" || tabName === "profile") {
+      if (!this.currentUser) {
+        this.showToast("Please log in or register to view your profile page.", "warning");
+        this.openModal("auth-modal");
+        return;
+      }
+
+      // Update URL to /user without page reload
+      if (window.location.pathname !== "/user") {
+        try {
+          history.pushState(null, "", "/user");
+        } catch (e) {
+          window.location.hash = "user";
+        }
+      }
+
+      // Populate user profile page content
+      const initials = (this.currentUser.full_name || "ST")
+        .split(" ")
+        .map(n => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2);
+
+      const avatarEl = document.getElementById("page-prof-avatar");
+      const nameEl = document.getElementById("page-prof-name");
+      const emailEl = document.getElementById("page-prof-email");
+      const phoneEl = document.getElementById("page-prof-phone");
+      const roleEl = document.getElementById("page-prof-role");
+
+      if (avatarEl) avatarEl.innerText = initials;
+      if (nameEl) nameEl.innerText = this.currentUser.full_name || "Student Account";
+      if (emailEl) emailEl.innerText = this.currentUser.email || "Not Provided";
+      if (phoneEl) phoneEl.innerText = this.currentUser.phone || "Not Provided";
+      if (roleEl) roleEl.innerText = this.currentUser.role || "student";
+
+      document.querySelectorAll(".tab-content").forEach(t => t.style.display = "none");
+      document.querySelectorAll(".nav-link").forEach(l => l.classList.remove("active"));
+      document.querySelectorAll(".mobile-nav-item").forEach(m => m.classList.remove("active"));
+
+      const userTab = document.getElementById("tab-user");
+      if (userTab) userTab.style.display = "block";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
+    // Reset URL to / if returning to main tabs
+    if (window.location.pathname === "/user") {
+      try {
+        history.pushState(null, "", "/");
+      } catch (e) {
+        window.location.hash = "";
+      }
+    }
+
+    document.querySelectorAll(".tab-content").forEach(t => t.style.display = "none");
     document.querySelectorAll(".nav-link").forEach(l => l.classList.remove("active"));
     document.querySelectorAll(".mobile-nav-item").forEach(m => m.classList.remove("active"));
 
     if (tabName === "hostels") {
-      document.getElementById("tab-hostels")?.classList.add("active");
+      const hTab = document.getElementById("tab-hostels");
+      if (hTab) hTab.style.display = "block";
       document.getElementById("nav-hostels-btn")?.classList.add("active");
       document.getElementById("mob-nav-hostels")?.classList.add("active");
     } else if (tabName === "roommates") {
-      document.getElementById("tab-roommates")?.classList.add("active");
+      const rmTab = document.getElementById("tab-roommates");
+      if (rmTab) rmTab.style.display = "block";
       document.getElementById("nav-roommates-btn")?.classList.add("active");
       document.getElementById("mob-nav-roommates")?.classList.add("active");
+    } else if (tabName === "saved") {
+      const hTab = document.getElementById("tab-hostels");
+      if (hTab) hTab.style.display = "block";
     }
   }
 

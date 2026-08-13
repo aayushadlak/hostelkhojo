@@ -283,6 +283,81 @@
     </div>
   </section>
 
+  <!-- DEDICATED STUDENT PROFILE PAGE VIEW (/user) -->
+  <section id="tab-user" class="tab-content main-container padding-top-md padding-bottom-xl" style="display: none; max-width: 900px; margin: 0 auto;">
+    
+    <!-- Profile Hero Card -->
+    <div class="user-page-card margin-bottom-lg" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 32px 24px; position: relative; overflow: hidden; box-shadow: var(--shadow-md);">
+      <div style="position: absolute; top: 0; left: 0; right: 0; height: 100px; background: linear-gradient(135deg, var(--accent-primary), #6366f1); opacity: 0.9;"></div>
+      
+      <div style="position: relative; z-index: 2; margin-top: 36px;" class="text-center">
+        <div class="profile-avatar-lg" id="page-prof-avatar" style="width: 88px; height: 88px; font-size: 2.2rem; border: 4px solid var(--bg-card); box-shadow: 0 8px 24px rgba(0,0,0,0.15);">ST</div>
+        <h1 class="font-xl font-weight-700 margin-top-sm" id="page-prof-name" style="margin-bottom: 4px;">Student Account</h1>
+        <p class="text-muted font-sm" id="page-prof-handle">Verified Student Member</p>
+        <span class="badge badge-accent margin-top-xs" style="font-size: 0.85rem; padding: 6px 14px;"><i class="fa-solid fa-shield-halved"></i> Active Verified Session</span>
+      </div>
+    </div>
+
+    <!-- Details Grid -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px;" class="margin-bottom-lg">
+      
+      <!-- Account Details Box -->
+      <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 24px;">
+        <h3 style="font-size: 1.1rem; margin-bottom: 18px; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-id-card" style="color: var(--accent-primary);"></i> Profile Information
+        </h3>
+        
+        <div style="display: flex; flex-direction: column; gap: 14px;">
+          <div style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+            <span class="text-muted font-xs display-block margin-bottom-xs"><i class="fa-solid fa-envelope"></i> Email Address</span>
+            <strong id="page-prof-email" class="font-sm">student@hostelkhojo.in</strong>
+          </div>
+          <div style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+            <span class="text-muted font-xs display-block margin-bottom-xs"><i class="fa-solid fa-phone"></i> Mobile Phone</span>
+            <strong id="page-prof-phone" class="font-sm">Not Provided</strong>
+          </div>
+          <div style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+            <span class="text-muted font-xs display-block margin-bottom-xs"><i class="fa-solid fa-user-gear"></i> Account Role</span>
+            <strong id="page-prof-role" class="font-sm text-capitalize">Verified Student</strong>
+          </div>
+          <div>
+            <span class="text-muted font-xs display-block margin-bottom-xs"><i class="fa-solid fa-clock"></i> Session Status</span>
+            <span class="badge" style="background: rgba(34, 197, 94, 0.15); color: #16a34a; font-weight: 600;">Online & Authenticated</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Services Box -->
+      <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 24px;">
+        <h3 style="font-size: 1.1rem; margin-bottom: 18px; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-sliders" style="color: var(--accent-secondary);"></i> Student Shortcuts
+        </h3>
+
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <button class="btn btn-outline btn-block text-left" onclick="app.switchTab('saved');" style="padding: 12px 16px;">
+            <i class="fa-solid fa-bookmark" style="color: var(--accent-primary);"></i> My Saved Hostels & PGs
+          </button>
+          <button class="btn btn-outline btn-block text-left" onclick="app.openModal('post-roommate-modal');" style="padding: 12px 16px;">
+            <i class="fa-solid fa-user-plus" style="color: var(--accent-secondary);"></i> Post Roommate Requirement Card
+          </button>
+          <button class="btn btn-outline btn-block text-left" onclick="app.switchTab('roommates');" style="padding: 12px 16px;">
+            <i class="fa-solid fa-users" style="color: var(--accent-amber);"></i> Search Compatible Roommates
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Logout Bar -->
+    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 24px; text-align: center;">
+      <p class="text-muted font-xs margin-bottom-sm">Finished managing your account profile?</p>
+      <button class="btn btn-danger-outline btn-block btn-lg" onclick="app.logoutUser()" style="max-width: 340px; margin: 0 auto; border: 1.5px solid #ef4444; color: #ef4444; background: transparent; font-weight: 600; cursor: pointer;">
+        <i class="fa-solid fa-right-from-bracket"></i> Log Out of Account
+      </button>
+    </div>
+
+  </section>
+
+
   <!-- STICKY COMPARISON TRAY -->
   <div class="comparison-tray" id="comparison-tray">
     <div class="comp-tray-inner">
