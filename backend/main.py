@@ -15,7 +15,7 @@ from .schemas import (
     RoommateResponse, RoommateCreate,
     PropertySubmissionResponse, PropertySubmissionCreate,
     ReviewResponse, ReviewCreate,
-    UserRegister, UserLogin, GoogleLogin, UserResponse, Token
+    UserRegister, UserLogin, GoogleLogin, PhoneUpdate, UserResponse, Token
 )
 from .auth import get_password_hash, verify_password, create_access_token, get_current_user
 from .seed import seed_database
@@ -128,6 +128,15 @@ def google_login(google_in: GoogleLogin, db: Session = Depends(get_db)):
     token = create_access_token(data={"sub": user.id})
     user_res = UserResponse.from_orm(user)
     return Token(access_token=token, token_type="bearer", user=user_res)
+
+@app.post("/api/auth/update-phone")
+def update_phone(phone_in: PhoneUpdate, db: Session = Depends(get_db)):
+    user = db.query(UserDB).filter(UserDB.id == phone_in.user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    user.phone = phone_in.phone.strip()
+    db.commit()
+    return {"status": "success", "phone": user.phone}
 
 @app.get("/api/auth/me", response_model=UserResponse)
 def get_me(current_user: UserDB = Depends(get_current_user)):

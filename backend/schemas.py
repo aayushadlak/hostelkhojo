@@ -20,6 +20,11 @@ class GoogleLogin(BaseModel):
     full_name: str
     avatar: Optional[str] = None
 
+class PhoneUpdate(BaseModel):
+    user_id: str
+    phone: str
+
+
 
 class UserResponse(BaseModel):
     id: str

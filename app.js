@@ -1166,8 +1166,26 @@ class HostelKhojoApp {
       if (avatarEl) avatarEl.innerText = initials;
       if (nameEl) nameEl.innerText = this.currentUser.full_name || "Student Account";
       if (emailEl) emailEl.innerText = this.currentUser.email || "Not Provided";
-      if (phoneEl) phoneEl.innerText = this.currentUser.phone || "Not Provided";
       if (roleEl) roleEl.innerText = this.currentUser.role || "student";
+
+      const phoneContainer = document.getElementById("page-prof-phone-container");
+      if (this.currentUser.phone && this.currentUser.phone.trim() !== "" && this.currentUser.phone !== "Not Provided") {
+        if (phoneContainer) {
+          phoneContainer.innerHTML = `<strong class="font-sm"><i class="fa-solid fa-circle-check" style="color: #16a34a;"></i> ${this.currentUser.phone}</strong>`;
+        }
+      } else {
+        if (phoneContainer) {
+          phoneContainer.innerHTML = `
+            <div style="display: flex; gap: 8px; align-items: center; margin-top: 6px; flex-wrap: wrap;">
+              <input type="tel" placeholder="Enter Mobile Number (e.g. 9876543210)" id="user-add-phone-input" class="form-control" style="max-width: 240px; padding: 6px 12px; font-size: 0.85rem;" />
+              <button class="btn btn-primary btn-sm" onclick="app.savePhoneNumber()" style="padding: 6px 14px; font-size: 0.85rem;">
+                <i class="fa-solid fa-floppy-disk"></i> Save Phone
+              </button>
+            </div>
+            <span class="text-muted font-xs display-block margin-top-xs" style="color: var(--accent-amber); font-weight: 500;"><i class="fa-solid fa-triangle-exclamation"></i> Mobile number required for WhatsApp warden bookings & roommate requests.</span>
+          `;
+        }
+      }
 
       document.querySelectorAll(".tab-content").forEach(t => t.style.display = "none");
       document.querySelectorAll(".nav-link").forEach(l => l.classList.remove("active"));
@@ -1178,6 +1196,34 @@ class HostelKhojoApp {
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
+
+  async savePhoneNumber() {
+    const input = document.getElementById("user-add-phone-input");
+    const phoneVal = input ? input.value.trim() : "";
+
+    if (!phoneVal || phoneVal.length < 10) {
+      this.showToast("Please enter a valid 10-digit mobile phone number.", "warning");
+      return;
+    }
+
+    if (!this.currentUser) return;
+
+    this.currentUser.phone = phoneVal;
+    localStorage.setItem("hostelkhojo_user", JSON.stringify(this.currentUser));
+
+    try {
+      await apiFetch("/auth/update-phone", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: this.currentUser.id, phone: phoneVal })
+      });
+    } catch (err) {
+      console.warn("Backend update phone failed, saved locally.");
+    }
+
+    this.switchTab("user");
+    this.showToast("Mobile phone number saved successfully to your student profile!", "success");
+  }
 
     // Reset URL to / if returning to main tabs
     if (window.location.pathname === "/user") {
