@@ -1,0 +1,5 @@
+name = "hostelkhojo"
+compatibility_date = "2026-08-13"
+
+[assets]
+directory = "."
