@@ -1,0 +1,8 @@
+.git
+backend/
+*.db
+.env
+.env.example
+requirements.txt
+Procfile
+netlify.toml
