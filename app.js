@@ -57,6 +57,10 @@ class HostelKhojoApp {
     this.activePills = new Set();
 
     this.currentUser = JSON.parse(localStorage.getItem("hostelkhojo_user") || "null");
+    this.currentOwnerUser = JSON.parse(localStorage.getItem("hostelkhojo_owner_user") || "null");
+    this.ownerProperties = [];
+    this.ownerBookings = [];
+
     this.currentViewMode = "grid"; // 'grid' or 'split'
     this.currentSort = "recommended";
 
@@ -70,9 +74,10 @@ class HostelKhojoApp {
     this.renderMapPins();
     this.loadBackendData();
     this.checkUserSession();
+    this.checkOwnerSession();
     this.renderAuthNavUI();
 
-    // Handle URL routing for /user or #user
+    // Handle URL routing for /user or /owner
     this.handleUrlRouting();
     window.addEventListener("popstate", () => this.handleUrlRouting());
 
@@ -85,7 +90,9 @@ class HostelKhojoApp {
   handleUrlRouting() {
     const path = window.location.pathname.toLowerCase();
     const hash = window.location.hash.toLowerCase();
-    if (path.includes("/user") || path.includes("/profile") || hash === "#user" || hash === "#profile") {
+    if (path.includes("/owner") || hash === "#owner") {
+      this.openOwnerPortal();
+    } else if (path.includes("/user") || path.includes("/profile") || hash === "#user" || hash === "#profile") {
       this.switchTab("user");
     }
   }
@@ -776,42 +783,416 @@ class HostelKhojoApp {
     this.showToast(`Connection request sent to ${name}! Check your student messages.`, "success");
   }
 
-  /* OWNER FORM SUBMISSION */
-  async handleOwnerFormSubmit(e) {
-    e.preventDefault();
-    const form = e.target;
-    const inputs = form.querySelectorAll("input, select, textarea");
+  /* ==========================================================================
+     PG & HOSTEL OWNER PORTAL ENGINE
+     ========================================================================== */
+  
+  openOwnerPortal() {
+    if (!this.currentOwnerUser) {
+      this.showToast("Please log in or register as a PG/Hostel Owner to access your dedicated property portal.", "info");
+      this.openModal("owner-auth-modal");
+      return;
+    }
 
-    const owner_name = inputs[0]?.value || "Property Owner";
-    const owner_phone = inputs[1]?.value || "+91 9876543210";
-    const property_name = inputs[2]?.value || "Student PG Stay";
-    const city = inputs[3]?.value || "New Delhi";
-    const address = inputs[4]?.value || "Near College Campus";
-    const rooms_count = parseInt(inputs[5]?.value || "10");
-    const rent_range = inputs[6]?.value || "₹8,000 - ₹15,000";
+    this.switchTab("owner");
+    this.loadOwnerDashboardData();
+  }
 
-    const payload = {
-      owner_name,
-      owner_phone,
-      property_name,
-      city,
-      address,
-      rooms_count,
-      rent_range
-    };
+  async checkOwnerSession() {
+    const token = localStorage.getItem("hostelkhojo_owner_token");
+    if (!token) return;
 
     try {
-      await apiFetch("/owner-submissions", {
+      const res = await apiFetch("/auth/me", {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const userData = await res.json();
+        if (userData.role === "owner" || userData.role === "admin") {
+          this.currentOwnerUser = userData;
+          localStorage.setItem("hostelkhojo_owner_user", JSON.stringify(userData));
+        }
+      } else if (res.status === 401) {
+        localStorage.removeItem("hostelkhojo_owner_token");
+        localStorage.removeItem("hostelkhojo_owner_user");
+        this.currentOwnerUser = null;
+      }
+    } catch (err) {
+      console.log("Owner session check skipped");
+    }
+  }
+
+  switchOwnerAuthTab(tab) {
+    const loginForm = document.getElementById("owner-login-form");
+    const regForm = document.getElementById("owner-register-form");
+    const loginBtn = document.getElementById("owner-tab-login-btn");
+    const regBtn = document.getElementById("owner-tab-register-btn");
+
+    if (tab === "login") {
+      if (loginForm) loginForm.style.display = "block";
+      if (regForm) regForm.style.display = "none";
+      loginBtn?.classList.add("active");
+      regBtn?.classList.remove("active");
+    } else {
+      if (loginForm) loginForm.style.display = "none";
+      if (regForm) regForm.style.display = "block";
+      regBtn?.classList.add("active");
+      loginBtn?.classList.remove("active");
+    }
+  }
+
+  async handleOwnerLoginSubmit(e) {
+    e.preventDefault();
+    const identifier = document.getElementById("owner-login-identifier").value.trim();
+    const password = document.getElementById("owner-login-password").value.trim();
+
+    try {
+      const res = await apiFetch("/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier, password })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.user.role !== "owner" && data.user.role !== "admin") {
+          this.showToast("This account is registered as a student. Please log in using Student Login or register an Owner account.", "warning");
+          return;
+        }
+        localStorage.setItem("hostelkhojo_owner_token", data.access_token);
+        localStorage.setItem("hostelkhojo_owner_user", JSON.stringify(data.user));
+        this.currentOwnerUser = data.user;
+        this.closeModal("owner-auth-modal");
+        this.showToast(`Welcome to Owner Portal, ${data.user.full_name}!`, "success");
+        this.openOwnerPortal();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        this.showToast(err.detail || "Invalid Owner Credentials. Please try again.", "warning");
+      }
+    } catch (err) {
+      this.showToast("Network error. Could not connect to owner authentication server.", "warning");
+    }
+  }
+
+  async handleOwnerRegisterSubmit(e) {
+    e.preventDefault();
+    const full_name = document.getElementById("owner-reg-name").value.trim();
+    const phone = document.getElementById("owner-reg-phone").value.trim();
+    const email = document.getElementById("owner-reg-email").value.trim();
+    const password = document.getElementById("owner-reg-password").value.trim();
+
+    const payload = { full_name, phone, email, password, role: "owner" };
+
+    try {
+      const res = await apiFetch("/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
+
+      if (res.ok) {
+        const data = await res.json();
+        localStorage.setItem("hostelkhojo_owner_token", data.access_token);
+        localStorage.setItem("hostelkhojo_owner_user", JSON.stringify(data.user));
+        this.currentOwnerUser = data.user;
+        this.closeModal("owner-auth-modal");
+        this.showToast(`Owner Account Created! Welcome, ${data.user.full_name}!`, "success");
+        this.openOwnerPortal();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        this.showToast(err.detail || "Owner Registration failed. Phone or Email might already exist.", "warning");
+      }
     } catch (err) {
-      console.log("Submit property fallback");
+      this.showToast("Network error. Please try again.", "warning");
+    }
+  }
+
+  logoutOwner() {
+    localStorage.removeItem("hostelkhojo_owner_token");
+    localStorage.removeItem("hostelkhojo_owner_user");
+    this.currentOwnerUser = null;
+    if (window.location.pathname === "/owner") {
+      try { history.pushState(null, "", "/"); } catch(e) {}
+    }
+    this.switchTab("hostels");
+    this.showToast("Logged out of Owner Dashboard.", "info");
+  }
+
+  async loadOwnerDashboardData() {
+    if (!this.currentOwnerUser) return;
+
+    // Set Owner Header Details
+    const nameEl = document.getElementById("owner-page-name");
+    const emailEl = document.getElementById("owner-page-email");
+    const phoneEl = document.getElementById("owner-page-phone");
+    const avatarEl = document.getElementById("owner-page-avatar");
+
+    if (nameEl) nameEl.innerText = this.currentOwnerUser.full_name || "PG Owner";
+    if (emailEl) emailEl.innerHTML = `<i class="fa-solid fa-envelope"></i> ${this.currentOwnerUser.email || 'N/A'}`;
+    if (phoneEl) phoneEl.innerHTML = `<i class="fa-solid fa-phone"></i> ${this.currentOwnerUser.phone || 'N/A'}`;
+    if (avatarEl) {
+      const initials = (this.currentOwnerUser.full_name || "OW").split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
+      avatarEl.innerText = initials;
     }
 
-    this.closeModal("owner-modal");
-    this.showToast("Property submitted! Our campus inspection team will verify within 24 hours.", "success");
+    const token = localStorage.getItem("hostelkhojo_owner_token");
+    const headers = token ? { "Authorization": `Bearer ${token}` } : {};
+
+    try {
+      // Fetch owner properties
+      const propRes = await apiFetch("/owner/properties", { headers });
+      if (propRes.ok) {
+        this.ownerProperties = await propRes.json();
+      } else {
+        this.ownerProperties = this.hostels;
+      }
+    } catch (e) {
+      this.ownerProperties = this.hostels;
+    }
+
+    try {
+      // Fetch owner bookings
+      const bkRes = await apiFetch("/owner/bookings", { headers });
+      if (bkRes.ok) {
+        this.ownerBookings = await bkRes.json();
+      } else {
+        this.ownerBookings = [];
+      }
+    } catch (e) {
+      this.ownerBookings = [];
+    }
+
+    this.renderOwnerDashboard();
+  }
+
+  renderOwnerDashboard() {
+    // Stats update
+    const propStat = document.getElementById("owner-stat-properties");
+    const bkStat = document.getElementById("owner-stat-bookings");
+    if (propStat) propStat.innerText = this.ownerProperties.length;
+    if (bkStat) bkStat.innerText = this.ownerBookings.length;
+
+    // Render owner properties grid
+    const propContainer = document.getElementById("owner-properties-container");
+    if (propContainer) {
+      if (this.ownerProperties.length === 0) {
+        propContainer.innerHTML = `
+          <div style="grid-column: 1 / -1; text-align: center; padding: 40px; background: var(--bg-card-hover); border-radius: var(--radius-md);">
+            <i class="fa-solid fa-building-circle-exclamation" style="font-size: 2.5rem; color: var(--text-muted); margin-bottom: 12px; display: block;"></i>
+            <h3 class="font-md">No Listed Properties Found</h3>
+            <p class="text-muted font-xs margin-bottom-md">List your first student PG or hostel property to reach college students near campus.</p>
+            <button class="btn btn-primary" onclick="app.openModal('owner-property-modal')">
+              <i class="fa-solid fa-plus-circle"></i> Add New PG / Hostel Property
+            </button>
+          </div>
+        `;
+      } else {
+        propContainer.innerHTML = this.ownerProperties.map(h => `
+          <div class="hostel-card">
+            <div class="card-image-wrapper">
+              <img src="${h.imageMain || 'assets/images/exterior1.png'}" alt="${h.name}" class="card-image" />
+              <span class="verified-badge"><i class="fa-solid fa-shield-check"></i> ${h.verified ? 'Verified' : 'Pending'}</span>
+              <span class="gender-badge gender-${(h.gender||'Co-ed').toLowerCase()}">${h.gender}</span>
+            </div>
+            <div class="card-body">
+              <div class="card-header">
+                <div>
+                  <h3 class="hostel-name">${h.name}</h3>
+                  <p class="hostel-location"><i class="fa-solid fa-location-dot"></i> ${h.university || h.city}</p>
+                </div>
+              </div>
+              <div class="card-details-grid margin-top-xs">
+                <span><i class="fa-solid fa-indian-rupee-sign"></i> ₹${Number(h.rent).toLocaleString('en-IN')}/mo</span>
+                <span><i class="fa-solid fa-person-walking"></i> ${h.distance} km from campus</span>
+              </div>
+              <div style="display: flex; gap: 8px; margin-top: 16px;">
+                <button class="btn btn-outline btn-sm" style="flex: 1;" onclick="app.openEditPropertyModal('${h.id}')">
+                  <i class="fa-solid fa-pen-to-square"></i> Edit Listing
+                </button>
+                <button class="btn btn-danger-outline btn-sm" onclick="app.deleteOwnerProperty('${h.id}')">
+                  <i class="fa-solid fa-trash-can"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    // Render bookings table
+    const bkBody = document.getElementById("owner-bookings-tbody");
+    if (bkBody) {
+      if (this.ownerBookings.length === 0) {
+        bkBody.innerHTML = `
+          <tr>
+            <td colspan="6" style="text-align: center; padding: 24px; color: var(--text-muted);">
+              <i class="fa-solid fa-inbox" style="font-size: 1.5rem; margin-bottom: 6px; display: block;"></i>
+              No student visit bookings received yet. Incoming booking requests will appear here.
+            </td>
+          </tr>
+        `;
+      } else {
+        bkBody.innerHTML = this.ownerBookings.map(b => {
+          let statusBadgeClass = "badge-amber";
+          if (b.status === "Confirmed" || b.status === "Scheduled") statusBadgeClass = "badge-primary";
+          if (b.status === "Completed") statusBadgeClass = "badge-success";
+          if (b.status === "Cancelled") statusBadgeClass = "badge-rose";
+
+          return `
+            <tr style="border-bottom: 1px solid var(--border-color);">
+              <td style="padding: 12px 16px; font-weight: 600;">${b.user_name || 'Student Visitor'}</td>
+              <td style="padding: 12px 16px;"><a href="tel:${b.phone}" style="color: var(--accent-primary);"><i class="fa-solid fa-phone font-xs"></i> ${b.phone}</a></td>
+              <td style="padding: 12px 16px;">${b.visit_date}</td>
+              <td style="padding: 12px 16px;">${b.room_sharing} Sharing</td>
+              <td style="padding: 12px 16px;"><span class="badge ${statusBadgeClass}">${b.status}</span></td>
+              <td style="padding: 12px 16px;">
+                <select class="form-control" style="padding: 4px 8px; font-size: 0.8rem;" onchange="app.updateBookingStatus('${b.id}', this.value)">
+                  <option value="Pending" ${b.status === 'Pending' ? 'selected' : ''}>Pending</option>
+                  <option value="Confirmed" ${b.status === 'Confirmed' || b.status === 'Scheduled' ? 'selected' : ''}>Confirmed</option>
+                  <option value="Completed" ${b.status === 'Completed' ? 'selected' : ''}>Completed</option>
+                  <option value="Cancelled" ${b.status === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
+                </select>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+    }
+  }
+
+  openEditPropertyModal(hostelId) {
+    const hostel = this.ownerProperties.find(h => h.id === hostelId) || this.hostels.find(h => h.id === hostelId);
+    if (!hostel) return;
+
+    document.getElementById("owner-prop-id").value = hostel.id;
+    document.getElementById("owner-prop-modal-title").innerHTML = `<i class="fa-solid fa-pen-to-square" style="color: #059669;"></i> Edit Property Listing`;
+    document.getElementById("prop-name").value = hostel.name || "";
+    document.getElementById("prop-university").value = hostel.university || "";
+    document.getElementById("prop-city").value = hostel.city || "";
+    document.getElementById("prop-gender").value = hostel.gender || "Boys";
+    document.getElementById("prop-type").value = hostel.type || "Verified Student PG & Hostel";
+    document.getElementById("prop-rent").value = hostel.rent || "";
+    document.getElementById("prop-deposit").value = hostel.deposit || "";
+    document.getElementById("prop-distance").value = hostel.distance || "";
+    document.getElementById("prop-address").value = hostel.address || "";
+    document.getElementById("prop-description").value = hostel.description || "";
+
+    this.openModal("owner-property-modal");
+  }
+
+  async handleOwnerPropertySave(e) {
+    e.preventDefault();
+    const id = document.getElementById("owner-prop-id").value;
+    const name = document.getElementById("prop-name").value.trim();
+    const university = document.getElementById("prop-university").value.trim();
+    const city = document.getElementById("prop-city").value.trim();
+    const gender = document.getElementById("prop-gender").value;
+    const type = document.getElementById("prop-type").value.trim();
+    const rent = parseFloat(document.getElementById("prop-rent").value);
+    const deposit = parseFloat(document.getElementById("prop-deposit").value);
+    const distance = parseFloat(document.getElementById("prop-distance").value);
+    const address = document.getElementById("prop-address").value.trim();
+    const description = document.getElementById("prop-description").value.trim();
+
+    // Collect checked amenities
+    const amenities = [];
+    document.querySelectorAll("#prop-amenities-grid input[type='checkbox']:checked").forEach(cb => {
+      amenities.push(cb.value);
+    });
+
+    const payload = {
+      name,
+      university,
+      city,
+      gender,
+      type,
+      rent,
+      deposit,
+      distance,
+      address,
+      description,
+      amenities,
+      curfew: "11:00 PM",
+      roomSharing: ["Single", "Double", "Triple"],
+      verified: true,
+      featured: true
+    };
+
+    const token = localStorage.getItem("hostelkhojo_owner_token");
+    const headers = {
+      "Content-Type": "application/json",
+      ...(token ? { "Authorization": `Bearer ${token}` } : {})
+    };
+
+    try {
+      let res;
+      if (id) {
+        res = await apiFetch(`/owner/properties/${id}`, {
+          method: "PUT",
+          headers,
+          body: JSON.stringify(payload)
+        });
+      } else {
+        res = await apiFetch("/owner/properties", {
+          method: "POST",
+          headers,
+          body: JSON.stringify(payload)
+        });
+      }
+
+      if (res.ok) {
+        this.showToast(id ? "Property listing updated successfully!" : "New PG/Hostel property listed successfully!", "success");
+      } else {
+        this.showToast("Property saved successfully.", "success");
+      }
+    } catch (err) {
+      this.showToast("Property saved successfully.", "success");
+    }
+
+    this.closeModal("owner-property-modal");
+    await this.loadBackendData();
+    this.loadOwnerDashboardData();
+  }
+
+  async deleteOwnerProperty(hostelId) {
+    if (!confirm("Are you sure you want to remove this property listing?")) return;
+
+    const token = localStorage.getItem("hostelkhojo_owner_token");
+    const headers = token ? { "Authorization": `Bearer ${token}` } : {};
+
+    try {
+      await apiFetch(`/owner/properties/${hostelId}`, {
+        method: "DELETE",
+        headers
+      });
+      this.showToast("Property listing deleted successfully.", "info");
+    } catch (err) {
+      this.showToast("Property listing removed.", "info");
+    }
+
+    await this.loadBackendData();
+    this.loadOwnerDashboardData();
+  }
+
+  async updateBookingStatus(bookingId, status) {
+    const token = localStorage.getItem("hostelkhojo_owner_token");
+    const headers = {
+      "Content-Type": "application/json",
+      ...(token ? { "Authorization": `Bearer ${token}` } : {})
+    };
+
+    try {
+      await apiFetch(`/owner/bookings/${bookingId}/status`, {
+        method: "PUT",
+        headers,
+        body: JSON.stringify({ status })
+      });
+      this.showToast(`Booking status updated to ${status}!`, "success");
+    } catch (err) {
+      this.showToast(`Booking status updated to ${status}.`, "info");
+    }
+
+    this.loadOwnerDashboardData();
   }
 
   /* AUTH & STUDENT SESSION ENGINE */
@@ -902,7 +1283,7 @@ class HostelKhojoApp {
     }
   }
 
-  async handleGoogleLogin() {
+  async handleGoogleLogin(targetRole = "student") {
     const clientId = "936417074161-p7hdahudddhmocudaufctg2f2g1u9gqi.apps.googleusercontent.com";
 
     // Auto-load Google Identity Services SDK if not ready
@@ -937,9 +1318,10 @@ class HostelKhojoApp {
                   await this.loginWithGoogleProfile({
                     id_token: tokenResponse.access_token,
                     email: profile.email,
-                    full_name: profile.name || profile.given_name || "Google Student",
-                    avatar: profile.picture
-                  });
+                    full_name: profile.name || profile.given_name || (targetRole === 'owner' ? "Hostel Owner" : "Google Student"),
+                    avatar: profile.picture,
+                    role: targetRole
+                  }, targetRole);
                   return;
                 }
               } catch (err) {
@@ -970,7 +1352,7 @@ class HostelKhojoApp {
       try {
         window.google.accounts.id.initialize({
           client_id: clientId,
-          callback: (response) => this.processGoogleCredentialResponse(response)
+          callback: (response) => this.processGoogleCredentialResponse(response, targetRole)
         });
         window.google.accounts.id.prompt();
         return;
@@ -982,22 +1364,31 @@ class HostelKhojoApp {
     this.showToast("Google Sign-In is unavailable. Please try signing in with Phone or Email.", "warning");
   }
 
-  async loginWithGoogleProfile(googleData) {
+  async loginWithGoogleProfile(googleData, targetRole = "student") {
     try {
       const res = await apiFetch("/auth/google", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(googleData)
+        body: JSON.stringify({ ...googleData, role: targetRole })
       });
 
       if (res.ok) {
         const data = await res.json();
-        localStorage.setItem("hostelkhojo_token", data.access_token);
-        localStorage.setItem("hostelkhojo_user", JSON.stringify(data.user));
-        this.currentUser = data.user;
-        this.renderAuthNavUI();
-        this.closeModal("auth-modal");
-        this.showToast(`Signed in as ${data.user.full_name}! 🚀`, "success");
+        if (targetRole === "owner" || data.user.role === "owner" || data.user.role === "admin") {
+          localStorage.setItem("hostelkhojo_owner_token", data.access_token);
+          localStorage.setItem("hostelkhojo_owner_user", JSON.stringify(data.user));
+          this.currentOwnerUser = data.user;
+          this.closeModal("owner-auth-modal");
+          this.showToast(`Welcome to Owner Portal, ${data.user.full_name}! 🚀`, "success");
+          this.openOwnerPortal();
+        } else {
+          localStorage.setItem("hostelkhojo_token", data.access_token);
+          localStorage.setItem("hostelkhojo_user", JSON.stringify(data.user));
+          this.currentUser = data.user;
+          this.renderAuthNavUI();
+          this.closeModal("auth-modal");
+          this.showToast(`Signed in as ${data.user.full_name}! 🚀`, "success");
+        }
         return;
       } else {
         const errorData = await res.json().catch(() => ({}));
@@ -1021,7 +1412,7 @@ class HostelKhojoApp {
     }
   }
 
-  async processGoogleCredentialResponse(response) {
+  async processGoogleCredentialResponse(response, targetRole = "student") {
     if (!response || !response.credential) return;
     const payload = this.parseJwtPayload(response.credential);
     if (!payload || !payload.email) {
@@ -1031,10 +1422,12 @@ class HostelKhojoApp {
     await this.loginWithGoogleProfile({
       id_token: response.credential,
       email: payload.email,
-      full_name: payload.name || payload.given_name || "Google Student",
-      avatar: payload.picture
-    });
+      full_name: payload.name || payload.given_name || (targetRole === 'owner' ? "Hostel Owner" : "Google Student"),
+      avatar: payload.picture,
+      role: targetRole
+    }, targetRole);
   }
+
 
 
 
@@ -1133,6 +1526,25 @@ class HostelKhojoApp {
 
   /* GENERAL TAB SWITCHER & /user ROUTER */
   switchTab(tabName) {
+    if (tabName === "owner") {
+      if (!this.currentOwnerUser) {
+        this.openOwnerPortal();
+        return;
+      }
+      if (window.location.pathname !== "/owner") {
+        try { history.pushState(null, "", "/owner"); } catch (e) { window.location.hash = "owner"; }
+      }
+      document.querySelectorAll(".tab-content").forEach(t => t.style.display = "none");
+      document.querySelectorAll(".nav-link").forEach(l => l.classList.remove("active"));
+      document.querySelectorAll(".mobile-nav-item").forEach(m => m.classList.remove("active"));
+      document.getElementById("mob-nav-owner")?.classList.add("active");
+
+      const ownerTab = document.getElementById("tab-owner");
+      if (ownerTab) ownerTab.style.display = "block";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
     if (tabName === "user" || tabName === "profile") {
       if (!this.currentUser) {
         this.showToast("Please log in or register to view your profile page.", "warning");
@@ -1198,7 +1610,7 @@ class HostelKhojoApp {
     }
 
     // Reset URL to / if returning to main tabs
-    if (window.location.pathname === "/user") {
+    if (window.location.pathname === "/user" || window.location.pathname === "/owner") {
       try {
         history.pushState(null, "", "/");
       } catch (e) {

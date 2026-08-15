@@ -11,7 +11,7 @@ from .database import engine, Base, get_db
 from .models import HostelDB, BookingDB, RoommateDB, PropertySubmissionDB, ReviewDB, UserDB
 from .schemas import (
     HostelResponse, HostelCreate,
-    BookingResponse, BookingCreate,
+    BookingResponse, BookingCreate, BookingStatusUpdate,
     RoommateResponse, RoommateCreate,
     PropertySubmissionResponse, PropertySubmissionCreate,
     ReviewResponse, ReviewCreate,
@@ -111,6 +111,8 @@ def google_login(google_in: GoogleLogin, db: Session = Depends(get_db)):
     email = google_in.email.strip().lower()
     user = db.query(UserDB).filter(UserDB.email == email).first()
 
+    target_role = google_in.role if google_in.role in ["owner", "admin"] else "student"
+
     if not user:
         new_user = UserDB(
             id=f"usr_{uuid.uuid4().hex[:10]}",
@@ -118,16 +120,23 @@ def google_login(google_in: GoogleLogin, db: Session = Depends(get_db)):
             phone=None,
             password_hash=get_password_hash(f"google_{uuid.uuid4().hex}"),
             full_name=google_in.full_name,
-            role="student"
+            role=target_role
         )
         db.add(new_user)
         db.commit()
         db.refresh(new_user)
         user = new_user
+    else:
+        # Upgrade role to owner if logging in through owner portal
+        if target_role == "owner" and user.role == "student":
+            user.role = "owner"
+            db.commit()
+            db.refresh(user)
 
     token = create_access_token(data={"sub": user.id})
     user_res = UserResponse.from_orm(user)
     return Token(access_token=token, token_type="bearer", user=user_res)
+
 
 @app.post("/api/auth/update-phone")
 def update_phone(phone_in: PhoneUpdate, db: Session = Depends(get_db)):
@@ -438,4 +447,244 @@ def submit_property(sub_in: PropertySubmissionCreate, db: Session = Depends(get_
     db.commit()
     db.refresh(new_sub)
     return new_sub
+
+
+# DEDICATED OWNER PORTAL ENDPOINTS
+@app.get("/api/owner/properties", response_model=List[HostelResponse])
+def get_owner_properties(
+    current_user: UserDB = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if current_user.role not in ["owner", "admin"]:
+        raise HTTPException(status_code=403, detail="Owner portal access required")
+
+    # Fetch hostels owned by this owner (or all hostels if owner_id is not yet set)
+    hostels = db.query(HostelDB).filter(
+        (HostelDB.owner_id == current_user.id) | (HostelDB.owner_id == None)
+    ).all()
+
+    results = []
+    for h in hostels:
+        reviews_db = db.query(ReviewDB).filter(ReviewDB.hostel_id == h.id).all()
+        reviews_res = [ReviewResponse.from_orm(r) for r in reviews_db]
+        h_dict = {
+            "id": h.id,
+            "name": h.name,
+            "university": h.university,
+            "city": h.city,
+            "gender": h.gender,
+            "type": h.type,
+            "rent": h.rent,
+            "deposit": h.deposit,
+            "distance": h.distance,
+            "rating": h.rating,
+            "reviewsCount": h.reviews_count,
+            "verified": h.verified,
+            "featured": h.featured,
+            "imageMain": h.image_main,
+            "imageSingle": h.image_single,
+            "imageShared": h.image_shared,
+            "imageMess": h.image_mess,
+            "address": h.address,
+            "mapCoords": h.map_coords,
+            "amenities": h.amenities,
+            "curfew": h.curfew,
+            "roomSharing": h.room_sharing,
+            "description": h.description,
+            "messMenu": h.mess_menu,
+            "owner_id": h.owner_id,
+            "reviews": reviews_res
+        }
+        results.append(h_dict)
+    return results
+
+
+@app.post("/api/owner/properties", response_model=HostelResponse)
+def create_owner_property(
+    hostel_in: HostelCreate,
+    current_user: UserDB = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if current_user.role not in ["owner", "admin"]:
+        raise HTTPException(status_code=403, detail="Owner portal access required")
+
+    new_id = f"h_{uuid.uuid4().hex[:8]}"
+    new_hostel = HostelDB(
+        id=new_id,
+        name=hostel_in.name,
+        university=hostel_in.university,
+        city=hostel_in.city,
+        gender=hostel_in.gender,
+        type=hostel_in.type,
+        rent=hostel_in.rent,
+        deposit=hostel_in.deposit,
+        distance=hostel_in.distance,
+        rating=hostel_in.rating,
+        reviews_count=hostel_in.reviewsCount,
+        verified=True,
+        featured=hostel_in.featured,
+        image_main=hostel_in.imageMain or "assets/images/exterior1.png",
+        image_single=hostel_in.imageSingle or "assets/images/room_single.png",
+        image_shared=hostel_in.imageShared or "assets/images/room_shared.png",
+        image_mess=hostel_in.imageMess or "assets/images/mess.png",
+        address=hostel_in.address,
+        map_coords_json=json.dumps(hostel_in.mapCoords.dict() if hostel_in.mapCoords else {"top": 40, "left": 50}),
+        amenities_json=json.dumps(hostel_in.amenities or ["Wi-Fi", "4-Time Mess", "AC"]),
+        curfew=hostel_in.curfew or "11:00 PM",
+        room_sharing_json=json.dumps(hostel_in.roomSharing or ["Single", "Double"]),
+        description=hostel_in.description,
+        mess_menu_json=json.dumps(hostel_in.messMenu.dict() if hostel_in.messMenu else {}),
+        owner_id=current_user.id
+    )
+    db.add(new_hostel)
+    db.commit()
+    db.refresh(new_hostel)
+
+    return {
+        "id": new_hostel.id,
+        "name": new_hostel.name,
+        "university": new_hostel.university,
+        "city": new_hostel.city,
+        "gender": new_hostel.gender,
+        "type": new_hostel.type,
+        "rent": new_hostel.rent,
+        "deposit": new_hostel.deposit,
+        "distance": new_hostel.distance,
+        "rating": new_hostel.rating,
+        "reviewsCount": new_hostel.reviews_count,
+        "verified": new_hostel.verified,
+        "featured": new_hostel.featured,
+        "imageMain": new_hostel.image_main,
+        "imageSingle": new_hostel.image_single,
+        "imageShared": new_hostel.image_shared,
+        "imageMess": new_hostel.image_mess,
+        "address": new_hostel.address,
+        "mapCoords": new_hostel.map_coords,
+        "amenities": new_hostel.amenities,
+        "curfew": new_hostel.curfew,
+        "roomSharing": new_hostel.room_sharing,
+        "description": new_hostel.description,
+        "messMenu": new_hostel.mess_menu,
+        "owner_id": new_hostel.owner_id,
+        "reviews": []
+    }
+
+
+@app.put("/api/owner/properties/{hostel_id}", response_model=HostelResponse)
+def update_owner_property(
+    hostel_id: str,
+    hostel_in: HostelCreate,
+    current_user: UserDB = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if current_user.role not in ["owner", "admin"]:
+        raise HTTPException(status_code=403, detail="Owner portal access required")
+
+    h = db.query(HostelDB).filter(HostelDB.id == hostel_id).first()
+    if not h:
+        raise HTTPException(status_code=404, detail="Hostel not found")
+
+    h.name = hostel_in.name
+    h.university = hostel_in.university
+    h.city = hostel_in.city
+    h.gender = hostel_in.gender
+    h.type = hostel_in.type
+    h.rent = hostel_in.rent
+    h.deposit = hostel_in.deposit
+    h.distance = hostel_in.distance
+    h.address = hostel_in.address
+    h.description = hostel_in.description
+    if hostel_in.amenities:
+        h.amenities = hostel_in.amenities
+    if hostel_in.roomSharing:
+        h.room_sharing = hostel_in.roomSharing
+    if hostel_in.curfew:
+        h.curfew = hostel_in.curfew
+
+    db.commit()
+    db.refresh(h)
+
+    reviews_db = db.query(ReviewDB).filter(ReviewDB.hostel_id == h.id).all()
+    reviews_res = [ReviewResponse.from_orm(r) for r in reviews_db]
+
+    return {
+        "id": h.id,
+        "name": h.name,
+        "university": h.university,
+        "city": h.city,
+        "gender": h.gender,
+        "type": h.type,
+        "rent": h.rent,
+        "deposit": h.deposit,
+        "distance": h.distance,
+        "rating": h.rating,
+        "reviewsCount": h.reviews_count,
+        "verified": h.verified,
+        "featured": h.featured,
+        "imageMain": h.image_main,
+        "imageSingle": h.image_single,
+        "imageShared": h.image_shared,
+        "imageMess": h.image_mess,
+        "address": h.address,
+        "mapCoords": h.map_coords,
+        "amenities": h.amenities,
+        "curfew": h.curfew,
+        "roomSharing": h.room_sharing,
+        "description": h.description,
+        "messMenu": h.mess_menu,
+        "owner_id": h.owner_id,
+        "reviews": reviews_res
+    }
+
+
+@app.delete("/api/owner/properties/{hostel_id}")
+def delete_owner_property(
+    hostel_id: str,
+    current_user: UserDB = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if current_user.role not in ["owner", "admin"]:
+        raise HTTPException(status_code=403, detail="Owner portal access required")
+
+    h = db.query(HostelDB).filter(HostelDB.id == hostel_id).first()
+    if not h:
+        raise HTTPException(status_code=404, detail="Hostel not found")
+
+    db.delete(h)
+    db.commit()
+    return {"status": "success", "message": "Property removed successfully"}
+
+
+@app.get("/api/owner/bookings", response_model=List[BookingResponse])
+def get_owner_bookings(
+    current_user: UserDB = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if current_user.role not in ["owner", "admin"]:
+        raise HTTPException(status_code=403, detail="Owner portal access required")
+
+    # Get all bookings or bookings for owner's hostels
+    bookings = db.query(BookingDB).order_by(BookingDB.created_at.desc()).all()
+    return bookings
+
+
+@app.put("/api/owner/bookings/{booking_id}/status", response_model=BookingResponse)
+def update_owner_booking_status(
+    booking_id: str,
+    status_in: BookingStatusUpdate,
+    current_user: UserDB = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if current_user.role not in ["owner", "admin"]:
+        raise HTTPException(status_code=403, detail="Owner portal access required")
+
+    b = db.query(BookingDB).filter(BookingDB.id == booking_id).first()
+    if not b:
+        raise HTTPException(status_code=404, detail="Booking not found")
+
+    b.status = status_in.status
+    db.commit()
+    db.refresh(b)
+    return b
+
 

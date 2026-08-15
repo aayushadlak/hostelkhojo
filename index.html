@@ -65,7 +65,7 @@
           <i class="fa-solid fa-moon" id="theme-icon"></i>
         </button>
 
-        <button class="btn btn-outline" onclick="app.openModal('owner-modal')">
+        <button class="btn btn-outline" onclick="app.openOwnerPortal()">
           <i class="fa-solid fa-plus-circle"></i> List Your Hostel / PG
         </button>
 
@@ -360,6 +360,126 @@
   </section>
 
 
+  <!-- DEDICATED PG/HOSTEL OWNER MANAGEMENT DASHBOARD VIEW (/owner) -->
+  <main id="tab-owner" class="tab-content main-container padding-top-md padding-bottom-xl" style="display: none; max-width: 1200px; margin: 0 auto;">
+    
+    <!-- Owner Header Banner -->
+    <div class="user-page-card margin-bottom-lg" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 32px 24px; position: relative; overflow: hidden; box-shadow: var(--shadow-md);">
+      <div style="position: absolute; top: 0; left: 0; right: 0; height: 110px; background: linear-gradient(135deg, #059669, #10b981); opacity: 0.95;"></div>
+      
+      <div style="position: relative; z-index: 2; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px; margin-top: 30px;">
+        <div style="display: flex; align-items: center; gap: 20px;">
+          <div class="profile-avatar-lg" id="owner-page-avatar" style="width: 88px; height: 88px; font-size: 2.2rem; border: 4px solid var(--bg-card); background: #059669; color: white; box-shadow: 0 8px 24px rgba(0,0,0,0.15); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700;">OW</div>
+          <div>
+            <h1 class="font-xl font-weight-700" id="owner-page-name" style="margin-bottom: 4px;">Hostel Owner Portal</h1>
+            <p class="text-muted font-sm" id="owner-page-email"><i class="fa-solid fa-envelope"></i> owner@hostelkhojo.com</p>
+            <div style="display: flex; gap: 10px; align-items: center; margin-top: 6px;">
+              <span class="badge badge-success" style="padding: 4px 12px; font-size: 0.8rem;"><i class="fa-solid fa-building-circle-check"></i> Verified Partner</span>
+              <span class="text-muted font-xs" id="owner-page-phone"><i class="fa-solid fa-phone"></i> +91 98765 43210</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 12px;">
+          <button class="btn btn-outline btn-sm" onclick="app.openModal('owner-property-modal')" style="border-color: #059669; color: #059669;">
+            <i class="fa-solid fa-plus-circle"></i> Add Property
+          </button>
+          <button class="btn btn-danger-outline btn-sm" onclick="app.logoutOwner()" style="border: 1px solid #ef4444; color: #ef4444; background: transparent;">
+            <i class="fa-solid fa-right-from-bracket"></i> Owner Logout
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Owner Statistics Cards -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 32px;">
+      <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 20px; box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 16px;">
+        <div style="width: 52px; height: 52px; border-radius: 12px; background: rgba(5, 150, 105, 0.12); color: #059669; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+          <i class="fa-solid fa-building"></i>
+        </div>
+        <div>
+          <span style="font-size: 0.85rem; color: var(--text-muted); display: block;">Properties Listed</span>
+          <strong style="font-size: 1.6rem; font-weight: 700; color: var(--text-primary);" id="owner-stat-properties">0</strong>
+        </div>
+      </div>
+
+      <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 20px; box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 16px;">
+        <div style="width: 52px; height: 52px; border-radius: 12px; background: rgba(79, 70, 229, 0.12); color: #4f46e5; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+          <i class="fa-solid fa-calendar-check"></i>
+        </div>
+        <div>
+          <span style="font-size: 0.85rem; color: var(--text-muted); display: block;">Student Visit Requests</span>
+          <strong style="font-size: 1.6rem; font-weight: 700; color: var(--text-primary);" id="owner-stat-bookings">0</strong>
+        </div>
+      </div>
+
+      <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 20px; box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 16px;">
+        <div style="width: 52px; height: 52px; border-radius: 12px; background: rgba(217, 119, 6, 0.12); color: #d97706; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+          <i class="fa-solid fa-eye"></i>
+        </div>
+        <div>
+          <span style="font-size: 0.85rem; color: var(--text-muted); display: block;">Campus Inquiries</span>
+          <strong style="font-size: 1.6rem; font-weight: 700; color: var(--text-primary);" id="owner-stat-inquiries">100+</strong>
+        </div>
+      </div>
+
+      <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 20px; box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 16px;">
+        <div style="width: 52px; height: 52px; border-radius: 12px; background: rgba(16, 185, 129, 0.12); color: #10b981; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+          <i class="fa-solid fa-shield-check"></i>
+        </div>
+        <div>
+          <span style="font-size: 0.85rem; color: var(--text-muted); display: block;">Verification Status</span>
+          <strong style="font-size: 1.1rem; font-weight: 700; color: #10b981;">Active Partner</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- OWNER PROPERTIES LISTING SECTION -->
+    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 28px; margin-bottom: 32px; box-shadow: var(--shadow-sm);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+        <div>
+          <h2 style="font-size: 1.3rem; font-weight: 700;"><i class="fa-solid fa-building-circle-check" style="color: #059669;"></i> Your Listed Hostels & PGs</h2>
+          <p class="text-muted font-xs">View, update, or publish new student accommodations under your ownership.</p>
+        </div>
+        <button class="btn btn-primary" onclick="app.openModal('owner-property-modal')">
+          <i class="fa-solid fa-plus"></i> Add New PG / Hostel
+        </button>
+      </div>
+
+      <div id="owner-properties-container" class="hostels-grid">
+        <!-- Rendered dynamically by JS -->
+      </div>
+    </div>
+
+    <!-- STUDENT VISIT BOOKINGS SECTION -->
+    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 28px; box-shadow: var(--shadow-sm);">
+      <div style="margin-bottom: 20px;">
+        <h2 style="font-size: 1.3rem; font-weight: 700;"><i class="fa-solid fa-calendar-days" style="color: #4f46e5;"></i> Student Visit Inquiries & Bookings</h2>
+        <p class="text-muted font-xs">Students requesting room tours & booking details for your hostels.</p>
+      </div>
+
+      <div class="table-responsive">
+        <table class="comparison-table" style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr style="background: var(--bg-card-hover); text-align: left;">
+              <th style="padding: 12px 16px;">Student Name</th>
+              <th style="padding: 12px 16px;">Contact Mobile</th>
+              <th style="padding: 12px 16px;">Visit Date</th>
+              <th style="padding: 12px 16px;">Room Choice</th>
+              <th style="padding: 12px 16px;">Status</th>
+              <th style="padding: 12px 16px;">Action</th>
+            </tr>
+          </thead>
+          <tbody id="owner-bookings-tbody">
+            <!-- Rendered dynamically by JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+
   <!-- STICKY COMPARISON TRAY -->
   <div class="comparison-tray" id="comparison-tray">
     <div class="comp-tray-inner">
@@ -420,64 +540,175 @@
   </div>
 
 
-  <!-- MODAL 4: LIST YOUR HOSTEL (OWNER FORM) -->
-  <div class="modal-backdrop" id="owner-modal">
+  <!-- MODAL 4: SEPARATE OWNER AUTHENTICATION & LOGIN PORTAL -->
+  <div class="modal-backdrop" id="owner-auth-modal">
     <div class="modal-box modal-md">
-      <button class="modal-close" onclick="app.closeModal('owner-modal')">&times;</button>
-      <h2 class="modal-title"><i class="fa-solid fa-building-circle-check"></i> List Your Hostel or PG Property</h2>
-      <p class="text-muted">Partner with Hostel Khojo to reach 100,000+ verified college students near your campus.</p>
+      <button class="modal-close" onclick="app.closeModal('owner-auth-modal')">&times;</button>
+      <div class="text-center margin-bottom-md">
+        <div style="width: 60px; height: 60px; border-radius: 50%; background: rgba(5, 150, 105, 0.15); color: #059669; font-size: 1.8rem; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px auto;">
+          <i class="fa-solid fa-building-circle-check"></i>
+        </div>
+        <h2 class="modal-title" style="margin-bottom: 4px;">Hostel Owner & Partner Portal</h2>
+        <p class="text-muted font-xs">Dedicated portal for PG & Hostel owners to manage properties & bookings</p>
+      </div>
 
-      <form id="owner-listing-form" onsubmit="app.handleOwnerFormSubmit(event)">
+      <!-- Owner Auth Tab Navigation -->
+      <div class="auth-tabs" style="display: flex; gap: 8px; margin-bottom: 20px; background: var(--bg-card-hover); padding: 4px; border-radius: var(--radius-md);">
+        <button type="button" class="auth-tab-btn active" id="owner-tab-login-btn" onclick="app.switchOwnerAuthTab('login')" style="flex: 1; padding: 10px; border: none; border-radius: var(--radius-sm); font-weight: 600; cursor: pointer;">
+          <i class="fa-solid fa-right-to-bracket"></i> Owner Login
+        </button>
+        <button type="button" class="auth-tab-btn" id="owner-tab-register-btn" onclick="app.switchOwnerAuthTab('register')" style="flex: 1; padding: 10px; border: none; border-radius: var(--radius-sm); font-weight: 600; cursor: pointer;">
+          <i class="fa-solid fa-user-plus"></i> Register Property Owner
+        </button>
+      </div>
+
+      <!-- OWNER LOGIN FORM -->
+      <form id="owner-login-form" onsubmit="app.handleOwnerLoginSubmit(event)">
         <div class="form-group">
-          <label>Hostel / PG Name</label>
-          <input type="text" required placeholder="e.g. Royal Heights Student PG & Hostel" class="form-control" />
+          <label><i class="fa-solid fa-user"></i> Mobile Phone or Email</label>
+          <input type="text" id="owner-login-identifier" required placeholder="e.g. 9876543210 or owner@hostel.com" class="form-control" />
+        </div>
+
+        <div class="form-group">
+          <label><i class="fa-solid fa-lock"></i> Password</label>
+          <input type="password" id="owner-login-password" required placeholder="Enter password" class="form-control" />
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block btn-lg margin-top-md" style="background: #059669; border-color: #059669;">
+          <i class="fa-solid fa-arrow-right-to-bracket"></i> Access Owner Dashboard
+        </button>
+
+        <div class="auth-divider"><span>OR</span></div>
+
+        <button type="button" class="btn btn-google btn-block btn-lg" onclick="app.handleGoogleLogin('owner')">
+          <svg class="google-icon" viewBox="0 0 24 24" width="18" height="18"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+          Continue with Google as Owner
+        </button>
+      </form>
+
+      <!-- OWNER REGISTER FORM -->
+      <form id="owner-register-form" onsubmit="app.handleOwnerRegisterSubmit(event)" style="display: none;">
+        <div class="form-group">
+          <label>Owner Full Name</label>
+          <input type="text" id="owner-reg-name" required placeholder="e.g. Rajesh Sharma" class="form-control" />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Mobile Contact / WhatsApp</label>
+            <input type="tel" id="owner-reg-phone" required placeholder="9876543210" class="form-control" />
+          </div>
+          <div class="form-group">
+            <label>City / Location</label>
+            <input type="text" id="owner-reg-city" required placeholder="e.g. New Delhi, Pune" class="form-control" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="email" id="owner-reg-email" required placeholder="owner@myhostel.com" class="form-control" />
+        </div>
+
+        <div class="form-group">
+          <label>Create Password</label>
+          <input type="password" id="owner-reg-password" required placeholder="Create secure password" class="form-control" />
+        </div>
+
+        <button type="submit" class="btn btn-accent btn-block btn-lg margin-top-md" style="background: #059669; border-color: #059669;">
+          <i class="fa-solid fa-user-check"></i> Create Owner Account & Access Dashboard
+        </button>
+
+        <div class="auth-divider"><span>OR</span></div>
+
+        <button type="button" class="btn btn-google btn-block btn-lg" onclick="app.handleGoogleLogin('owner')">
+          <svg class="google-icon" viewBox="0 0 24 24" width="18" height="18"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+          Register with Google as Owner
+        </button>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- MODAL FOR ADDING / EDITING OWNER PROPERTY LISTING -->
+  <div class="modal-backdrop" id="owner-property-modal">
+    <div class="modal-box modal-lg">
+      <button class="modal-close" onclick="app.closeModal('owner-property-modal')">&times;</button>
+      <h2 class="modal-title" id="owner-prop-modal-title"><i class="fa-solid fa-building-circle-check" style="color: #059669;"></i> List New PG / Hostel Property</h2>
+      <p class="text-muted font-xs margin-bottom-md">Fill property details below to publish instantly on Hostel Khojo India.</p>
+
+      <form id="owner-property-form" onsubmit="app.handleOwnerPropertySave(event)">
+        <input type="hidden" id="owner-prop-id" value="" />
+
+        <div class="form-group">
+          <label>Hostel / PG Property Name</label>
+          <input type="text" id="prop-name" required placeholder="e.g. Royal Heights Student PG & Hostel" class="form-control" />
         </div>
 
         <div class="form-row">
           <div class="form-group">
             <label>Nearby University / Area</label>
-            <input type="text" required placeholder="e.g. DU North Campus, Kamla Nagar" class="form-control" />
+            <input type="text" id="prop-university" required placeholder="e.g. DU North Campus, Kamla Nagar" class="form-control" />
           </div>
           <div class="form-group">
-            <label>Property Type</label>
-            <select class="form-control">
+            <label>City</label>
+            <input type="text" id="prop-city" required placeholder="e.g. New Delhi, Pune, Kota" class="form-control" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Occupancy Type</label>
+            <select id="prop-gender" class="form-control">
               <option value="Boys">Boys Hostel / PG</option>
               <option value="Girls">Girls Hostel / PG</option>
               <option value="Co-ed">Co-ed Co-Living</option>
             </select>
+          </div>
+          <div class="form-group">
+            <label>Category Tag</label>
+            <input type="text" id="prop-type" required placeholder="e.g. Verified Premium Student PG" class="form-control" />
           </div>
         </div>
 
         <div class="form-row">
           <div class="form-group">
             <label>Monthly Rent Starting (₹)</label>
-            <input type="number" required placeholder="8500" class="form-control" />
+            <input type="number" id="prop-rent" required placeholder="8500" class="form-control" />
+          </div>
+          <div class="form-group">
+            <label>Security Deposit (₹)</label>
+            <input type="number" id="prop-deposit" required placeholder="5000" class="form-control" />
           </div>
           <div class="form-group">
             <label>Distance to Campus (km)</label>
-            <input type="number" step="0.1" required placeholder="0.3" class="form-control" />
+            <input type="number" step="0.1" id="prop-distance" required placeholder="0.3" class="form-control" />
           </div>
         </div>
 
         <div class="form-group">
-          <label>Key Student Amenities Provided</label>
-          <div class="checkbox-grid">
-            <label><input type="checkbox" checked /> High-Speed Wi-Fi</label>
-            <label><input type="checkbox" checked /> 4-Time Mess Food</label>
-            <label><input type="checkbox" checked /> Split AC / Air Cooler</label>
-            <label><input type="checkbox" /> In-house Gym</label>
-            <label><input type="checkbox" checked /> 24/7 CCTV & Biometric Security</label>
-            <label><input type="checkbox" checked /> 24x7 Power Backup</label>
+          <label>Full Property Address</label>
+          <input type="text" id="prop-address" required placeholder="Plot 42, Block B, Near University Main Gate" class="form-control" />
+        </div>
+
+        <div class="form-group">
+          <label>Key Amenities Included</label>
+          <div class="checkbox-grid" id="prop-amenities-grid">
+            <label><input type="checkbox" value="High-Speed Wi-Fi" checked /> High-Speed Wi-Fi</label>
+            <label><input type="checkbox" value="4-Time Mess Food" checked /> 4-Time Mess Food</label>
+            <label><input type="checkbox" value="Split AC / Air Cooler" checked /> Split AC / Air Cooler</label>
+            <label><input type="checkbox" value="In-house Gym" /> In-house Gym</label>
+            <label><input type="checkbox" value="24/7 CCTV & Biometric Security" checked /> 24/7 CCTV Security</label>
+            <label><input type="checkbox" value="24x7 Power Backup" checked /> 24x7 Power Backup</label>
           </div>
         </div>
 
         <div class="form-group">
-          <label>Owner Mobile / WhatsApp Contact</label>
-          <input type="tel" required placeholder="+91 98765 43210" class="form-control" />
+          <label>Property Description & Warden Rules</label>
+          <textarea id="prop-description" required rows="3" placeholder="Describe room quality, mess timings, curfew rules, hygiene..." class="form-control"></textarea>
         </div>
 
-        <button type="submit" class="btn btn-accent btn-block btn-lg margin-top-md">
-          <i class="fa-solid fa-paper-plane"></i> Submit Property for Verification
+        <button type="submit" class="btn btn-primary btn-block btn-lg margin-top-md" style="background: #059669; border-color: #059669;">
+          <i class="fa-solid fa-floppy-disk"></i> Save & Publish Property
         </button>
       </form>
     </div>
@@ -701,7 +932,7 @@
         <h3>Student Perks</h3>
         <ul>
           <li><a href="#" onclick="app.switchTab('roommates')">Roommate Matcher</a></li>
-          <li><a href="#" onclick="app.openModal('owner-modal')">Hostel Owner Verification</a></li>
+          <li><a href="#" onclick="app.openOwnerPortal()">Hostel Owner Verification & Portal</a></li>
           <li><a href="#">Student Safety & Biometric Guarantee</a></li>
           <li><a href="#">Virtual 360° Room Tours</a></li>
           <li><a href="#">Zero Brokerage Guarantee</a></li>
@@ -739,7 +970,7 @@
       <i class="fa-solid fa-bookmark"></i>
       <span>Saved</span>
     </button>
-    <button class="mobile-nav-item" id="mob-nav-owner" onclick="app.openModal('owner-modal')">
+    <button class="mobile-nav-item" id="mob-nav-owner" onclick="app.openOwnerPortal()">
       <i class="fa-solid fa-plus-circle"></i>
       <span>List PG</span>
     </button>

@@ -47,6 +47,7 @@ class HostelDB(Base):
     mess_menu_json = Column(Text, default='{}')
 
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    owner_id = Column(String, ForeignKey("users.id"), nullable=True)
 
     # Helper getters/setters for JSON structures
     @property
@@ -120,6 +121,7 @@ class PropertySubmissionDB(Base):
     rooms_count = Column(Integer, nullable=False)
     rent_range = Column(String, nullable=False)
     status = Column(String, default="Under Verification")
+    owner_id = Column(String, ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
 class ReviewDB(Base):

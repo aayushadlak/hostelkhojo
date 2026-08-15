@@ -19,6 +19,7 @@ class GoogleLogin(BaseModel):
     email: str
     full_name: str
     avatar: Optional[str] = None
+    role: Optional[str] = "student"
 
 class PhoneUpdate(BaseModel):
     user_id: str
@@ -126,6 +127,7 @@ class HostelResponse(BaseModel):
     roomSharing: List[str]
     description: str
     messMenu: Dict[str, str]
+    owner_id: Optional[str] = None
     reviews: List[ReviewResponse] = []
 
     class Config:
@@ -199,7 +201,11 @@ class PropertySubmissionResponse(BaseModel):
     rooms_count: int
     rent_range: str
     status: str
+    owner_id: Optional[str] = None
     created_at: datetime
 
     class Config:
         from_attributes = True
+
+class BookingStatusUpdate(BaseModel):
+    status: str
