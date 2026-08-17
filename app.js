@@ -9,17 +9,16 @@ let API_BASE_URL = (window.location.hostname === "localhost" || window.location.
 
 /**
  * Smart fetch wrapper that handles API requests.
- * If the relative /api proxy request returns HTML (due to SPA fallback misconfig)
- * or encounters a network error, it automatically falls back to the direct Render backend URL.
+ * Automatically handles localhost vs Render cloud backend, cold-start delays, and proxy fallbacks.
  */
-async function apiFetch(endpoint, options = {}, retries = 2) {
+async function apiFetch(endpoint, options = {}, retries = 3) {
   let url = `${API_BASE_URL}${endpoint}`;
   try {
     let res = await fetch(url, options);
     const contentType = res.headers.get("content-type") || "";
 
     if ((contentType.includes("text/html") || res.status === 502 || res.status === 503 || res.status === 504) && API_BASE_URL !== RENDER_BACKEND_URL) {
-      console.warn(`API proxy/local server returned status ${res.status} at ${url}. Retrying with direct Render backend URL: ${RENDER_BACKEND_URL}`);
+      console.warn(`API server returned status ${res.status} at ${url}. Retrying with direct Render backend URL: ${RENDER_BACKEND_URL}`);
       API_BASE_URL = RENDER_BACKEND_URL;
       url = `${API_BASE_URL}${endpoint}`;
       res = await fetch(url, options);
@@ -33,8 +32,10 @@ async function apiFetch(endpoint, options = {}, retries = 2) {
       return await fetch(url, options);
     }
     if (retries > 0) {
-      console.warn(`Retrying request to ${url}... (${retries} retries left)`);
-      await new Promise(r => setTimeout(r, 1500));
+      if (window.app && typeof window.app.showToast === "function" && retries === 3) {
+        window.app.showToast("Connecting to live backend cloud database...", "info");
+      }
+      await new Promise(r => setTimeout(r, 2000));
       return await apiFetch(endpoint, options, retries - 1);
     }
     throw err;
