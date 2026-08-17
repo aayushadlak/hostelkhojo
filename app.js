@@ -65,6 +65,10 @@ class HostelKhojoApp {
     this.currentViewMode = "grid"; // 'grid' or 'split'
     this.currentSort = "recommended";
 
+    this.searchDebounceTimer = null;
+    this.mapDebounceTimer = null;
+    this.renderRaf = null;
+
     this.initGoogleMapsEngine();
     this.init();
   }
@@ -146,7 +150,10 @@ class HostelKhojoApp {
 
   /* SEARCH & FILTER ENGINE */
   handleSearchInput() {
-    this.applyFilters();
+    if (this.searchDebounceTimer) clearTimeout(this.searchDebounceTimer);
+    this.searchDebounceTimer = setTimeout(() => {
+      this.applyFilters();
+    }, 200);
   }
 
   updateBudgetLabel(val) {
@@ -422,6 +429,13 @@ class HostelKhojoApp {
   }
 
   renderOpenStreetMap() {
+    if (this.mapDebounceTimer) clearTimeout(this.mapDebounceTimer);
+    this.mapDebounceTimer = setTimeout(() => {
+      this._doRenderOpenStreetMap();
+    }, 150);
+  }
+
+  _doRenderOpenStreetMap() {
     const canvas = document.getElementById("google-map-canvas");
     if (!canvas || typeof L === "undefined") return;
 
