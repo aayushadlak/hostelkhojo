@@ -1140,28 +1140,36 @@ class HostelKhojoApp {
   }
 
   renderFallbackAdminStats() {
-    const totalUsers = (this.currentUser ? 1 : 0) + (this.currentOwnerUser ? 1 : 0) + 1;
+    const users = this.getFallbackAdminUsers();
+    const studentsCount = users.filter(u => u.role === "student").length;
+    const ownersCount = users.filter(u => u.role === "owner").length;
+    const adminsCount = users.filter(u => u.role === "admin").length;
+
     const totalUsersEl = document.getElementById("admin-stat-total-users");
     const breakdownEl = document.getElementById("admin-stat-user-breakdown");
     const hostelsEl = document.getElementById("admin-stat-hostels");
     const bookingsEl = document.getElementById("admin-stat-bookings");
     const roommatesEl = document.getElementById("admin-stat-roommates");
 
-    if (totalUsersEl) totalUsersEl.innerText = totalUsers;
-    if (breakdownEl) breakdownEl.innerText = `1 Student • 1 Owner • 1 Admin`;
+    if (totalUsersEl) totalUsersEl.innerText = users.length;
+    if (breakdownEl) breakdownEl.innerText = `${studentsCount} Students • ${ownersCount} Owners • ${adminsCount} Admins`;
     if (hostelsEl) hostelsEl.innerText = this.hostels.length;
-    if (bookingsEl) bookingsEl.innerText = this.ownerBookings.length || 3;
+    if (bookingsEl) bookingsEl.innerText = this.ownerBookings.length || 0;
     if (roommatesEl) roommatesEl.innerText = this.roommates.length;
   }
 
   getFallbackAdminUsers() {
-    const list = [
-      { id: "usr_admin_1", full_name: "Hostel Khojo Admin", email: "admin@hostelkhojo.in", phone: "9999999999", role: "admin", created_at: new Date().toISOString() },
-      { id: "usr_owner_demo", full_name: "Rajesh Sharma (PG Owner)", email: "owner@myhostel.com", phone: "9876543210", role: "owner", created_at: new Date().toISOString() },
-      { id: "usr_student_demo", full_name: "Rahul Verma", email: "rahul.v@gmail.com", phone: "9811223344", role: "student", created_at: new Date().toISOString() }
-    ];
+    const list = [];
+    if (this.currentAdminUser) list.push(this.currentAdminUser);
     if (this.currentUser && !list.some(u => u.id === this.currentUser.id)) list.push(this.currentUser);
     if (this.currentOwnerUser && !list.some(u => u.id === this.currentOwnerUser.id)) list.push(this.currentOwnerUser);
+
+    const localUser = JSON.parse(localStorage.getItem("hostelkhojo_user") || "null");
+    if (localUser && !list.some(u => u.id === localUser.id)) list.push(localUser);
+
+    const localOwner = JSON.parse(localStorage.getItem("hostelkhojo_owner_user") || "null");
+    if (localOwner && !list.some(u => u.id === localOwner.id)) list.push(localOwner);
+
     return list;
   }
 
