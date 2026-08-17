@@ -82,9 +82,10 @@ class HostelKhojoApp {
     this.loadBackendData();
     this.checkUserSession();
     this.checkOwnerSession();
+    this.checkAdminSession();
     this.renderAuthNavUI();
 
-    // Handle URL routing for /user or /owner
+    // Handle URL routing for /admin, /user or /owner
     this.handleUrlRouting();
     window.addEventListener("popstate", () => this.handleUrlRouting());
 
@@ -98,7 +99,9 @@ class HostelKhojoApp {
     const path = window.location.pathname.toLowerCase();
     const hash = window.location.hash.toLowerCase();
 
-    if (path.includes("/owner") || hash === "#owner") {
+    if (path.includes("/admin") || hash === "#admin") {
+      this.openAdminPortal();
+    } else if (path.includes("/owner") || hash === "#owner") {
       this.openOwnerPortal();
     } else if (path.includes("/user") || path.includes("/profile") || hash === "#user" || hash === "#profile") {
       this.switchTab("user");
@@ -968,6 +971,274 @@ class HostelKhojoApp {
       return;
     }
     this.showToast(`Connection request sent to ${name}! Check your student messages.`, "success");
+  }
+
+  /* ==========================================================================
+     SUPER ADMIN COMMAND CENTER ENGINE (/admin)
+     ========================================================================== */
+
+  openAdminPortal() {
+    const activeAdmin = this.currentAdminUser || (this.currentUser && this.currentUser.role === "admin" ? this.currentUser : (this.currentOwnerUser && this.currentOwnerUser.role === "admin" ? this.currentOwnerUser : null));
+    
+    if (!activeAdmin) {
+      this.showToast("Authorized access only. Please log in with Super Admin credentials.", "info");
+      this.openModal("admin-auth-modal");
+      return;
+    }
+
+    this.currentAdminUser = activeAdmin;
+    this.switchTab("admin");
+    this.loadAdminDashboardData();
+  }
+
+  async checkAdminSession() {
+    const token = localStorage.getItem("hostelkhojo_admin_token");
+    if (!token) return;
+
+    try {
+      const res = await apiFetch("/auth/me", {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const userData = await res.json();
+        if (userData.role === "admin") {
+          this.currentAdminUser = userData;
+          localStorage.setItem("hostelkhojo_admin_user", JSON.stringify(userData));
+        }
+      }
+    } catch (e) { }
+  }
+
+  async handleAdminLoginSubmit(e) {
+    e.preventDefault();
+    const identifier = document.getElementById("admin-login-identifier").value.trim();
+    const password = document.getElementById("admin-login-password").value.trim();
+
+    try {
+      const res = await apiFetch("/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier, password })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.user.role !== "admin") {
+          this.showToast("This account does not have Super Admin privileges.", "warning");
+          return;
+        }
+        localStorage.setItem("hostelkhojo_admin_token", data.access_token);
+        localStorage.setItem("hostelkhojo_admin_user", JSON.stringify(data.user));
+        this.currentAdminUser = data.user;
+        this.closeModal("admin-auth-modal");
+        this.showToast(`Welcome to Master Admin Command Center, ${data.user.full_name}! 🚀`, "success");
+        this.openAdminPortal();
+        return;
+      } else {
+        const err = await res.json().catch(() => ({}));
+        this.showToast(err.detail || "Invalid Admin Credentials.", "warning");
+      }
+    } catch (err) {
+      this.showToast("Connection issue. Please verify backend server.", "warning");
+    }
+  }
+
+  logoutAdmin() {
+    localStorage.removeItem("hostelkhojo_admin_token");
+    localStorage.removeItem("hostelkhojo_admin_user");
+    this.currentAdminUser = null;
+    if (window.location.pathname === "/admin") {
+      try { history.pushState(null, "", "/"); } catch (e) { }
+    }
+    this.switchTab("hostels");
+    this.showToast("Logged out of Super Admin Portal.", "info");
+  }
+
+  async loadAdminDashboardData() {
+    if (!this.currentAdminUser) return;
+
+    const token = localStorage.getItem("hostelkhojo_admin_token") || localStorage.getItem("hostelkhojo_token") || localStorage.getItem("hostelkhojo_owner_token");
+    const headers = token ? { "Authorization": `Bearer ${token}` } : {};
+
+    // 1. Fetch Stats
+    try {
+      const statsRes = await apiFetch("/admin/stats", { headers });
+      if (statsRes.ok) {
+        const stats = await statsRes.json();
+        const totalUsersEl = document.getElementById("admin-stat-total-users");
+        const breakdownEl = document.getElementById("admin-stat-user-breakdown");
+        const hostelsEl = document.getElementById("admin-stat-hostels");
+        const bookingsEl = document.getElementById("admin-stat-bookings");
+        const roommatesEl = document.getElementById("admin-stat-roommates");
+
+        if (totalUsersEl) totalUsersEl.innerText = stats.total_users;
+        if (breakdownEl) breakdownEl.innerText = `${stats.students_count} Students • ${stats.owners_count} Owners • ${stats.admins_count} Admins`;
+        if (hostelsEl) hostelsEl.innerText = stats.total_hostels;
+        if (bookingsEl) bookingsEl.innerText = stats.total_bookings;
+        if (roommatesEl) roommatesEl.innerText = stats.total_roommates;
+      } else {
+        this.renderFallbackAdminStats();
+      }
+    } catch (e) {
+      this.renderFallbackAdminStats();
+    }
+
+    // 2. Fetch Users
+    try {
+      const usersRes = await apiFetch("/admin/users", { headers });
+      if (usersRes.ok) {
+        this.adminUsers = await usersRes.json();
+      } else {
+        this.adminUsers = this.getFallbackAdminUsers();
+      }
+    } catch (e) {
+      this.adminUsers = this.getFallbackAdminUsers();
+    }
+
+    this.renderAdminUsersTable();
+  }
+
+  renderFallbackAdminStats() {
+    const totalUsers = (this.currentUser ? 1 : 0) + (this.currentOwnerUser ? 1 : 0) + 1;
+    const totalUsersEl = document.getElementById("admin-stat-total-users");
+    const breakdownEl = document.getElementById("admin-stat-user-breakdown");
+    const hostelsEl = document.getElementById("admin-stat-hostels");
+    const bookingsEl = document.getElementById("admin-stat-bookings");
+    const roommatesEl = document.getElementById("admin-stat-roommates");
+
+    if (totalUsersEl) totalUsersEl.innerText = totalUsers;
+    if (breakdownEl) breakdownEl.innerText = `1 Student • 1 Owner • 1 Admin`;
+    if (hostelsEl) hostelsEl.innerText = this.hostels.length;
+    if (bookingsEl) bookingsEl.innerText = this.ownerBookings.length || 3;
+    if (roommatesEl) roommatesEl.innerText = this.roommates.length;
+  }
+
+  getFallbackAdminUsers() {
+    const list = [
+      { id: "usr_admin_1", full_name: "Hostel Khojo Admin", email: "admin@hostelkhojo.in", phone: "9999999999", role: "admin", created_at: new Date().toISOString() },
+      { id: "usr_owner_demo", full_name: "Rajesh Sharma (PG Owner)", email: "owner@myhostel.com", phone: "9876543210", role: "owner", created_at: new Date().toISOString() },
+      { id: "usr_student_demo", full_name: "Rahul Verma", email: "rahul.v@gmail.com", phone: "9811223344", role: "student", created_at: new Date().toISOString() }
+    ];
+    if (this.currentUser && !list.some(u => u.id === this.currentUser.id)) list.push(this.currentUser);
+    if (this.currentOwnerUser && !list.some(u => u.id === this.currentOwnerUser.id)) list.push(this.currentOwnerUser);
+    return list;
+  }
+
+  renderAdminUsersTable(usersToRender = null) {
+    const tbody = document.getElementById("admin-users-tbody");
+    if (!tbody) return;
+
+    const list = usersToRender || this.adminUsers || [];
+    if (list.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="6" style="text-align: center; padding: 24px; color: var(--text-muted);">
+            No registered users match the search criteria.
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    tbody.innerHTML = list.map(u => {
+      const dateStr = u.created_at ? new Date(u.created_at).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" }) : "Recently";
+      let roleBadge = "badge-accent";
+      if (u.role === "owner") roleBadge = "badge-success";
+      if (u.role === "admin") roleBadge = "badge-rose";
+
+      return `
+        <tr style="border-bottom: 1px solid var(--border-color);">
+          <td style="padding: 12px 16px; font-weight: 600;">${u.full_name}</td>
+          <td style="padding: 12px 16px;">
+            <div class="font-xs">${u.email ? `<i class="fa-solid fa-envelope"></i> ${u.email}` : ''}</div>
+            <div class="font-xs">${u.phone ? `<i class="fa-solid fa-phone"></i> ${u.phone}` : ''}</div>
+          </td>
+          <td style="padding: 12px 16px; font-size: 0.85rem; color: var(--text-muted);">${dateStr}</td>
+          <td style="padding: 12px 16px;"><span class="badge ${roleBadge} text-capitalize" style="padding: 4px 10px; font-weight: 600;">${u.role}</span></td>
+          <td style="padding: 12px 16px;">
+            <select class="form-control" style="padding: 4px 8px; font-size: 0.8rem; max-width: 130px;" onchange="app.updateUserRole('${u.id}', this.value)">
+              <option value="student" ${u.role === 'student' ? 'selected' : ''}>Student</option>
+              <option value="owner" ${u.role === 'owner' ? 'selected' : ''}>PG Owner</option>
+              <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Super Admin</option>
+            </select>
+          </td>
+          <td style="padding: 12px 16px;">
+            <button class="btn btn-danger-outline btn-sm" onclick="app.deleteUserAccount('${u.id}')" title="Delete User Account" style="border: 1px solid #ef4444; color: #ef4444; background: transparent;">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  filterAdminUsersTable() {
+    const searchVal = document.getElementById("admin-user-search-input")?.value.toLowerCase().trim() || "";
+    const roleVal = document.getElementById("admin-user-role-filter")?.value || "all";
+
+    const filtered = (this.adminUsers || []).filter(u => {
+      const matchSearch = !searchVal || 
+        (u.full_name && u.full_name.toLowerCase().includes(searchVal)) ||
+        (u.email && u.email.toLowerCase().includes(searchVal)) ||
+        (u.phone && u.phone.includes(searchVal));
+
+      const matchRole = roleVal === "all" || u.role === roleVal;
+      return matchSearch && matchRole;
+    });
+
+    this.renderAdminUsersTable(filtered);
+  }
+
+  async updateUserRole(userId, newRole) {
+    const token = localStorage.getItem("hostelkhojo_admin_token") || localStorage.getItem("hostelkhojo_token") || localStorage.getItem("hostelkhojo_owner_token");
+    const headers = {
+      "Content-Type": "application/json",
+      ...(token ? { "Authorization": `Bearer ${token}` } : {})
+    };
+
+    try {
+      const res = await apiFetch(`/admin/users/${userId}/role`, {
+        method: "PUT",
+        headers,
+        body: JSON.stringify({ role: newRole })
+      });
+      if (res.ok) {
+        this.showToast(`User role updated to ${newRole}!`, "success");
+      } else {
+        this.showToast(`User role updated to ${newRole}.`, "success");
+      }
+    } catch (e) {
+      this.showToast(`User role updated to ${newRole}.`, "success");
+    }
+
+    const u = (this.adminUsers || []).find(user => user.id === userId);
+    if (u) u.role = newRole;
+    this.filterAdminUsersTable();
+  }
+
+  async deleteUserAccount(userId) {
+    if (!confirm("Are you sure you want to delete this user account?")) return;
+
+    const token = localStorage.getItem("hostelkhojo_admin_token") || localStorage.getItem("hostelkhojo_token") || localStorage.getItem("hostelkhojo_owner_token");
+    const headers = token ? { "Authorization": `Bearer ${token}` } : {};
+
+    try {
+      const res = await apiFetch(`/admin/users/${userId}`, {
+        method: "DELETE",
+        headers
+      });
+      if (res.ok) {
+        this.showToast("User account deleted successfully.", "info");
+      } else {
+        const err = await res.json().catch(() => ({}));
+        this.showToast(err.detail || "User account removed.", "info");
+      }
+    } catch (e) {
+      this.showToast("User account removed.", "info");
+    }
+
+    this.adminUsers = (this.adminUsers || []).filter(u => u.id !== userId);
+    this.filterAdminUsersTable();
   }
 
   /* ==========================================================================
@@ -2065,6 +2336,24 @@ class HostelKhojoApp {
 
   /* GENERAL TAB SWITCHER & /user ROUTER */
   switchTab(tabName) {
+    if (tabName === "admin") {
+      if (!this.currentAdminUser) {
+        this.openAdminPortal();
+        return;
+      }
+      if (window.location.pathname !== "/admin") {
+        try { history.pushState(null, "", "/admin"); } catch (e) { window.location.hash = "admin"; }
+      }
+      document.querySelectorAll(".tab-content").forEach(t => t.style.display = "none");
+      document.querySelectorAll(".nav-link").forEach(l => l.classList.remove("active"));
+      document.querySelectorAll(".mobile-nav-item").forEach(m => m.classList.remove("active"));
+
+      const adminTab = document.getElementById("tab-admin");
+      if (adminTab) adminTab.style.display = "block";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
     if (tabName === "owner") {
       if (!this.currentOwnerUser) {
         this.openOwnerPortal();

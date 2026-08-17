@@ -15,7 +15,7 @@ from .schemas import (
     RoommateResponse, RoommateCreate,
     PropertySubmissionResponse, PropertySubmissionCreate,
     ReviewResponse, ReviewCreate,
-    UserRegister, UserLogin, GoogleLogin, PhoneUpdate, PasswordReset, UserResponse, Token
+    UserRegister, UserLogin, GoogleLogin, PhoneUpdate, PasswordReset, UserResponse, UserRoleUpdate, Token
 )
 from .auth import get_password_hash, verify_password, create_access_token, get_current_user
 from .seed import seed_database
@@ -710,5 +710,87 @@ def update_owner_booking_status(
     db.commit()
     db.refresh(b)
     return b
+
+
+# SUPER ADMIN CONTROL PANEL ENDPOINTS
+@app.get("/api/admin/stats")
+def get_admin_stats(
+    current_user: UserDB = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Super Admin authorization required.")
+
+    total_users = db.query(UserDB).count()
+    students_count = db.query(UserDB).filter(UserDB.role == "student").count()
+    owners_count = db.query(UserDB).filter(UserDB.role == "owner").count()
+    admins_count = db.query(UserDB).filter(UserDB.role == "admin").count()
+    total_hostels = db.query(HostelDB).count()
+    total_bookings = db.query(BookingDB).count()
+    total_roommates = db.query(RoommateDB).count()
+
+    return {
+        "total_users": total_users,
+        "students_count": students_count,
+        "owners_count": owners_count,
+        "admins_count": admins_count,
+        "total_hostels": total_hostels,
+        "total_bookings": total_bookings,
+        "total_roommates": total_roommates
+    }
+
+@app.get("/api/admin/users", response_model=List[UserResponse])
+def get_admin_users(
+    current_user: UserDB = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Super Admin authorization required.")
+
+    users = db.query(UserDB).order_by(UserDB.created_at.desc()).all()
+    return users
+
+@app.put("/api/admin/users/{user_id}/role", response_model=UserResponse)
+def update_user_role(
+    user_id: str,
+    role_in: UserRoleUpdate,
+    current_user: UserDB = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Super Admin authorization required.")
+
+    target_user = db.query(UserDB).filter(UserDB.id == user_id).first()
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User account not found.")
+
+    if role_in.role not in ["student", "owner", "admin"]:
+        raise HTTPException(status_code=400, detail="Invalid role type. Must be student, owner, or admin.")
+
+    target_user.role = role_in.role
+    db.commit()
+    db.refresh(target_user)
+    return target_user
+
+@app.delete("/api/admin/users/{user_id}")
+def delete_user_account(
+    user_id: str,
+    current_user: UserDB = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Super Admin authorization required.")
+
+    if user_id == current_user.id:
+        raise HTTPException(status_code=400, detail="Super Admin cannot delete their own active account.")
+
+    target_user = db.query(UserDB).filter(UserDB.id == user_id).first()
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User account not found.")
+
+    db.delete(target_user)
+    db.commit()
+    return {"status": "success", "message": "User account deleted successfully."}
+
 
 

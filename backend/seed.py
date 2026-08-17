@@ -33,6 +33,31 @@ def seed_database() -> None:
         except Exception as mig_err:
             print(f"Migration notice: {mig_err}")
 
+    # Seed default Admin account if none exists
+    try:
+        from .database import SessionLocal
+        from .models import UserDB
+        from .auth import get_password_hash
+        import uuid
+
+        db = SessionLocal()
+        existing_admin = db.query(UserDB).filter(UserDB.role == "admin").first()
+        if not existing_admin:
+            admin_user = UserDB(
+                id=f"usr_admin_{uuid.uuid4().hex[:6]}",
+                email="admin@hostelkhojo.in",
+                phone="9999999999",
+                password_hash=get_password_hash("adminpassword123"),
+                full_name="Hostel Khojo Admin",
+                role="admin"
+            )
+            db.add(admin_user)
+            db.commit()
+            print("Default Super Admin account seeded: admin@hostelkhojo.in / 9999999999")
+        db.close()
+    except Exception as admin_err:
+        print(f"Admin seeding notice: {admin_err}")
+
     print("Database schema verified and ready.")
 
 if __name__ == "__main__":

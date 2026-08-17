@@ -29,6 +29,9 @@ class PasswordReset(BaseModel):
     identifier: str
     new_password: str
 
+class UserRoleUpdate(BaseModel):
+    role: str
+
 
 
 class UserResponse(BaseModel):

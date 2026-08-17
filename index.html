@@ -528,6 +528,122 @@
   </main>
 
 
+  <!-- DEDICATED SUPER ADMIN CONTROL PANEL VIEW (/admin) -->
+  <main id="tab-admin" class="tab-content main-container padding-top-md padding-bottom-xl" style="display: none; max-width: 1200px; margin: 0 auto;">
+    
+    <!-- Admin Header Banner -->
+    <div class="user-page-card margin-bottom-lg" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 32px 24px; position: relative; overflow: hidden; box-shadow: var(--shadow-md);">
+      <div style="position: absolute; top: 0; left: 0; right: 0; height: 110px; background: linear-gradient(135deg, #dc2626, #ef4444); opacity: 0.95;"></div>
+      
+      <div style="position: relative; z-index: 2; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px; margin-top: 30px;">
+        <div style="display: flex; align-items: center; gap: 20px;">
+          <div class="profile-avatar-lg" id="admin-page-avatar" style="width: 88px; height: 88px; font-size: 2.2rem; border: 4px solid var(--bg-card); background: #dc2626; color: white; box-shadow: 0 8px 24px rgba(0,0,0,0.15); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700;">SA</div>
+          <div>
+            <h1 class="font-xl font-weight-700" id="admin-page-name" style="margin-bottom: 4px;">Super Admin Control Panel</h1>
+            <p class="text-muted font-sm" id="admin-page-email"><i class="fa-solid fa-shield-halved"></i> admin@hostelkhojo.in</p>
+            <div style="display: flex; gap: 10px; align-items: center; margin-top: 6px;">
+              <span class="badge badge-rose" style="padding: 4px 12px; font-size: 0.8rem; background: #dc2626; color: white;"><i class="fa-solid fa-user-shield"></i> Master Admin Session</span>
+              <span class="text-muted font-xs"><i class="fa-solid fa-clock"></i> Full System Access</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 12px;">
+          <button class="btn btn-outline btn-sm" onclick="app.loadAdminDashboardData()" style="border-color: #dc2626; color: #dc2626;">
+            <i class="fa-solid fa-rotate"></i> Refresh Telemetry
+          </button>
+          <button class="btn btn-danger-outline btn-sm" onclick="app.logoutAdmin()" style="border: 1px solid #ef4444; color: #ef4444; background: transparent;">
+            <i class="fa-solid fa-right-from-bracket"></i> Exit Admin Mode
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Admin Platform Analytics Cards -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 32px;">
+      <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 20px; box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 16px;">
+        <div style="width: 52px; height: 52px; border-radius: 12px; background: rgba(220, 38, 38, 0.12); color: #dc2626; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+          <i class="fa-solid fa-users"></i>
+        </div>
+        <div>
+          <span style="font-size: 0.85rem; color: var(--text-muted); display: block;">Total Registered Users</span>
+          <strong style="font-size: 1.6rem; font-weight: 700; color: var(--text-primary);" id="admin-stat-total-users">0</strong>
+          <span class="text-muted font-xs display-block" id="admin-stat-user-breakdown">0 Students • 0 Owners</span>
+        </div>
+      </div>
+
+      <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 20px; box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 16px;">
+        <div style="width: 52px; height: 52px; border-radius: 12px; background: rgba(5, 150, 105, 0.12); color: #059669; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+          <i class="fa-solid fa-building"></i>
+        </div>
+        <div>
+          <span style="font-size: 0.85rem; color: var(--text-muted); display: block;">Total Live PGs & Hostels</span>
+          <strong style="font-size: 1.6rem; font-weight: 700; color: var(--text-primary);" id="admin-stat-hostels">0</strong>
+        </div>
+      </div>
+
+      <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 20px; box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 16px;">
+        <div style="width: 52px; height: 52px; border-radius: 12px; background: rgba(79, 70, 229, 0.12); color: #4f46e5; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+          <i class="fa-solid fa-calendar-check"></i>
+        </div>
+        <div>
+          <span style="font-size: 0.85rem; color: var(--text-muted); display: block;">Total Visit Requests</span>
+          <strong style="font-size: 1.6rem; font-weight: 700; color: var(--text-primary);" id="admin-stat-bookings">0</strong>
+        </div>
+      </div>
+
+      <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 20px; box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 16px;">
+        <div style="width: 52px; height: 52px; border-radius: 12px; background: rgba(217, 119, 6, 0.12); color: #d97706; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+          <i class="fa-solid fa-user-group"></i>
+        </div>
+        <div>
+          <span style="font-size: 0.85rem; color: var(--text-muted); display: block;">Roommate Cards</span>
+          <strong style="font-size: 1.6rem; font-weight: 700; color: var(--text-primary);" id="admin-stat-roommates">0</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- ALL REGISTERED USERS MANAGEMENT SECTION -->
+    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 28px; margin-bottom: 32px; box-shadow: var(--shadow-sm);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+        <div>
+          <h2 style="font-size: 1.3rem; font-weight: 700;"><i class="fa-solid fa-users-gear" style="color: #dc2626;"></i> Registered Platform Users</h2>
+          <p class="text-muted font-xs">Track, search, manage user roles, or remove accounts across all user types.</p>
+        </div>
+        
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <input type="text" id="admin-user-search-input" placeholder="Search user by name, email or phone..." oninput="app.filterAdminUsersTable()" class="form-control" style="max-width: 280px; padding: 6px 12px; font-size: 0.85rem;" />
+          <select id="admin-user-role-filter" onchange="app.filterAdminUsersTable()" class="form-control" style="max-width: 150px; padding: 6px 12px; font-size: 0.85rem;">
+            <option value="all">All Roles</option>
+            <option value="student">Students</option>
+            <option value="owner">PG Owners</option>
+            <option value="admin">Admins</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="comparison-table" style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr style="background: var(--bg-card-hover); text-align: left;">
+              <th style="padding: 12px 16px;">User Name</th>
+              <th style="padding: 12px 16px;">Email / Phone Contact</th>
+              <th style="padding: 12px 16px;">Joined Date</th>
+              <th style="padding: 12px 16px;">Current Role</th>
+              <th style="padding: 12px 16px;">Role Management</th>
+              <th style="padding: 12px 16px;">Action</th>
+            </tr>
+          </thead>
+          <tbody id="admin-users-tbody">
+            <!-- Rendered dynamically by JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+
   <!-- STICKY COMPARISON TRAY -->
   <div class="comparison-tray" id="comparison-tray">
     <div class="comp-tray-inner">
@@ -1000,6 +1116,36 @@
 
 
 
+  <!-- MODAL: ADMIN MASTER AUTHENTICATION -->
+  <div class="modal-backdrop" id="admin-auth-modal">
+    <div class="modal-box modal-sm text-center">
+      <button class="modal-close" onclick="app.closeModal('admin-auth-modal')">&times;</button>
+      <div style="width: 60px; height: 60px; border-radius: 50%; background: rgba(220, 38, 38, 0.15); color: #dc2626; font-size: 1.8rem; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px auto;">
+        <i class="fa-solid fa-user-shield"></i>
+      </div>
+      <h2 class="modal-title" style="margin-bottom: 4px;">Super Admin Portal</h2>
+      <p class="text-muted font-xs margin-bottom-md">Authorized access only for platform administrators</p>
+
+      <form id="admin-login-form" onsubmit="app.handleAdminLoginSubmit(event)">
+        <div class="form-group text-left">
+          <label><i class="fa-solid fa-envelope"></i> Admin Email / Phone</label>
+          <input type="text" id="admin-login-identifier" required placeholder="admin@hostelkhojo.in or 9999999999" class="form-control" value="admin@hostelkhojo.in" />
+        </div>
+
+        <div class="form-group text-left">
+          <label><i class="fa-solid fa-key"></i> Master Admin Password</label>
+          <input type="password" id="admin-login-password" required placeholder="Enter admin password" class="form-control" />
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block btn-lg margin-top-md" style="background: #dc2626; border-color: #dc2626;">
+          <i class="fa-solid fa-shield-halved"></i> Access Admin Command Center
+        </button>
+      </form>
+    </div>
+  </div>
+
+
+
   <!-- TOAST NOTIFICATION CONTAINER -->
   <div id="toast-container"></div>
 
@@ -1034,11 +1180,11 @@
       </div>
 
       <div class="footer-col">
-        <h3>Student Perks</h3>
+        <h3>Student Perks & Admin</h3>
         <ul>
           <li><a href="#" onclick="app.switchTab('roommates')">Roommate Matcher</a></li>
           <li><a href="#" onclick="app.openOwnerPortal()">Hostel Owner Verification & Portal</a></li>
-          <li><a href="#">Student Safety & Biometric Guarantee</a></li>
+          <li><a href="#" onclick="app.openAdminPortal()"><i class="fa-solid fa-user-shield" style="color: #dc2626;"></i> Super Admin Portal</a></li>
           <li><a href="#">Virtual 360° Room Tours</a></li>
           <li><a href="#">Zero Brokerage Guarantee</a></li>
         </ul>
