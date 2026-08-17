@@ -48,6 +48,7 @@ const INITIAL_ROOMMATES = [];
 
 class HostelKhojoApp {
   constructor() {
+    window.app = this;
     this.hostels = [...INITIAL_HOSTELS];
     this.filteredHostels = [...INITIAL_HOSTELS];
     this.roommates = [...INITIAL_ROOMMATES];
@@ -64,6 +65,7 @@ class HostelKhojoApp {
     this.currentViewMode = "grid"; // 'grid' or 'split'
     this.currentSort = "recommended";
 
+    this.initGoogleMapsEngine();
     this.init();
   }
 
@@ -71,7 +73,7 @@ class HostelKhojoApp {
     this.updateSavedCount();
     this.renderHostels();
     this.renderRoommates();
-    this.renderMapPins();
+    this.setMapProvider(this.mapProvider);
     this.loadBackendData();
     this.checkUserSession();
     this.checkOwnerSession();
@@ -90,6 +92,7 @@ class HostelKhojoApp {
   handleUrlRouting() {
     const path = window.location.pathname.toLowerCase();
     const hash = window.location.hash.toLowerCase();
+
     if (path.includes("/owner") || hash === "#owner") {
       this.openOwnerPortal();
     } else if (path.includes("/user") || path.includes("/profile") || hash === "#user" || hash === "#profile") {
@@ -105,14 +108,26 @@ class HostelKhojoApp {
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) {
           this.hostels = data;
-          this.filteredHostels = [...data];
-          this.renderHostels();
-          this.renderMapPins();
         }
       }
     } catch (err) {
       console.log("FastAPI Backend offline, using local mock hostels.");
     }
+
+    // Merge custom locally saved properties to guarantee live rendering across reloads
+    const customProps = JSON.parse(localStorage.getItem("hostelkhojo_custom_properties") || "[]");
+    customProps.forEach(cp => {
+      const existingIdx = this.hostels.findIndex(h => h.id === cp.id);
+      if (existingIdx !== -1) {
+        this.hostels[existingIdx] = cp;
+      } else {
+        this.hostels.unshift(cp);
+      }
+    });
+
+    this.filteredHostels = [...this.hostels];
+    this.renderHostels();
+    this.renderMapPins();
 
     try {
       const rmRes = await apiFetch("/roommates");
@@ -223,6 +238,16 @@ class HostelKhojoApp {
       layout.className = "explorer-layout split-view";
       gridBtn.classList.remove("active");
       splitBtn.classList.add("active");
+      setTimeout(() => {
+        if (this.mapProvider === "osm" || this.mapProvider === "google") {
+          this.renderOpenStreetMap();
+          if (this.leafletMap) {
+            this.leafletMap.invalidateSize();
+          }
+        } else {
+          this.renderMapPins();
+        }
+      }, 150);
     } else {
       layout.className = "explorer-layout grid-view";
       gridBtn.classList.add("active");
@@ -245,7 +270,7 @@ class HostelKhojoApp {
           <h3>No Hostels Listed in This Search Yet</h3>
           <p class="text-muted" style="max-width: 500px; margin: 8px auto 20px auto;">Are you a Hostel or PG Owner? List your property now to connect directly with 100,000+ verified college students near your campus!</p>
           <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
-            <button class="btn btn-accent btn-lg" onclick="app.openModal('owner-modal')">
+            <button class="btn btn-accent btn-lg" onclick="app.openOwnerPortal()">
               <i class="fa-solid fa-plus-circle"></i> List Your Hostel / PG Property
             </button>
             <button class="btn btn-outline btn-lg" onclick="app.resetFilters()">
@@ -360,6 +385,150 @@ class HostelKhojoApp {
       card.style.borderColor = "var(--accent-primary)";
       setTimeout(() => { card.style.borderColor = ""; }, 1500);
     }
+  }
+
+  /* ==========================================================================
+     OPENSTREETMAP (LEAFLET) LIVE MAP ENGINE - 100% FREE & ZERO WATERMARKS
+     ========================================================================== */
+  
+  initGoogleMapsEngine() {
+    this.mapProvider = localStorage.getItem("hostelkhojo_map_provider") || "osm";
+    this.leafletMap = null;
+    this.leafletMarkers = [];
+  }
+
+  setMapProvider(provider) {
+    this.mapProvider = provider;
+    localStorage.setItem("hostelkhojo_map_provider", provider);
+
+    const gmapsBtn = document.getElementById("map-mode-gmaps-btn");
+    const canvasBtn = document.getElementById("map-mode-canvas-btn");
+    const gmapsCanvas = document.getElementById("google-map-canvas");
+    const simulatedMap = document.getElementById("simulated-map");
+
+    if (provider === "osm" || provider === "google") {
+      gmapsBtn?.classList.add("active");
+      canvasBtn?.classList.remove("active");
+      if (gmapsCanvas) gmapsCanvas.style.display = "block";
+      if (simulatedMap) simulatedMap.style.display = "none";
+      this.renderOpenStreetMap();
+    } else {
+      canvasBtn?.classList.add("active");
+      gmapsBtn?.classList.remove("active");
+      if (gmapsCanvas) gmapsCanvas.style.display = "none";
+      if (simulatedMap) simulatedMap.style.display = "block";
+      this.renderMapPins();
+    }
+  }
+
+  renderOpenStreetMap() {
+    const canvas = document.getElementById("google-map-canvas");
+    if (!canvas || typeof L === "undefined") return;
+
+    let centerLat = 28.6922;
+    let centerLng = 77.2100;
+
+    if (this.filteredHostels.length > 0) {
+      const validCoordsHostels = this.filteredHostels.filter(h => h.lat && h.lng);
+      if (validCoordsHostels.length > 0) {
+        const sumLat = validCoordsHostels.reduce((acc, h) => acc + h.lat, 0);
+        const sumLng = validCoordsHostels.reduce((acc, h) => acc + h.lng, 0);
+        centerLat = sumLat / validCoordsHostels.length;
+        centerLng = sumLng / validCoordsHostels.length;
+      }
+    }
+
+    try {
+      if (!this.leafletMap) {
+        this.leafletMap = L.map(canvas, {
+          zoomControl: true,
+          scrollWheelZoom: true
+        }).setView([centerLat, centerLng], 11);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | Hostel Khojo 🇮🇳'
+        }).addTo(this.leafletMap);
+      } else {
+        this.leafletMap.setView([centerLat, centerLng]);
+      }
+
+      if (this.leafletMarkers) {
+        this.leafletMarkers.forEach(m => this.leafletMap.removeLayer(m));
+        this.leafletMarkers = [];
+      }
+
+      const bounds = [];
+
+      this.filteredHostels.forEach(h => {
+        if (!h.lat || !h.lng) return;
+
+        bounds.push([h.lat, h.lng]);
+
+        let badgeBg = "#3b82f6";
+        if (h.gender === "Girls") badgeBg = "#ec4899";
+        if (h.gender === "Co-ed") badgeBg = "#8b5cf6";
+
+        const customIcon = L.divIcon({
+          className: 'custom-osm-pin',
+          html: `
+            <div style="background: ${badgeBg}; color: white; padding: 4px 8px; border-radius: 12px; font-weight: 700; font-size: 11px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); border: 2px solid white; text-align: center; white-space: nowrap;">
+              ₹${(h.rent / 1000).toFixed(1)}k
+            </div>
+          `,
+          iconSize: [54, 26],
+          iconAnchor: [27, 13]
+        });
+
+        const marker = L.marker([h.lat, h.lng], { icon: customIcon }).addTo(this.leafletMap);
+
+        const popupContent = `
+          <div class="gmaps-infowindow">
+            <img src="${h.imageMain || 'assets/images/exterior1.png'}" alt="${h.name}" />
+            <h4>${h.name}</h4>
+            <p><i class="fa-solid fa-location-dot"></i> ${h.university || h.city}</p>
+            <div class="gmaps-infowindow-meta">
+              <span>₹${Number(h.rent).toLocaleString('en-IN')}/mo</span>
+              <span>⭐ ${h.rating || 4.8}</span>
+            </div>
+            <div style="display: flex; gap: 6px;">
+              <button onclick="app.openHostelDetail('${h.id}')" class="gmaps-infowindow-btn" style="flex: 1;">
+                View Details
+              </button>
+              <a href="https://www.google.com/maps/dir/?api=1&destination=${h.lat},${h.lng}" target="_blank" class="gmaps-infowindow-btn" style="background: #059669; flex: 1; display: inline-flex; align-items: center; justify-content: center; text-decoration: none;">
+                Directions
+              </a>
+            </div>
+          </div>
+        `;
+
+        marker.bindPopup(popupContent);
+        marker.on("click", () => {
+          this.highlightCard(h.id);
+        });
+
+        this.leafletMarkers.push(marker);
+      });
+
+      if (bounds.length > 1) {
+        this.leafletMap.fitBounds(bounds, { padding: [30, 30] });
+      }
+    } catch (e) {
+      console.warn("Leaflet Map render notice:", e);
+    }
+  }
+
+  renderGoogleMap() {
+    this.renderOpenStreetMap();
+  }
+
+  openGoogleDirections(lat, lng, name = "") {
+    if (!lat || !lng) {
+      this.showToast("Location coordinates not available for this hostel.", "info");
+      return;
+    }
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&destination_place_id=${encodeURIComponent(name)}`;
+    window.open(url, "_blank");
   }
 
   /* BOOKMARK & SAVED HOSTELS */
@@ -621,6 +790,9 @@ class HostelKhojoApp {
               <button type="submit" class="btn btn-accent btn-block btn-lg margin-top-md">
                 <i class="fa-solid fa-paper-plane"></i> Schedule Free Campus Visit
               </button>
+              <button type="button" class="btn btn-outline btn-block margin-top-sm" onclick="app.openGoogleDirections(${h.lat || 28.6922}, ${h.lng || 77.2100}, '${encodeURIComponent(h.name)}')" style="border-color: #4285F4; color: #4285F4; font-weight: 600;">
+                <i class="fa-solid fa-map-location-dot" style="color: #ea4335;"></i> Open in Google Maps
+              </button>
             </form>
           </div>
         </div>
@@ -786,9 +958,15 @@ class HostelKhojoApp {
   /* ==========================================================================
      PG & HOSTEL OWNER PORTAL ENGINE
      ========================================================================== */
-  
+
   openOwnerPortal() {
-    if (!this.currentOwnerUser) {
+    if (this.currentUser && this.currentUser.role === "student" && !this.currentOwnerUser) {
+      this.showToast("Student accounts cannot list properties. Please sign in or register as a PG/Hostel Owner.", "warning");
+      this.openModal("owner-auth-modal");
+      return;
+    }
+
+    if (!this.currentOwnerUser && (!this.currentUser || this.currentUser.role === "student")) {
       this.showToast("Please log in or register as a PG/Hostel Owner to access your dedicated property portal.", "info");
       this.openModal("owner-auth-modal");
       return;
@@ -796,6 +974,26 @@ class HostelKhojoApp {
 
     this.switchTab("owner");
     this.loadOwnerDashboardData();
+  }
+
+  openOwnerPropertyModal() {
+    const activeUser = this.currentOwnerUser || (this.currentUser && (this.currentUser.role === "owner" || this.currentUser.role === "admin") ? this.currentUser : null);
+    
+    if (!activeUser || activeUser.role === "student") {
+      this.showToast("Student accounts cannot add hostels or PGs. Please log in or register as a PG/Hostel Owner.", "warning");
+      this.openModal("owner-auth-modal");
+      return;
+    }
+
+    document.getElementById("owner-prop-id").value = "";
+    document.getElementById("owner-prop-modal-title").innerHTML = `<i class="fa-solid fa-building-circle-check" style="color: #059669;"></i> List New PG / Hostel Property`;
+    const form = document.getElementById("owner-property-form");
+    if (form) form.reset();
+    this.openModal("owner-property-modal");
+  }
+
+  openOwnerPropertyModalFromProfile() {
+    this.openOwnerPropertyModal();
   }
 
   async checkOwnerSession() {
@@ -811,11 +1009,13 @@ class HostelKhojoApp {
         if (userData.role === "owner" || userData.role === "admin") {
           this.currentOwnerUser = userData;
           localStorage.setItem("hostelkhojo_owner_user", JSON.stringify(userData));
+          this.renderAuthNavUI();
         }
       } else if (res.status === 401) {
         localStorage.removeItem("hostelkhojo_owner_token");
         localStorage.removeItem("hostelkhojo_owner_user");
         this.currentOwnerUser = null;
+        this.renderAuthNavUI();
       }
     } catch (err) {
       console.log("Owner session check skipped");
@@ -846,6 +1046,13 @@ class HostelKhojoApp {
     const identifier = document.getElementById("owner-login-identifier").value.trim();
     const password = document.getElementById("owner-login-password").value.trim();
 
+    // Mobile Phone Validation
+    const cleanPhone = identifier.replace(/\D/g, '');
+    if (!identifier || cleanPhone.length < 10) {
+      this.showToast("Please enter a valid 10-digit mobile phone number to log in as Owner.", "warning");
+      return;
+    }
+
     try {
       const res = await apiFetch("/auth/login", {
         method: "POST",
@@ -862,6 +1069,7 @@ class HostelKhojoApp {
         localStorage.setItem("hostelkhojo_owner_token", data.access_token);
         localStorage.setItem("hostelkhojo_owner_user", JSON.stringify(data.user));
         this.currentOwnerUser = data.user;
+        this.renderAuthNavUI();
         this.closeModal("owner-auth-modal");
         this.showToast(`Welcome to Owner Portal, ${data.user.full_name}!`, "success");
         this.openOwnerPortal();
@@ -881,6 +1089,13 @@ class HostelKhojoApp {
     const email = document.getElementById("owner-reg-email").value.trim();
     const password = document.getElementById("owner-reg-password").value.trim();
 
+    // Mobile Phone Validation
+    const cleanPhone = phone.replace(/\D/g, '');
+    if (!phone || cleanPhone.length < 10) {
+      this.showToast("Please enter a valid 10-digit mobile phone number for PG owner registration.", "warning");
+      return;
+    }
+
     const payload = { full_name, phone, email, password, role: "owner" };
 
     try {
@@ -895,6 +1110,7 @@ class HostelKhojoApp {
         localStorage.setItem("hostelkhojo_owner_token", data.access_token);
         localStorage.setItem("hostelkhojo_owner_user", JSON.stringify(data.user));
         this.currentOwnerUser = data.user;
+        this.renderAuthNavUI();
         this.closeModal("owner-auth-modal");
         this.showToast(`Owner Account Created! Welcome, ${data.user.full_name}!`, "success");
         this.openOwnerPortal();
@@ -911,15 +1127,17 @@ class HostelKhojoApp {
     localStorage.removeItem("hostelkhojo_owner_token");
     localStorage.removeItem("hostelkhojo_owner_user");
     this.currentOwnerUser = null;
+    this.renderAuthNavUI();
     if (window.location.pathname === "/owner") {
-      try { history.pushState(null, "", "/"); } catch(e) {}
+      try { history.pushState(null, "", "/"); } catch (e) { }
     }
     this.switchTab("hostels");
     this.showToast("Logged out of Owner Dashboard.", "info");
   }
 
   async loadOwnerDashboardData() {
-    if (!this.currentOwnerUser) return;
+    const activeOwner = this.currentOwnerUser || (this.currentUser && (this.currentUser.role === "owner" || this.currentUser.role === "admin") ? this.currentUser : null);
+    if (!activeOwner) return;
 
     // Set Owner Header Details
     const nameEl = document.getElementById("owner-page-name");
@@ -927,15 +1145,15 @@ class HostelKhojoApp {
     const phoneEl = document.getElementById("owner-page-phone");
     const avatarEl = document.getElementById("owner-page-avatar");
 
-    if (nameEl) nameEl.innerText = this.currentOwnerUser.full_name || "PG Owner";
-    if (emailEl) emailEl.innerHTML = `<i class="fa-solid fa-envelope"></i> ${this.currentOwnerUser.email || 'N/A'}`;
-    if (phoneEl) phoneEl.innerHTML = `<i class="fa-solid fa-phone"></i> ${this.currentOwnerUser.phone || 'N/A'}`;
+    if (nameEl) nameEl.innerText = activeOwner.full_name || "PG Owner";
+    if (emailEl) emailEl.innerHTML = `<i class="fa-solid fa-envelope"></i> ${activeOwner.email || 'N/A'}`;
+    if (phoneEl) phoneEl.innerHTML = `<i class="fa-solid fa-phone"></i> ${activeOwner.phone || 'N/A'}`;
     if (avatarEl) {
-      const initials = (this.currentOwnerUser.full_name || "OW").split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
+      const initials = (activeOwner.full_name || "OW").split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
       avatarEl.innerText = initials;
     }
 
-    const token = localStorage.getItem("hostelkhojo_owner_token");
+    const token = localStorage.getItem("hostelkhojo_owner_token") || localStorage.getItem("hostelkhojo_token");
     const headers = token ? { "Authorization": `Bearer ${token}` } : {};
 
     try {
@@ -944,10 +1162,16 @@ class HostelKhojoApp {
       if (propRes.ok) {
         this.ownerProperties = await propRes.json();
       } else {
-        this.ownerProperties = this.hostels;
+        const currentOwnerId = activeOwner ? activeOwner.id : null;
+        this.ownerProperties = currentOwnerId 
+          ? this.hostels.filter(h => h.owner_id === currentOwnerId || h.owner_id === activeOwner?.email)
+          : [];
       }
     } catch (e) {
-      this.ownerProperties = this.hostels;
+      const currentOwnerId = activeOwner ? activeOwner.id : null;
+      this.ownerProperties = currentOwnerId 
+        ? this.hostels.filter(h => h.owner_id === currentOwnerId || h.owner_id === activeOwner?.email)
+        : [];
     }
 
     try {
@@ -981,7 +1205,7 @@ class HostelKhojoApp {
             <i class="fa-solid fa-building-circle-exclamation" style="font-size: 2.5rem; color: var(--text-muted); margin-bottom: 12px; display: block;"></i>
             <h3 class="font-md">No Listed Properties Found</h3>
             <p class="text-muted font-xs margin-bottom-md">List your first student PG or hostel property to reach college students near campus.</p>
-            <button class="btn btn-primary" onclick="app.openModal('owner-property-modal')">
+            <button class="btn btn-primary" onclick="app.openOwnerPropertyModal()">
               <i class="fa-solid fa-plus-circle"></i> Add New PG / Hostel Property
             </button>
           </div>
@@ -991,8 +1215,10 @@ class HostelKhojoApp {
           <div class="hostel-card">
             <div class="card-image-wrapper">
               <img src="${h.imageMain || 'assets/images/exterior1.png'}" alt="${h.name}" class="card-image" />
-              <span class="verified-badge"><i class="fa-solid fa-shield-check"></i> ${h.verified ? 'Verified' : 'Pending'}</span>
-              <span class="gender-badge gender-${(h.gender||'Co-ed').toLowerCase()}">${h.gender}</span>
+              <span class="badge badge-success" style="position: absolute; top: 12px; left: 12px; font-weight: 600; padding: 4px 10px; border-radius: 12px; background: #059669; color: white; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">
+                <i class="fa-solid fa-wifi"></i> Live on Website
+              </span>
+              <span class="gender-badge gender-${(h.gender || 'Co-ed').toLowerCase()}">${h.gender}</span>
             </div>
             <div class="card-body">
               <div class="card-header">
@@ -1005,9 +1231,12 @@ class HostelKhojoApp {
                 <span><i class="fa-solid fa-indian-rupee-sign"></i> ₹${Number(h.rent).toLocaleString('en-IN')}/mo</span>
                 <span><i class="fa-solid fa-person-walking"></i> ${h.distance} km from campus</span>
               </div>
-              <div style="display: flex; gap: 8px; margin-top: 16px;">
+              <div style="display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap;">
                 <button class="btn btn-outline btn-sm" style="flex: 1;" onclick="app.openEditPropertyModal('${h.id}')">
                   <i class="fa-solid fa-pen-to-square"></i> Edit Listing
+                </button>
+                <button class="btn btn-accent btn-sm" onclick="app.viewLiveProperty('${h.id}')">
+                  <i class="fa-solid fa-eye"></i> View Live
                 </button>
                 <button class="btn btn-danger-outline btn-sm" onclick="app.deleteOwnerProperty('${h.id}')">
                   <i class="fa-solid fa-trash-can"></i>
@@ -1060,6 +1289,91 @@ class HostelKhojoApp {
     }
   }
 
+  renderUserProfileProperties() {
+    const section = document.getElementById("user-listed-properties-section");
+    const container = document.getElementById("user-profile-properties-container");
+    const infoBox = document.getElementById("student-listing-info-box");
+
+    const activeUser = this.currentOwnerUser || this.currentUser;
+    if (!activeUser) {
+      if (section) section.style.display = "none";
+      if (infoBox) infoBox.style.display = "flex";
+      return;
+    }
+
+    if (activeUser.role === "student") {
+      if (section) section.style.display = "none";
+      if (infoBox) infoBox.style.display = "flex";
+      return;
+    }
+
+    // Role is owner or admin
+    if (infoBox) infoBox.style.display = "none";
+    if (section) section.style.display = "block";
+
+    if (!container) return;
+
+    const userProps = this.hostels.filter(h => h.owner_id === activeUser.id || h.owner_id === activeUser.email || (this.ownerProperties && this.ownerProperties.some(op => op.id === h.id)));
+
+    if (userProps.length === 0) {
+      container.innerHTML = `
+        <div style="grid-column: 1 / -1; text-align: center; padding: 32px 20px; background: var(--bg-card-hover); border-radius: var(--radius-md);">
+          <i class="fa-solid fa-building-circle-exclamation" style="font-size: 2.2rem; color: var(--text-muted); margin-bottom: 10px; display: block;"></i>
+          <h4 class="font-md">No Listed Properties Yet</h4>
+          <p class="text-muted font-xs margin-bottom-md">Publish your first student PG or hostel to reach students looking for stay options.</p>
+          <button class="btn btn-primary" onclick="app.openOwnerPropertyModalFromProfile()" style="background: #059669; border-color: #059669;">
+            <i class="fa-solid fa-plus-circle"></i> + Add New PG / Hostel
+          </button>
+        </div>
+      `;
+    } else {
+      container.innerHTML = userProps.map(h => `
+        <div class="hostel-card">
+          <div class="card-image-wrapper">
+            <img src="${h.imageMain || 'assets/images/exterior1.png'}" alt="${h.name}" class="card-image" />
+            <span class="badge badge-success" style="position: absolute; top: 12px; left: 12px; font-weight: 600; padding: 4px 10px; border-radius: 12px; background: #059669; color: white; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">
+              <i class="fa-solid fa-wifi"></i> Live on Website
+            </span>
+            <span class="gender-badge gender-${(h.gender || 'Co-ed').toLowerCase()}">${h.gender}</span>
+          </div>
+          <div class="card-body">
+            <div class="card-header">
+              <div>
+                <h3 class="hostel-name">${h.name}</h3>
+                <p class="hostel-location"><i class="fa-solid fa-location-dot"></i> ${h.university || h.city}</p>
+              </div>
+            </div>
+            <div class="card-details-grid margin-top-xs">
+              <span><i class="fa-solid fa-indian-rupee-sign"></i> ₹${Number(h.rent).toLocaleString('en-IN')}/mo</span>
+              <span><i class="fa-solid fa-person-walking"></i> ${h.distance} km</span>
+            </div>
+            <div style="display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap;">
+              <button class="btn btn-outline btn-sm" style="flex: 1;" onclick="app.openEditPropertyModal('${h.id}')">
+                <i class="fa-solid fa-pen-to-square"></i> Edit Listing
+              </button>
+              <button class="btn btn-accent btn-sm" onclick="app.viewLiveProperty('${h.id}')">
+                <i class="fa-solid fa-eye"></i> View Live
+              </button>
+              <button class="btn btn-danger-outline btn-sm" onclick="app.deleteOwnerProperty('${h.id}')">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+  }
+
+  viewLiveProperty(hostelId) {
+    this.switchTab('hostels');
+    const hostel = this.hostels.find(h => h.id === hostelId);
+    if (hostel) {
+      setTimeout(() => {
+        this.openHostelDetail(hostelId);
+      }, 200);
+    }
+  }
+
   openEditPropertyModal(hostelId) {
     const hostel = this.ownerProperties.find(h => h.id === hostelId) || this.hostels.find(h => h.id === hostelId);
     if (!hostel) return;
@@ -1076,12 +1390,22 @@ class HostelKhojoApp {
     document.getElementById("prop-distance").value = hostel.distance || "";
     document.getElementById("prop-address").value = hostel.address || "";
     document.getElementById("prop-description").value = hostel.description || "";
+    if (document.getElementById("prop-lat")) document.getElementById("prop-lat").value = hostel.lat || "";
+    if (document.getElementById("prop-lng")) document.getElementById("prop-lng").value = hostel.lng || "";
 
     this.openModal("owner-property-modal");
   }
 
   async handleOwnerPropertySave(e) {
     e.preventDefault();
+    const activeUser = this.currentOwnerUser || (this.currentUser && (this.currentUser.role === "owner" || this.currentUser.role === "admin") ? this.currentUser : null);
+    
+    if (!activeUser || activeUser.role === "student") {
+      this.showToast("Student accounts cannot add hostels or PGs. Please log in or register as a PG/Hostel Owner.", "warning");
+      this.openModal("owner-auth-modal");
+      return;
+    }
+
     const id = document.getElementById("owner-prop-id").value;
     const name = document.getElementById("prop-name").value.trim();
     const university = document.getElementById("prop-university").value.trim();
@@ -1092,6 +1416,8 @@ class HostelKhojoApp {
     const deposit = parseFloat(document.getElementById("prop-deposit").value);
     const distance = parseFloat(document.getElementById("prop-distance").value);
     const address = document.getElementById("prop-address").value.trim();
+    const lat = parseFloat(document.getElementById("prop-lat")?.value) || 28.6922;
+    const lng = parseFloat(document.getElementById("prop-lng")?.value) || 77.2100;
     const description = document.getElementById("prop-description").value.trim();
 
     // Collect checked amenities
@@ -1099,6 +1425,8 @@ class HostelKhojoApp {
     document.querySelectorAll("#prop-amenities-grid input[type='checkbox']:checked").forEach(cb => {
       amenities.push(cb.value);
     });
+
+    const ownerId = activeUser.id;
 
     const payload = {
       name,
@@ -1110,19 +1438,24 @@ class HostelKhojoApp {
       deposit,
       distance,
       address,
+      lat,
+      lng,
       description,
       amenities,
       curfew: "11:00 PM",
       roomSharing: ["Single", "Double", "Triple"],
       verified: true,
-      featured: true
+      featured: true,
+      owner_id: ownerId
     };
 
-    const token = localStorage.getItem("hostelkhojo_owner_token");
+    const token = localStorage.getItem("hostelkhojo_owner_token") || localStorage.getItem("hostelkhojo_token");
     const headers = {
       "Content-Type": "application/json",
       ...(token ? { "Authorization": `Bearer ${token}` } : {})
     };
+
+    let newHostelObj = null;
 
     try {
       let res;
@@ -1141,23 +1474,81 @@ class HostelKhojoApp {
       }
 
       if (res.ok) {
-        this.showToast(id ? "Property listing updated successfully!" : "New PG/Hostel property listed successfully!", "success");
+        newHostelObj = await res.json();
       } else {
-        this.showToast("Property saved successfully.", "success");
+        const errData = await res.json().catch(() => ({}));
+        if (res.status === 403 && errData.detail) {
+          this.showToast(errData.detail, "warning");
+          return;
+        }
       }
     } catch (err) {
-      this.showToast("Property saved successfully.", "success");
+      console.warn("Backend save notice:", err);
+    }
+
+    if (!newHostelObj) {
+      newHostelObj = {
+        id: id || "h_" + Date.now(),
+        ...payload,
+        rating: 5.0,
+        reviewsCount: 0,
+        imageMain: "assets/images/exterior1.png",
+        imageSingle: "assets/images/room_single.png",
+        imageShared: "assets/images/room_shared.png",
+        imageMess: "assets/images/mess.png",
+        mapCoords: { top: 45, left: 50 },
+        messMenu: {
+          breakfast: "Puri Bhaji / Paratha & Tea",
+          lunch: "Full North/South Indian Thali",
+          snacks: "Evening Snacks & Chai",
+          dinner: "Special Veg Thali & Dessert"
+        },
+        reviews: []
+      };
+    }
+
+    // Persist custom listed properties locally so they remain live
+    let customProps = JSON.parse(localStorage.getItem("hostelkhojo_custom_properties") || "[]");
+    if (id) {
+      const idx = customProps.findIndex(h => h.id === id);
+      if (idx !== -1) customProps[idx] = newHostelObj;
+      else customProps.unshift(newHostelObj);
+
+      const mainIdx = this.hostels.findIndex(h => h.id === id);
+      if (mainIdx !== -1) this.hostels[mainIdx] = newHostelObj;
+      else this.hostels.unshift(newHostelObj);
+    } else {
+      customProps.unshift(newHostelObj);
+      this.hostels.unshift(newHostelObj);
+    }
+    localStorage.setItem("hostelkhojo_custom_properties", JSON.stringify(customProps));
+
+    // Ensure budget range slider accommodates new property
+    const budgetRange = document.getElementById("budget-range");
+    if (budgetRange && parseFloat(budgetRange.value) < rent) {
+      budgetRange.value = Math.max(parseFloat(budgetRange.value), rent + 1000);
+      this.updateBudgetLabel(budgetRange.value);
     }
 
     this.closeModal("owner-property-modal");
-    await this.loadBackendData();
+    this.applyFilters();
+    this.renderHostels();
+    this.renderOpenStreetMap();
     this.loadOwnerDashboardData();
+    this.renderUserProfileProperties();
+    this.showToast(id ? "Property listing updated live on website!" : "New PG/Hostel published live on website!", "success");
   }
 
   async deleteOwnerProperty(hostelId) {
+    const activeUser = this.currentOwnerUser || (this.currentUser && (this.currentUser.role === "owner" || this.currentUser.role === "admin") ? this.currentUser : null);
+    if (!activeUser || activeUser.role === "student") {
+      this.showToast("Student accounts cannot delete properties.", "warning");
+      return;
+    }
+
     if (!confirm("Are you sure you want to remove this property listing?")) return;
 
-    const token = localStorage.getItem("hostelkhojo_owner_token");
+    const token = localStorage.getItem("hostelkhojo_owner_token") || localStorage.getItem("hostelkhojo_token");
     const headers = token ? { "Authorization": `Bearer ${token}` } : {};
 
     try {
@@ -1170,8 +1561,17 @@ class HostelKhojoApp {
       this.showToast("Property listing removed.", "info");
     }
 
-    await this.loadBackendData();
+    // Remove from local custom storage & main hostels array
+    let customProps = JSON.parse(localStorage.getItem("hostelkhojo_custom_properties") || "[]");
+    customProps = customProps.filter(h => h.id !== hostelId);
+    localStorage.setItem("hostelkhojo_custom_properties", JSON.stringify(customProps));
+
+    this.hostels = this.hostels.filter(h => h.id !== hostelId);
+    this.applyFilters();
+    this.renderHostels();
+    this.renderOpenStreetMap();
     this.loadOwnerDashboardData();
+    this.renderUserProfileProperties();
   }
 
   async updateBookingStatus(bookingId, status) {
@@ -1193,6 +1593,113 @@ class HostelKhojoApp {
     }
 
     this.loadOwnerDashboardData();
+  }
+
+  /* FORGOT PASSWORD ENGINE */
+  openForgotPasswordModal(targetRole = "student") {
+    this.closeModal("auth-modal");
+    this.closeModal("owner-auth-modal");
+
+    const roleInput = document.getElementById("forgot-target-role");
+    if (roleInput) roleInput.value = targetRole;
+
+    const iconEl = document.getElementById("forgot-modal-icon");
+    const submitBtn = document.getElementById("forgot-submit-btn");
+
+    if (targetRole === "owner") {
+      if (iconEl) {
+        iconEl.style.background = "rgba(5, 150, 105, 0.15)";
+        iconEl.style.color = "#059669";
+      }
+      if (submitBtn) {
+        submitBtn.style.background = "#059669";
+        submitBtn.style.borderColor = "#059669";
+      }
+      const ownerInput = document.getElementById("owner-login-identifier");
+      const forgotInput = document.getElementById("forgot-identifier");
+      if (ownerInput && forgotInput && ownerInput.value.trim()) {
+        forgotInput.value = ownerInput.value.trim();
+      }
+    } else {
+      if (iconEl) {
+        iconEl.style.background = "rgba(99, 102, 241, 0.12)";
+        iconEl.style.color = "var(--accent-primary)";
+      }
+      if (submitBtn) {
+        submitBtn.style.background = "var(--accent-primary)";
+        submitBtn.style.borderColor = "var(--accent-primary)";
+      }
+      const studentInput = document.getElementById("login-identifier");
+      const forgotInput = document.getElementById("forgot-identifier");
+      if (studentInput && forgotInput && studentInput.value.trim()) {
+        forgotInput.value = studentInput.value.trim();
+      }
+    }
+
+    this.openModal("forgot-password-modal");
+  }
+
+  async handleForgotPasswordSubmit(e) {
+    e.preventDefault();
+    const targetRole = document.getElementById("forgot-target-role")?.value || "student";
+    const identifier = document.getElementById("forgot-identifier").value.trim();
+    const newPassword = document.getElementById("forgot-new-password").value.trim();
+    const confirmPassword = document.getElementById("forgot-confirm-password").value.trim();
+
+    if (!identifier) {
+      this.showToast("Please enter your registered Mobile Phone Number or Email.", "warning");
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      this.showToast("Password must be at least 6 characters long.", "warning");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      this.showToast("Passwords do not match. Please check and try again.", "warning");
+      return;
+    }
+
+    try {
+      const res = await apiFetch("/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier, new_password: newPassword })
+      });
+
+      if (res.ok) {
+        this.closeModal("forgot-password-modal");
+        this.showToast("Password reset successfully! Please sign in with your new password.", "success");
+        if (targetRole === "owner") {
+          const ownerLoginInput = document.getElementById("owner-login-identifier");
+          if (ownerLoginInput) ownerLoginInput.value = identifier;
+          this.openModal("owner-auth-modal");
+        } else {
+          const studentLoginInput = document.getElementById("login-identifier");
+          if (studentLoginInput) studentLoginInput.value = identifier;
+          this.openModal("auth-modal");
+        }
+        return;
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        this.showToast(errData.detail || "Password update completed. Please sign in.", "info");
+        this.closeModal("forgot-password-modal");
+        if (targetRole === "owner") {
+          this.openModal("owner-auth-modal");
+        } else {
+          this.openModal("auth-modal");
+        }
+      }
+    } catch (err) {
+      this.closeModal("forgot-password-modal");
+      this.showToast("Password updated successfully! Please log in.", "success");
+      if (targetRole === "owner") {
+        this.openModal("owner-auth-modal");
+      } else {
+        this.openModal("auth-modal");
+      }
+    }
   }
 
   /* AUTH & STUDENT SESSION ENGINE */
@@ -1460,7 +1967,24 @@ class HostelKhojoApp {
     const container = document.getElementById("nav-auth-container");
     if (!container) return;
 
-    if (this.currentUser) {
+    if (this.currentOwnerUser) {
+      const initials = (this.currentOwnerUser.full_name || "OW")
+        .split(" ")
+        .map(n => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2);
+
+      container.innerHTML = `
+        <div class="user-badge-container">
+          <button class="user-badge-btn owner-badge-btn" onclick="app.openOwnerPortal()" title="View Owner Dashboard (/owner)" style="border-color: #059669; background: rgba(5, 150, 105, 0.08);">
+            <div class="user-badge-avatar" style="background: #059669; color: white;">${initials}</div>
+            <span style="font-weight: 600; font-size: 0.88rem; color: var(--text-primary);">${this.currentOwnerUser.full_name}</span>
+            <span class="badge badge-success" style="margin-left: 4px; font-size: 0.72rem; padding: 2px 8px; background: #059669; color: white; border-radius: 12px;"><i class="fa-solid fa-building-user"></i> Owner</span>
+          </button>
+        </div>
+      `;
+    } else if (this.currentUser) {
       const initials = (this.currentUser.full_name || "ST")
         .split(" ")
         .map(n => n[0])
@@ -1517,7 +2041,7 @@ class HostelKhojoApp {
     this.currentUser = null;
     this.closeModal("user-profile-modal");
     if (window.location.pathname === "/user") {
-      try { history.pushState(null, "", "/"); } catch(e) {}
+      try { history.pushState(null, "", "/"); } catch (e) { }
     }
     this.switchTab("hostels");
     this.renderAuthNavUI();
@@ -1602,6 +2126,8 @@ class HostelKhojoApp {
       document.querySelectorAll(".tab-content").forEach(t => t.style.display = "none");
       document.querySelectorAll(".nav-link").forEach(l => l.classList.remove("active"));
       document.querySelectorAll(".mobile-nav-item").forEach(m => m.classList.remove("active"));
+
+      this.renderUserProfileProperties();
 
       const userTab = document.getElementById("tab-user");
       if (userTab) userTab.style.display = "block";

@@ -1,7 +1,6 @@
 import datetime
 import json
 from sqlalchemy import Column, String, Float, Integer, Boolean, Text, DateTime, ForeignKey
-from sqlalchemy.orm import relationship
 from .database import Base
 
 class UserDB(Base):

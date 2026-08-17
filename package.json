@@ -4,6 +4,8 @@
   "description": "Hostel Khojo India - Find Verified Hostels & PGs Near Indian Campuses",
   "main": "index.html",
   "scripts": {
+    "start": "python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000",
+    "dev": "python -m uvicorn backend.main:app --reload",
     "build": "echo 'Static build completed successfully'"
   },
   "keywords": [

@@ -3,7 +3,7 @@ import uuid
 import json
 
 from typing import List, Optional
-from fastapi import FastAPI, Depends, HTTPException, Query, status
+from fastapi import FastAPI, Depends, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
@@ -15,7 +15,7 @@ from .schemas import (
     RoommateResponse, RoommateCreate,
     PropertySubmissionResponse, PropertySubmissionCreate,
     ReviewResponse, ReviewCreate,
-    UserRegister, UserLogin, GoogleLogin, PhoneUpdate, UserResponse, Token
+    UserRegister, UserLogin, GoogleLogin, PhoneUpdate, PasswordReset, UserResponse, Token
 )
 from .auth import get_password_hash, verify_password, create_access_token, get_current_user
 from .seed import seed_database
@@ -146,6 +146,18 @@ def update_phone(phone_in: PhoneUpdate, db: Session = Depends(get_db)):
     user.phone = phone_in.phone.strip()
     db.commit()
     return {"status": "success", "phone": user.phone}
+
+@app.post("/api/auth/reset-password")
+def reset_password(reset_in: PasswordReset, db: Session = Depends(get_db)):
+    ident = reset_in.identifier.strip().lower()
+    user = db.query(UserDB).filter(
+        (UserDB.email.ilike(ident)) | (UserDB.phone == reset_in.identifier.strip())
+    ).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="No registered account found with this Mobile Phone Number or Email.")
+    user.password_hash = get_password_hash(reset_in.new_password)
+    db.commit()
+    return {"status": "success", "message": "Password updated successfully!"}
 
 @app.get("/api/auth/me", response_model=UserResponse)
 def get_me(current_user: UserDB = Depends(get_current_user)):
@@ -456,12 +468,13 @@ def get_owner_properties(
     db: Session = Depends(get_db)
 ):
     if current_user.role not in ["owner", "admin"]:
-        raise HTTPException(status_code=403, detail="Owner portal access required")
+        raise HTTPException(status_code=403, detail="Students cannot list or manage properties. Please log in as a Hostel/PG Owner.")
 
-    # Fetch hostels owned by this owner (or all hostels if owner_id is not yet set)
-    hostels = db.query(HostelDB).filter(
-        (HostelDB.owner_id == current_user.id) | (HostelDB.owner_id == None)
-    ).all()
+    # Admins see all properties; Owners strictly see only their own listed properties!
+    if current_user.role == "admin":
+        hostels = db.query(HostelDB).all()
+    else:
+        hostels = db.query(HostelDB).filter(HostelDB.owner_id == current_user.id).all()
 
     results = []
     for h in hostels:
@@ -506,7 +519,7 @@ def create_owner_property(
     db: Session = Depends(get_db)
 ):
     if current_user.role not in ["owner", "admin"]:
-        raise HTTPException(status_code=403, detail="Owner portal access required")
+        raise HTTPException(status_code=403, detail="Students cannot list properties. Please log in or register as a Hostel/PG Owner.")
 
     new_id = f"h_{uuid.uuid4().hex[:8]}"
     new_hostel = HostelDB(
@@ -578,11 +591,14 @@ def update_owner_property(
     db: Session = Depends(get_db)
 ):
     if current_user.role not in ["owner", "admin"]:
-        raise HTTPException(status_code=403, detail="Owner portal access required")
+        raise HTTPException(status_code=403, detail="Students cannot edit properties. Please log in as a Hostel/PG Owner.")
 
     h = db.query(HostelDB).filter(HostelDB.id == hostel_id).first()
     if not h:
         raise HTTPException(status_code=404, detail="Hostel not found")
+
+    if h.owner_id and h.owner_id != current_user.id and current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized to edit this property.")
 
     h.name = hostel_in.name
     h.university = hostel_in.university
@@ -644,15 +660,19 @@ def delete_owner_property(
     db: Session = Depends(get_db)
 ):
     if current_user.role not in ["owner", "admin"]:
-        raise HTTPException(status_code=403, detail="Owner portal access required")
+        raise HTTPException(status_code=403, detail="Students cannot delete properties. Please log in as a Hostel/PG Owner.")
 
     h = db.query(HostelDB).filter(HostelDB.id == hostel_id).first()
     if not h:
         raise HTTPException(status_code=404, detail="Hostel not found")
 
+    if h.owner_id and h.owner_id != current_user.id and current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized to delete this property.")
+
     db.delete(h)
     db.commit()
     return {"status": "success", "message": "Property removed successfully"}
+
 
 
 @app.get("/api/owner/bookings", response_model=List[BookingResponse])
@@ -663,8 +683,12 @@ def get_owner_bookings(
     if current_user.role not in ["owner", "admin"]:
         raise HTTPException(status_code=403, detail="Owner portal access required")
 
-    # Get all bookings or bookings for owner's hostels
-    bookings = db.query(BookingDB).order_by(BookingDB.created_at.desc()).all()
+    # Admins see all bookings; Owners strictly see bookings for their own properties
+    if current_user.role == "admin":
+        bookings = db.query(BookingDB).order_by(BookingDB.created_at.desc()).all()
+    else:
+        owner_hostel_ids = [h.id for h in db.query(HostelDB).filter(HostelDB.owner_id == current_user.id).all()]
+        bookings = db.query(BookingDB).filter(BookingDB.hostel_id.in_(owner_hostel_ids)).order_by(BookingDB.created_at.desc()).all()
     return bookings
 
 

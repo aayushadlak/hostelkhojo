@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://hostelkhojo.com/sitemap.xml
+Sitemap: https://hostelkhojo.in/sitemap.xml

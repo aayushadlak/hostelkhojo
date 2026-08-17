@@ -1,5 +1,5 @@
-from pydantic import BaseModel, EmailStr
-from typing import List, Optional, Dict, Any
+from pydantic import BaseModel
+from typing import List, Optional, Dict
 from datetime import datetime
 
 # AUTH SCHEMAS
@@ -24,6 +24,10 @@ class GoogleLogin(BaseModel):
 class PhoneUpdate(BaseModel):
     user_id: str
     phone: str
+
+class PasswordReset(BaseModel):
+    identifier: str
+    new_password: str
 
 
 

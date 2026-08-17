@@ -33,6 +33,10 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <!-- FontAwesome 6 for rich icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+  <!-- Leaflet OpenStreetMap Engine (100% Free Live Maps) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <!-- Main Stylesheet -->
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -199,12 +203,23 @@
           <!-- Dynamically populated by JS -->
         </div>
 
-        <!-- SIMULATED INTERACTIVE MAP -->
+        <!-- INTERACTIVE MAP CONTAINER (LIVE OPENSTREETMAP & CANVAS PINS) -->
         <div class="map-container" id="map-container">
           <div class="map-header">
             <div class="map-title">
-              <i class="fa-solid fa-map-pin"></i> Campus Proximity Map (Live Interactive Pins)
+              <span class="map-live-dot"></span>
+              <i class="fa-solid fa-map-location-dot" style="color: var(--accent-primary);"></i> Campus Proximity Map
             </div>
+
+            <div class="map-segmented-control">
+              <button class="map-segmented-btn active" id="map-mode-gmaps-btn" onclick="app.setMapProvider('osm')" title="Switch to 100% Free Live Map (OpenStreetMap)">
+                <i class="fa-solid fa-earth-asia" style="color: #4285F4;"></i> Live Map
+              </button>
+              <button class="map-segmented-btn" id="map-mode-canvas-btn" onclick="app.setMapProvider('canvas')" title="Switch to Canvas Pins">
+                <i class="fa-solid fa-compass" style="color: var(--accent-primary);"></i> Canvas Pins
+              </button>
+            </div>
+
             <div class="map-legend">
               <span class="legend-item"><span class="dot pin-boys"></span> Boys</span>
               <span class="legend-item"><span class="dot pin-girls"></span> Girls</span>
@@ -212,8 +227,11 @@
             </div>
           </div>
           
-          <div class="simulated-map" id="simulated-map">
-            <!-- Simulated Map Canvas Background & Campus Hubs -->
+          <!-- LIVE INTERACTIVE MAP CANVAS -->
+          <div id="google-map-canvas" style="width: 100%; height: 100%; min-height: 500px; display: block; border-radius: 0 0 var(--radius-lg) var(--radius-lg); overflow: hidden; z-index: 1;"></div>
+
+          <!-- SIMULATED CANVAS MAP -->
+          <div class="simulated-map" id="simulated-map" style="display: none;">
             <div class="map-campus-center" style="top: 45%; left: 50%;">
               <i class="fa-solid fa-university"></i>
               <span>University Main Campus</span>
@@ -222,7 +240,6 @@
             <div class="map-route-line route-1"></div>
             <div class="map-route-line route-2"></div>
             
-            <!-- Pins dynamically inserted here -->
             <div id="map-pins-layer"></div>
           </div>
         </div>
@@ -347,6 +364,37 @@
           </button>
         </div>
       </div>
+    </div>
+
+    <!-- User Listed Properties Section (Visible for Owner accounts on profile) -->
+    <div id="user-listed-properties-section" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 28px; margin-bottom: 32px; box-shadow: var(--shadow-sm); display: none;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+        <div>
+          <h2 style="font-size: 1.3rem; font-weight: 700;"><i class="fa-solid fa-building-circle-check" style="color: #059669;"></i> My Listed PGs & Hostels</h2>
+          <p class="text-muted font-xs">Hostels and PGs you have listed. These are live on the website and can be edited anytime.</p>
+        </div>
+        <button class="btn btn-primary" onclick="app.openOwnerPropertyModalFromProfile()" style="background: #059669; border-color: #059669;">
+          <i class="fa-solid fa-plus-circle"></i> + Add New PG / Hostel
+        </button>
+      </div>
+
+      <div id="user-profile-properties-container" class="hostels-grid">
+        <!-- Rendered dynamically by JS -->
+      </div>
+    </div>
+
+    <!-- Student Listing Info Callout for Student Accounts -->
+    <div id="student-listing-info-box" style="background: rgba(79, 70, 229, 0.06); border: 1px dashed var(--accent-primary); border-radius: var(--radius-md); padding: 20px; margin-bottom: 32px; display: flex; align-items: center; gap: 16px;">
+      <div style="width: 44px; height: 44px; border-radius: 50%; background: rgba(79, 70, 229, 0.12); color: var(--accent-primary); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; flex-shrink: 0;">
+        <i class="fa-solid fa-circle-info"></i>
+      </div>
+      <div style="flex: 1;">
+        <h4 style="font-weight: 600; font-size: 0.95rem; margin-bottom: 2px; color: var(--text-primary);">Want to list a PG or Hostel?</h4>
+        <p class="text-muted font-xs" style="margin: 0;">Student accounts cannot list properties. To publish and manage student PGs live on Hostel Khojo, please switch or log in as a PG/Hostel Owner.</p>
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="app.openOwnerPortal()" style="border-color: #059669; color: #059669; flex-shrink: 0;">
+        <i class="fa-solid fa-building-user"></i> Owner Portal
+      </button>
     </div>
 
     <!-- Bottom Logout Bar -->
@@ -565,12 +613,17 @@
       <!-- OWNER LOGIN FORM -->
       <form id="owner-login-form" onsubmit="app.handleOwnerLoginSubmit(event)">
         <div class="form-group">
-          <label><i class="fa-solid fa-user"></i> Mobile Phone or Email</label>
-          <input type="text" id="owner-login-identifier" required placeholder="e.g. 9876543210 or owner@hostel.com" class="form-control" />
+          <label><i class="fa-solid fa-phone"></i> Mobile Phone Number <span style="color: #ef4444; font-weight: 600;">*</span></label>
+          <input type="tel" id="owner-login-identifier" required pattern="[0-9]{10,12}" title="10-digit mobile number required" placeholder="Enter 10-digit Mobile Phone Number (e.g. 9876543210)" class="form-control" />
         </div>
 
         <div class="form-group">
-          <label><i class="fa-solid fa-lock"></i> Password</label>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label style="margin-bottom: 0;"><i class="fa-solid fa-lock"></i> Password</label>
+            <button type="button" onclick="app.openForgotPasswordModal('owner')" style="background: none; border: none; color: #059669; font-size: 0.82rem; cursor: pointer; text-decoration: underline; font-weight: 500; padding: 0;">
+              Forgot Password?
+            </button>
+          </div>
           <input type="password" id="owner-login-password" required placeholder="Enter password" class="form-control" />
         </div>
 
@@ -589,14 +642,14 @@
       <!-- OWNER REGISTER FORM -->
       <form id="owner-register-form" onsubmit="app.handleOwnerRegisterSubmit(event)" style="display: none;">
         <div class="form-group">
-          <label>Owner Full Name</label>
+          <label>Owner Full Name <span style="color: #ef4444; font-weight: 600;">*</span></label>
           <input type="text" id="owner-reg-name" required placeholder="e.g. Rajesh Sharma" class="form-control" />
         </div>
 
         <div class="form-row">
           <div class="form-group">
-            <label>Mobile Contact / WhatsApp</label>
-            <input type="tel" id="owner-reg-phone" required placeholder="9876543210" class="form-control" />
+            <label><i class="fa-solid fa-phone"></i> Mobile Phone Number <span style="color: #ef4444; font-weight: 600;">*</span></label>
+            <input type="tel" id="owner-reg-phone" required pattern="[0-9]{10,12}" title="10-digit mobile number required" placeholder="e.g. 9876543210" class="form-control" />
           </div>
           <div class="form-group">
             <label>City / Location</label>
@@ -688,6 +741,17 @@
         <div class="form-group">
           <label>Full Property Address</label>
           <input type="text" id="prop-address" required placeholder="Plot 42, Block B, Near University Main Gate" class="form-control" />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label><i class="fa-solid fa-location-dot" style="color: #4285f4;"></i> Map Location Latitude</label>
+            <input type="number" step="0.000001" id="prop-lat" placeholder="e.g. 28.6922" class="form-control" />
+          </div>
+          <div class="form-group">
+            <label><i class="fa-solid fa-location-dot" style="color: #10b981;"></i> Map Location Longitude</label>
+            <input type="number" step="0.000001" id="prop-lng" placeholder="e.g. 77.2100" class="form-control" />
+          </div>
         </div>
 
         <div class="form-group">
@@ -802,7 +866,12 @@
           <input type="text" placeholder="Enter Phone Number or Email" required class="form-control" id="login-identifier" />
         </div>
         <div class="form-group text-left">
-          <label><i class="fa-solid fa-lock"></i> Password</label>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label style="margin-bottom: 0;"><i class="fa-solid fa-lock"></i> Password</label>
+            <button type="button" onclick="app.openForgotPasswordModal('student')" style="background: none; border: none; color: var(--accent-primary); font-size: 0.82rem; cursor: pointer; text-decoration: underline; font-weight: 500; padding: 0;">
+              Forgot Password?
+            </button>
+          </div>
           <input type="password" placeholder="Enter your password" required class="form-control" id="login-password" />
         </div>
         <button type="submit" class="btn btn-accent btn-block btn-lg margin-top-md">
@@ -890,6 +959,42 @@
       <button class="btn btn-danger-outline btn-block btn-lg margin-top-sm" onclick="app.logoutUser()" style="border: 1.5px solid #ef4444; color: #ef4444; background: transparent; font-weight: 600; cursor: pointer;">
         <i class="fa-solid fa-right-from-bracket"></i> Sign Out of Session
       </button>
+    </div>
+  </div>
+
+
+  <!-- MODAL: FORGOT & RESET PASSWORD -->
+  <div class="modal-backdrop" id="forgot-password-modal">
+    <div class="modal-box modal-sm text-center">
+      <button class="modal-close" onclick="app.closeModal('forgot-password-modal')">&times;</button>
+      <div style="width: 56px; height: 56px; border-radius: 50%; background: rgba(99, 102, 241, 0.12); color: var(--accent-primary); font-size: 1.6rem; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px auto;" id="forgot-modal-icon">
+        <i class="fa-solid fa-key"></i>
+      </div>
+      <h2 class="modal-title" style="margin-bottom: 4px;" id="forgot-modal-title">Reset Account Password</h2>
+      <p class="text-muted font-xs margin-bottom-md" id="forgot-modal-sub">Enter your registered Mobile Phone Number or Email ID to update your password.</p>
+
+      <form id="forgot-password-form" onsubmit="app.handleForgotPasswordSubmit(event)">
+        <input type="hidden" id="forgot-target-role" value="student" />
+        
+        <div class="form-group text-left">
+          <label><i class="fa-solid fa-mobile-screen"></i> Registered Mobile Phone or Email</label>
+          <input type="text" id="forgot-identifier" required placeholder="e.g. 9876543210 or email@domain.com" class="form-control" />
+        </div>
+
+        <div class="form-group text-left">
+          <label><i class="fa-solid fa-lock"></i> Create New Password</label>
+          <input type="password" id="forgot-new-password" required placeholder="Enter new password (min 6 chars)" class="form-control" minlength="6" />
+        </div>
+
+        <div class="form-group text-left">
+          <label><i class="fa-solid fa-circle-check"></i> Confirm New Password</label>
+          <input type="password" id="forgot-confirm-password" required placeholder="Re-enter new password" class="form-control" minlength="6" />
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block btn-lg margin-top-md" id="forgot-submit-btn">
+          <i class="fa-solid fa-rotate-right"></i> Reset & Save Password
+        </button>
+      </form>
     </div>
   </div>
 

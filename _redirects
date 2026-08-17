@@ -1,1 +1,3 @@
-# Cloudflare Worker handles API proxying and SPA fallback in worker.js
+# SPA Routing and API Proxying for Web Host Deployments
+/api/*  https://hostelkhojo.onrender.com/api/:splat  200!
+/*      /index.html                                   200
