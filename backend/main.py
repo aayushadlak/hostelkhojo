@@ -564,69 +564,74 @@ def create_owner_property(
     if current_user.role not in ["owner", "admin"]:
         raise HTTPException(status_code=403, detail="Students cannot list properties. Please log in or register as a Hostel/PG Owner.")
 
-    new_id = f"h_{uuid.uuid4().hex[:8]}"
-    new_hostel = HostelDB(
-        id=new_id,
-        name=hostel_in.name,
-        university=hostel_in.university,
-        city=hostel_in.city,
-        gender=hostel_in.gender,
-        type=hostel_in.type,
-        rent=hostel_in.rent,
-        deposit=hostel_in.deposit,
-        distance=hostel_in.distance,
-        rating=hostel_in.rating,
-        reviews_count=hostel_in.reviewsCount,
-        verified=True,
-        featured=hostel_in.featured,
-        image_main=hostel_in.imageMain or "assets/images/exterior1.png",
-        image_single=hostel_in.imageSingle or "assets/images/room_single.png",
-        image_shared=hostel_in.imageShared or "assets/images/room_shared.png",
-        image_mess=hostel_in.imageMess or "assets/images/mess.png",
-        address=hostel_in.address,
-        map_coords_json=json.dumps(hostel_in.mapCoords if isinstance(hostel_in.mapCoords, dict) else {"top": 40, "left": 50}),
-        amenities_json=json.dumps(hostel_in.amenities or ["Wi-Fi", "4-Time Mess", "AC"]),
-        curfew=hostel_in.curfew or "11:00 PM",
-        room_sharing_json=json.dumps(hostel_in.roomSharing or ["Single", "Double"]),
-        description=hostel_in.description or "",
-        mess_menu_json=json.dumps(hostel_in.messMenu if isinstance(hostel_in.messMenu, dict) else {}),
-        owner_id=current_user.id
-    )
-    db.add(new_hostel)
-    db.commit()
-    db.refresh(new_hostel)
+    try:
+        new_id = f"h_{uuid.uuid4().hex[:8]}"
+        new_hostel = HostelDB(
+            id=new_id,
+            name=hostel_in.name,
+            university=hostel_in.university,
+            city=hostel_in.city,
+            gender=hostel_in.gender,
+            type=hostel_in.type,
+            rent=hostel_in.rent,
+            deposit=hostel_in.deposit,
+            distance=hostel_in.distance,
+            rating=hostel_in.rating,
+            reviews_count=hostel_in.reviewsCount,
+            verified=True,
+            featured=hostel_in.featured,
+            image_main=hostel_in.imageMain or "assets/images/exterior1.png",
+            image_single=hostel_in.imageSingle or "assets/images/room_single.png",
+            image_shared=hostel_in.imageShared or "assets/images/room_shared.png",
+            image_mess=hostel_in.imageMess or "assets/images/mess.png",
+            address=hostel_in.address,
+            map_coords_json=json.dumps(hostel_in.mapCoords if isinstance(hostel_in.mapCoords, dict) else {"top": 40, "left": 50}),
+            amenities_json=json.dumps(hostel_in.amenities or ["Wi-Fi", "4-Time Mess", "AC"]),
+            curfew=hostel_in.curfew or "11:00 PM",
+            room_sharing_json=json.dumps(hostel_in.roomSharing or ["Single", "Double"]),
+            description=hostel_in.description or "",
+            mess_menu_json=json.dumps(hostel_in.messMenu if isinstance(hostel_in.messMenu, dict) else {}),
+            owner_id=current_user.id
+        )
+        db.add(new_hostel)
+        db.commit()
+        db.refresh(new_hostel)
 
-    return {
-        "id": new_hostel.id,
-        "name": new_hostel.name,
-        "university": new_hostel.university,
-        "city": new_hostel.city,
-        "gender": new_hostel.gender,
-        "type": new_hostel.type,
-        "rent": new_hostel.rent,
-        "deposit": new_hostel.deposit,
-        "distance": new_hostel.distance,
-        "rating": new_hostel.rating,
-        "reviewsCount": new_hostel.reviews_count,
-        "verified": new_hostel.verified,
-        "featured": new_hostel.featured,
-        "imageMain": new_hostel.image_main,
-        "imageSingle": new_hostel.image_single,
-        "imageShared": new_hostel.image_shared,
-        "imageMess": new_hostel.image_mess,
-        "address": new_hostel.address,
-        "mapCoords": new_hostel.map_coords,
-        "amenities": new_hostel.amenities,
-        "curfew": new_hostel.curfew,
-        "roomSharing": new_hostel.room_sharing,
-        "description": new_hostel.description,
-        "messMenu": new_hostel.mess_menu,
-        "owner_id": new_hostel.owner_id,
-        "reviews": []
-    }
+        return {
+            "id": new_hostel.id,
+            "name": new_hostel.name,
+            "university": new_hostel.university,
+            "city": new_hostel.city,
+            "gender": new_hostel.gender,
+            "type": new_hostel.type,
+            "rent": new_hostel.rent,
+            "deposit": new_hostel.deposit,
+            "distance": new_hostel.distance,
+            "rating": new_hostel.rating,
+            "reviewsCount": new_hostel.reviews_count,
+            "verified": new_hostel.verified,
+            "featured": new_hostel.featured,
+            "imageMain": new_hostel.image_main,
+            "imageSingle": new_hostel.image_single,
+            "imageShared": new_hostel.image_shared,
+            "imageMess": new_hostel.image_mess,
+            "address": new_hostel.address,
+            "mapCoords": new_hostel.map_coords,
+            "amenities": new_hostel.amenities,
+            "curfew": new_hostel.curfew,
+            "roomSharing": new_hostel.room_sharing,
+            "description": new_hostel.description,
+            "messMenu": new_hostel.mess_menu,
+            "owner_id": new_hostel.owner_id,
+            "reviews": []
+        }
+    except Exception as err:
+        db.rollback()
+        print(f"Error in create_owner_property: {err}")
+        raise HTTPException(status_code=500, detail=f"Failed to create property: {str(err)}")
 
 
-@app.put("/api/owner/properties/{hostel_id}", response_model=HostelResponse)
+@app.put("/api/owner/properties/{hostel_id}")
 def update_owner_property(
     hostel_id: str,
     hostel_in: HostelCreate,
