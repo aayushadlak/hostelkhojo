@@ -7,8 +7,12 @@ from jose import JWTError, jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
-from .database import get_db
-from .models import UserDB
+try:
+    from .database import get_db
+    from .models import UserDB
+except ImportError:
+    from database import get_db
+    from models import UserDB
 
 SECRET_KEY = os.getenv("JWT_SECRET_KEY", "hostelkhojo_secret_jwt_key_2026_super_secure")
 ALGORITHM = "HS256"

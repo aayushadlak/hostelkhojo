@@ -7,18 +7,32 @@ from fastapi import FastAPI, Depends, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
-from .database import engine, Base, get_db
-from .models import HostelDB, BookingDB, RoommateDB, PropertySubmissionDB, ReviewDB, UserDB
-from .schemas import (
-    HostelResponse, HostelCreate,
-    BookingResponse, BookingCreate, BookingStatusUpdate,
-    RoommateResponse, RoommateCreate,
-    PropertySubmissionResponse, PropertySubmissionCreate,
-    ReviewResponse, ReviewCreate,
-    UserRegister, UserLogin, GoogleLogin, PhoneUpdate, PasswordReset, UserResponse, UserRoleUpdate, Token
-)
-from .auth import get_password_hash, verify_password, create_access_token, get_current_user
-from .seed import seed_database
+try:
+    from .database import engine, Base, get_db
+    from .models import HostelDB, BookingDB, RoommateDB, PropertySubmissionDB, ReviewDB, UserDB
+    from .schemas import (
+        HostelResponse, HostelCreate,
+        BookingResponse, BookingCreate, BookingStatusUpdate,
+        RoommateResponse, RoommateCreate,
+        PropertySubmissionResponse, PropertySubmissionCreate,
+        ReviewResponse, ReviewCreate,
+        UserRegister, UserLogin, GoogleLogin, PhoneUpdate, PasswordReset, UserResponse, UserRoleUpdate, Token
+    )
+    from .auth import get_password_hash, verify_password, create_access_token, get_current_user
+    from .seed import seed_database
+except ImportError:
+    from database import engine, Base, get_db
+    from models import HostelDB, BookingDB, RoommateDB, PropertySubmissionDB, ReviewDB, UserDB
+    from schemas import (
+        HostelResponse, HostelCreate,
+        BookingResponse, BookingCreate, BookingStatusUpdate,
+        RoommateResponse, RoommateCreate,
+        PropertySubmissionResponse, PropertySubmissionCreate,
+        ReviewResponse, ReviewCreate,
+        UserRegister, UserLogin, GoogleLogin, PhoneUpdate, PasswordReset, UserResponse, UserRoleUpdate, Token
+    )
+    from auth import get_password_hash, verify_password, create_access_token, get_current_user
+    from seed import seed_database
 
 app = FastAPI(
     title="Hostel Khojo India API",

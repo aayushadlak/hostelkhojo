@@ -1,7 +1,10 @@
 import datetime
 import json
 from sqlalchemy import Column, String, Float, Integer, Boolean, Text, DateTime, ForeignKey
-from .database import Base
+try:
+    from .database import Base
+except ImportError:
+    from database import Base
 
 class UserDB(Base):
     __tablename__ = "users"

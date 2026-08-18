@@ -38,11 +38,15 @@ def seed_database() -> None:
     except Exception as mig_err:
         print(f"Migration notice: {mig_err}")
 
-    # Seed default Admin account if no admin exists
     try:
-        from .database import SessionLocal
-        from .models import UserDB
-        from .auth import get_password_hash
+        try:
+            from .database import SessionLocal
+            from .models import UserDB
+            from .auth import get_password_hash
+        except ImportError:
+            from database import SessionLocal
+            from models import UserDB
+            from auth import get_password_hash
 
         db = SessionLocal()
 
