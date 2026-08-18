@@ -603,42 +603,126 @@
       </div>
     </div>
 
-    <!-- ALL REGISTERED USERS MANAGEMENT SECTION -->
+    <!-- SEPARATE USER TABLES MANAGEMENT SECTION -->
     <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 28px; margin-bottom: 32px; box-shadow: var(--shadow-sm);">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+      
+      <!-- SUB TAB NAVIGATION HEADER -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 16px;">
         <div>
-          <h2 style="font-size: 1.3rem; font-weight: 700;"><i class="fa-solid fa-users-gear" style="color: #dc2626;"></i> Registered Platform Users</h2>
-          <p class="text-muted font-xs">Track, search, manage user roles, or remove accounts across all user types.</p>
+          <h2 style="font-size: 1.35rem; font-weight: 700;"><i class="fa-solid fa-users-gear" style="color: #dc2626;"></i> Platform User Management</h2>
+          <p class="text-muted font-xs">Separate table lists for PG/Hostel Owners, Student Accounts, and System Administrators.</p>
         </div>
         
-        <div style="display: flex; gap: 10px; align-items: center;">
-          <input type="text" id="admin-user-search-input" placeholder="Search user by name, email or phone..." oninput="app.filterAdminUsersTable()" class="form-control" style="max-width: 280px; padding: 6px 12px; font-size: 0.85rem;" />
-          <select id="admin-user-role-filter" onchange="app.filterAdminUsersTable()" class="form-control" style="max-width: 150px; padding: 6px 12px; font-size: 0.85rem;">
-            <option value="all">All Roles</option>
-            <option value="student">Students</option>
-            <option value="owner">PG Owners</option>
-            <option value="admin">Admins</option>
-          </select>
+        <!-- SUB TAB BUTTONS -->
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;" id="admin-user-subtabs">
+          <button class="btn btn-sm btn-accent admin-subtab-btn active" onclick="app.switchAdminUserSubTab('owners')" id="subtab-btn-owners" style="padding: 8px 16px; border-radius: 20px; font-weight: 600;">
+            <i class="fa-solid fa-building-user"></i> PG Owners (<span id="admin-subtab-owners-count">0</span>)
+          </button>
+          <button class="btn btn-sm btn-outline admin-subtab-btn" onclick="app.switchAdminUserSubTab('students')" id="subtab-btn-students" style="padding: 8px 16px; border-radius: 20px; font-weight: 600;">
+            <i class="fa-solid fa-graduation-cap"></i> Registered Students (<span id="admin-subtab-students-count">0</span>)
+          </button>
+          <button class="btn btn-sm btn-outline admin-subtab-btn" onclick="app.switchAdminUserSubTab('all')" id="subtab-btn-all" style="padding: 8px 16px; border-radius: 20px; font-weight: 600;">
+            <i class="fa-solid fa-layer-group"></i> All Users (<span id="admin-subtab-all-count">0</span>)
+          </button>
         </div>
       </div>
 
-      <div class="table-responsive">
-        <table class="comparison-table" style="width: 100%; border-collapse: collapse;">
-          <thead>
-            <tr style="background: var(--bg-card-hover); text-align: left;">
-              <th style="padding: 12px 16px;">User Name</th>
-              <th style="padding: 12px 16px;">Email / Phone Contact</th>
-              <th style="padding: 12px 16px;">Joined Date</th>
-              <th style="padding: 12px 16px;">Current Role</th>
-              <th style="padding: 12px 16px;">Role Management</th>
-              <th style="padding: 12px 16px;">Action</th>
-            </tr>
-          </thead>
-          <tbody id="admin-users-tbody">
-            <!-- Rendered dynamically by JS -->
-          </tbody>
-        </table>
+      <!-- 1. SEPARATE TABLE: PG & HOSTEL OWNERS LIST -->
+      <div id="admin-owners-section" class="admin-user-tab-panel">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <h3 style="font-size: 1.1rem; font-weight: 700; color: #059669;"><i class="fa-solid fa-building-circle-check"></i> Registered PG & Hostel Owners</h3>
+            <p class="text-muted font-xs">Property owners who can list hostels, manage room availability, and view visit bookings.</p>
+          </div>
+          <input type="text" id="admin-owner-search-input" placeholder="Search PG owners by name, email or phone..." oninput="app.filterAdminOwnersTable()" class="form-control" style="max-width: 320px; padding: 6px 12px; font-size: 0.85rem;" />
+        </div>
+
+        <div class="table-responsive">
+          <table class="comparison-table" style="width: 100%; border-collapse: collapse;">
+            <thead>
+              <tr style="background: rgba(5, 150, 105, 0.08); text-align: left;">
+                <th style="padding: 12px 16px;">Owner Name</th>
+                <th style="padding: 12px 16px;">Email / Phone Contact</th>
+                <th style="padding: 12px 16px;">Properties Listed</th>
+                <th style="padding: 12px 16px;">Joined Date</th>
+                <th style="padding: 12px 16px;">Role Management</th>
+                <th style="padding: 12px 16px;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="admin-owners-tbody">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
       </div>
+
+      <!-- 2. SEPARATE TABLE: REGISTERED STUDENTS LIST -->
+      <div id="admin-students-section" class="admin-user-tab-panel" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <h3 style="font-size: 1.1rem; font-weight: 700; color: #4f46e5;"><i class="fa-solid fa-user-graduate"></i> Registered Student Accounts & Logins</h3>
+            <p class="text-muted font-xs">Students searching for accommodation, booking visits, or finding roommates.</p>
+          </div>
+          <input type="text" id="admin-student-search-input" placeholder="Search students by name, email or phone..." oninput="app.filterAdminStudentsTable()" class="form-control" style="max-width: 320px; padding: 6px 12px; font-size: 0.85rem;" />
+        </div>
+
+        <div class="table-responsive">
+          <table class="comparison-table" style="width: 100%; border-collapse: collapse;">
+            <thead>
+              <tr style="background: rgba(79, 70, 229, 0.08); text-align: left;">
+                <th style="padding: 12px 16px;">Student Name</th>
+                <th style="padding: 12px 16px;">Email / Phone Contact</th>
+                <th style="padding: 12px 16px;">Account Status</th>
+                <th style="padding: 12px 16px;">Joined Date</th>
+                <th style="padding: 12px 16px;">Role Management</th>
+                <th style="padding: 12px 16px;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="admin-students-tbody">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 3. COMBINED VIEW: ALL PLATFORM USERS -->
+      <div id="admin-all-section" class="admin-user-tab-panel" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <h3 style="font-size: 1.1rem; font-weight: 700;"><i class="fa-solid fa-users"></i> All Platform Accounts (Combined)</h3>
+            <p class="text-muted font-xs">Complete user database listing with role filter options.</p>
+          </div>
+          
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <input type="text" id="admin-user-search-input" placeholder="Search user by name, email or phone..." oninput="app.filterAdminUsersTable()" class="form-control" style="max-width: 280px; padding: 6px 12px; font-size: 0.85rem;" />
+            <select id="admin-user-role-filter" onchange="app.filterAdminUsersTable()" class="form-control" style="max-width: 140px; padding: 6px 12px; font-size: 0.85rem;">
+              <option value="all">All Roles</option>
+              <option value="student">Students</option>
+              <option value="owner">PG Owners</option>
+              <option value="admin">Admins</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="comparison-table" style="width: 100%; border-collapse: collapse;">
+            <thead>
+              <tr style="background: var(--bg-card-hover); text-align: left;">
+                <th style="padding: 12px 16px;">User Name</th>
+                <th style="padding: 12px 16px;">Email / Phone Contact</th>
+                <th style="padding: 12px 16px;">Joined Date</th>
+                <th style="padding: 12px 16px;">Current Role</th>
+                <th style="padding: 12px 16px;">Role Management</th>
+                <th style="padding: 12px 16px;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="admin-users-tbody">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
     </div>
 
   </main>
