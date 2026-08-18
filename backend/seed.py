@@ -7,10 +7,10 @@ def seed_database() -> None:
     """
     Base.metadata.create_all(bind=engine)
     
-    # Automatic schema migration check for SQLite
-    if engine.name == "sqlite":
-        try:
-            with engine.connect() as conn:
+    # Automatic schema migration check for SQLite and PostgreSQL
+    try:
+        with engine.connect() as conn:
+            if engine.name == "sqlite":
                 # check hostels table
                 res = conn.execute(text("PRAGMA table_info(hostels)"))
                 cols = [row[1] for row in res.fetchall()]
@@ -28,10 +28,15 @@ def seed_database() -> None:
                 cols = [row[1] for row in res.fetchall()]
                 if "role" not in cols:
                     conn.execute(text("ALTER TABLE users ADD COLUMN role VARCHAR DEFAULT 'student'"))
-                
                 conn.commit()
-        except Exception as mig_err:
-            print(f"Migration notice: {mig_err}")
+            else:
+                # PostgreSQL migrations for Render cloud database
+                conn.execute(text("ALTER TABLE hostels ADD COLUMN IF NOT EXISTS owner_id VARCHAR;"))
+                conn.execute(text("ALTER TABLE property_submissions ADD COLUMN IF NOT EXISTS owner_id VARCHAR;"))
+                conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR DEFAULT 'student';"))
+                conn.commit()
+    except Exception as mig_err:
+        print(f"Migration notice: {mig_err}")
 
     # Seed default Admin account if none exists
     try:
