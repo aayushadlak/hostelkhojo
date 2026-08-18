@@ -29,10 +29,6 @@ async function apiFetch(endpoint, options = {}, retries = 3) {
 
     // Handle Render free tier cold-start status (502, 503, 504) with quiet retries
     if ((res.status === 502 || res.status === 503 || res.status === 504) && retries > 0) {
-      if (!hasShownConnectingToast && window.app && typeof window.app.showToast === "function") {
-        hasShownConnectingToast = true;
-        window.app.showToast("Waking up live cloud database server... Please wait a few seconds.", "info");
-      }
       await new Promise(r => setTimeout(r, 3000));
       return await apiFetch(endpoint, options, retries - 1);
     }
@@ -45,10 +41,6 @@ async function apiFetch(endpoint, options = {}, retries = 3) {
       return await apiFetch(endpoint, options, retries);
     }
     if (retries > 0) {
-      if (!hasShownConnectingToast && window.app && typeof window.app.showToast === "function") {
-        hasShownConnectingToast = true;
-        window.app.showToast("Connecting to live cloud database... Please wait.", "info");
-      }
       await new Promise(r => setTimeout(r, 2500));
       return await apiFetch(endpoint, options, retries - 1);
     }
