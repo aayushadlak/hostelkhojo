@@ -123,6 +123,38 @@ const INITIAL_HOSTELS = [
       dinner: "Mixed Veg, Dal, Roti, Kheer"
     },
     reviews: []
+  },
+  {
+    id: "h_rajaram",
+    name: "Raja Ram Student Residency",
+    university: "Delhi University / Central Campus",
+    city: "Delhi",
+    gender: "Boys",
+    type: "Verified Student PG & Hostel",
+    rent: 9500,
+    deposit: 8000,
+    distance: 0.4,
+    rating: 4.9,
+    reviewsCount: 18,
+    verified: true,
+    featured: true,
+    imageMain: "assets/images/exterior1.png",
+    imageSingle: "assets/images/room_single.png",
+    imageShared: "assets/images/room_shared.png",
+    imageMess: "assets/images/mess.png",
+    address: "Vijay Nagar, DU North Campus, New Delhi",
+    mapCoords: { top: 42, left: 52 },
+    amenities: ["Wi-Fi", "4-Time Mess", "AC", "Laundry", "24x7 Power Backup", "CCTV Security"],
+    curfew: "11:00 PM",
+    roomSharing: ["Single", "Double", "Triple"],
+    description: "Verified premium student residency with high-speed Wi-Fi, air conditioning, CCTV security, and delicious 4-time home-style meals daily.",
+    messMenu: {
+      breakfast: "Puri Bhaji / Paratha & Tea",
+      lunch: "Full North Indian Thali",
+      snacks: "Samosa / Evening Chai",
+      dinner: "Special Paneer Thali & Dessert"
+    },
+    reviews: []
   }
 ];
 const INITIAL_ROOMMATES = [];

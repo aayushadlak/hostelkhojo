@@ -110,6 +110,32 @@ def seed_database() -> None:
                     room_sharing_json=json.dumps(["Single", "Double"]),
                     description="Safe, quiet, and academic-friendly residency for female students. Includes 24/7 security guard, study tables, and quiet ambiance.",
                     mess_menu_json=json.dumps({"breakfast": "Idli Sambhar / Upma & Milk", "lunch": "Rajma Chawal, Chapati, Curd", "snacks": "Tea & Biscuits", "dinner": "Mixed Veg, Dal, Roti, Kheer"})
+                ),
+                HostelDB(
+                    id="h_rajaram",
+                    name="Raja Ram Student Residency",
+                    university="Delhi University / Central Campus",
+                    city="Delhi",
+                    gender="Boys",
+                    type="Verified Student PG & Hostel",
+                    rent=9500.0,
+                    deposit=8000.0,
+                    distance=0.4,
+                    rating=4.9,
+                    reviews_count=18,
+                    verified=True,
+                    featured=True,
+                    image_main="assets/images/exterior1.png",
+                    image_single="assets/images/room_single.png",
+                    image_shared="assets/images/room_shared.png",
+                    image_mess="assets/images/mess.png",
+                    address="Vijay Nagar, DU North Campus, New Delhi",
+                    map_coords_json=json.dumps({"top": 42, "left": 52}),
+                    amenities_json=json.dumps(["Wi-Fi", "4-Time Mess", "AC", "Laundry", "24x7 Power Backup", "CCTV Security"]),
+                    curfew="11:00 PM",
+                    room_sharing_json=json.dumps(["Single", "Double", "Triple"]),
+                    description="Verified premium student residency with high-speed Wi-Fi, air conditioning, CCTV security, and delicious 4-time home-style meals daily.",
+                    mess_menu_json=json.dumps({"breakfast": "Puri Bhaji / Paratha & Tea", "lunch": "Full North Indian Thali", "snacks": "Samosa / Evening Chai", "dinner": "Special Paneer Thali & Dessert"})
                 )
             ]
             db.add_all(sample_hostels)
