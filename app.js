@@ -49,67 +49,16 @@ async function apiFetch(endpoint, options = {}, retries = 3) {
 }
 
 
-const MOCK_SEED_HOSTELS = [
-  {
-    id: "h_greenstay_01",
-    name: "Green Stay Luxury PG & Hostel",
-    type: "pg",
-    gender: "male",
-    city: "Delhi",
-    university: "DU North Campus",
-    address: "Hudson Lane, GTB Nagar, Delhi",
-    rent: 9500,
-    rating: 4.8,
-    owner_id: "usr_owner_1",
-    owner_name: "Rajesh Sharma",
-    contact_phone: "9876543210",
-    contact_email: "rajesh.sharma@greenstay.in",
-    image: "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=500&q=80"
-  },
-  {
-    id: "h_comforthostel_02",
-    name: "Comfort Luxury Girls Hostel",
-    type: "hostel",
-    gender: "female",
-    city: "Bengaluru",
-    university: "Christ University",
-    address: "Koramangala 5th Block, Bengaluru",
-    rent: 12000,
-    rating: 4.9,
-    owner_id: "usr_owner_2",
-    owner_name: "Sunita Verma",
-    contact_phone: "9812345678",
-    contact_email: "sunita.v@comforthostels.com",
-    image: "https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?auto=format&fit=crop&w=500&q=80"
-  },
-  {
-    id: "h_malhotra_03",
-    name: "Malhotra PG for Boys",
-    type: "pg",
-    gender: "male",
-    city: "Kota",
-    university: "Kota Coaching Hub",
-    address: "Rajeev Gandhi Nagar, Kota",
-    rent: 8000,
-    rating: 4.6,
-    owner_id: "usr_owner_3",
-    owner_name: "Vikram Malhotra",
-    contact_phone: "9711223344",
-    contact_email: "vikram@malhotraproperties.in",
-    image: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=500&q=80"
-  }
-];
-
-const INITIAL_HOSTELS = [...MOCK_SEED_HOSTELS];
+const INITIAL_HOSTELS = [];
 const INITIAL_ROOMMATES = [];
 
 
 class HostelKhojoApp {
   constructor() {
     window.app = this;
-    this.hostels = [...INITIAL_HOSTELS];
-    this.filteredHostels = [...INITIAL_HOSTELS];
-    this.roommates = [...INITIAL_ROOMMATES];
+    this.hostels = [];
+    this.filteredHostels = [];
+    this.roommates = [];
 
     this.savedIds = JSON.parse(localStorage.getItem("hostelkhojo_saved") || localStorage.getItem("dormify_saved") || "[]");
     this.comparisonIds = [];
@@ -134,10 +83,6 @@ class HostelKhojoApp {
 
   init() {
     this.updateSavedCount();
-    if (!this.hostels || this.hostels.length === 0) {
-      this.hostels = [...MOCK_SEED_HOSTELS];
-      this.filteredHostels = [...MOCK_SEED_HOSTELS];
-    }
     this.renderHostels();
     this.renderRoommates();
     this.setMapProvider(this.mapProvider);
@@ -147,7 +92,7 @@ class HostelKhojoApp {
     this.checkAdminSession();
     this.renderAuthNavUI();
 
-    // Immediately seed and populate admin user & hostel tables on load
+    // Load admin user & hostel tables on load
     this.adminUsers = this.mergeAdminUsers([]);
     this.renderAdminUsersTables();
 
@@ -180,27 +125,19 @@ class HostelKhojoApp {
       const res = await apiFetch("/hostels");
       if (res.ok) {
         const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           this.hostels = data;
-        } else if (!this.hostels || this.hostels.length === 0) {
-          this.hostels = [...MOCK_SEED_HOSTELS];
         }
       }
     } catch (err) {
-      console.log("FastAPI Backend offline, using local mock hostels.");
-      if (!this.hostels || this.hostels.length === 0) {
-        this.hostels = [...MOCK_SEED_HOSTELS];
-      }
+      console.log("FastAPI Backend offline or pending listings.");
     }
 
-    // Auto-clear legacy local storage draft overrides so screen renders 100% live database data
+    // Auto-clear legacy local storage draft overrides
     try {
       localStorage.removeItem("hostelkhojo_custom_properties");
     } catch (e) {}
 
-    if (!this.hostels || this.hostels.length === 0) {
-      this.hostels = [...MOCK_SEED_HOSTELS];
-    }
     this.filteredHostels = [...this.hostels];
     this.renderHostels();
     this.renderMapPins();
@@ -1283,30 +1220,6 @@ class HostelKhojoApp {
       }
     });
 
-    // Default seed users if minimal or offline
-    const seedUsers = [
-      { id: "usr_admin_master", full_name: "Hostel Khojo Admin", email: "admin@hostelkhojo.in", phone: "9999999999", role: "admin", created_at: "2026-01-01T10:00:00.000Z" },
-      { id: "usr_owner_1", full_name: "Rajesh Sharma (Green Stay PG)", email: "rajesh.sharma@greenstay.in", phone: "9876543210", role: "owner", created_at: "2026-02-10T11:30:00.000Z" },
-      { id: "usr_owner_2", full_name: "Sunita Verma (Comfort Luxury Hostel)", email: "sunita.v@comforthostels.com", phone: "9812345678", role: "owner", created_at: "2026-02-15T14:20:00.000Z" },
-      { id: "usr_owner_3", full_name: "Vikram Malhotra (Malhotra PG for Boys)", email: "vikram@malhotraproperties.in", phone: "9711223344", role: "owner", created_at: "2026-03-01T09:15:00.000Z" },
-      { id: "usr_owner_4", full_name: "Anita Deshmukh (Saraswati Girls Hostel)", email: "anita.d@saraswatihostel.in", phone: "9654321098", role: "owner", created_at: "2026-03-12T16:45:00.000Z" },
-      { id: "usr_student_1", full_name: "Aarav Kumar", email: "aarav.k@iitd.ac.in", phone: "9123456789", role: "student", created_at: "2026-04-05T10:00:00.000Z" },
-      { id: "usr_student_2", full_name: "Ananya Roy", email: "ananya.roy@gmail.com", phone: "9234567890", role: "student", created_at: "2026-04-10T12:10:00.000Z" },
-      { id: "usr_student_3", full_name: "Rohan Gupta", email: "rohan.g@du.ac.in", phone: "9345678901", role: "student", created_at: "2026-04-18T15:30:00.000Z" },
-      { id: "usr_student_4", full_name: "Priya Patel", email: "priya.p@nift.ac.in", phone: "9456789012", role: "student", created_at: "2026-05-02T11:20:00.000Z" },
-      { id: "usr_student_5", full_name: "Kabir Singh", email: "kabir.singh@gmail.com", phone: "9567890123", role: "student", created_at: "2026-05-15T17:00:00.000Z" },
-      { id: "usr_student_6", full_name: "Sneha Reddy", email: "sneha.reddy@hyderabad.edu", phone: "9678901234", role: "student", created_at: "2026-06-01T08:45:00.000Z" }
-    ];
-
-    seedUsers.forEach(su => {
-      const exists = all.some(u => 
-        (u.id && su.id && u.id === su.id) || 
-        (u.email && su.email && u.email === su.email) || 
-        (u.phone && su.phone && u.phone === su.phone)
-      );
-      if (!exists) all.push(su);
-    });
-
     return all;
   }
 
@@ -1386,7 +1299,7 @@ class HostelKhojoApp {
       tbody.innerHTML = `
         <tr>
           <td colspan="7" style="text-align: center; padding: 24px; color: var(--text-muted);">
-            No registered PG/Hostel Owners found matching criteria.
+            No registered PG/Hostel Owner accounts found matching criteria.
           </td>
         </tr>
       `;
@@ -1395,17 +1308,23 @@ class HostelKhojoApp {
 
     tbody.innerHTML = owners.map(u => {
       const dateStr = u.created_at ? new Date(u.created_at).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" }) : "Recently";
-      const ownerPropertiesCount = (this.hostels || []).filter(h => h.owner_id === u.id || (u.email && h.contact_email === u.email)).length || (u.id === "usr_owner_1" ? 1 : 0);
-      const propBadge = ownerPropertiesCount > 0 
-        ? `<span class="badge badge-success" style="padding: 4px 10px; font-weight: 600;"><i class="fa-solid fa-building"></i> ${ownerPropertiesCount} Uploaded</span>`
-        : `<span class="badge badge-outline" style="padding: 4px 10px; font-size: 0.8rem;"><i class="fa-solid fa-store-slash"></i> 0 PGs</span>`;
+      
+      const ownerProperties = (this.hostels || []).filter(h => h.owner_id === u.id || h.contact_email === u.email || (u.full_name && h.owner_name && h.owner_name.toLowerCase() === u.full_name.toLowerCase()));
+      const propCount = ownerProperties.length;
+      
+      let propBadge = "";
+      if (propCount > 0) {
+        propBadge = `<span class="badge badge-success" style="padding: 4px 10px; font-weight: 600;"><i class="fa-solid fa-building"></i> ${propCount} Property Listed</span>`;
+      } else {
+        propBadge = `<span class="badge badge-outline" style="padding: 4px 10px; font-size: 0.8rem; color: var(--text-muted);"><i class="fa-solid fa-house-circle-exclamation"></i> 0 PGs Uploaded</span>`;
+      }
 
       return `
         <tr style="border-bottom: 1px solid var(--border-color);">
           <td style="padding: 12px 16px; font-weight: 600;">
             <div style="display: flex; align-items: center; gap: 8px;">
-              <div style="width: 34px; height: 34px; border-radius: 50%; background: rgba(5, 150, 105, 0.15); color: #059669; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.9rem;">
-                ${u.full_name ? u.full_name.charAt(0).toUpperCase() : 'O'}
+              <div style="width: 32px; height: 32px; border-radius: 50%; background: #059669; color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem;">
+                ${(u.full_name || 'Owner').charAt(0).toUpperCase()}
               </div>
               <div>${u.full_name || 'PG Owner'}</div>
             </div>
@@ -1452,19 +1371,10 @@ class HostelKhojoApp {
       return;
     }
 
-    const reqMap = {
-      "usr_student_1": { looking_for: "DU North Campus / 2 BHK", budget: 8500, sleep: "Night Owl", diet: "Veg" },
-      "usr_student_2": { looking_for: "IIT Bombay / Single Room", budget: 12000, sleep: "Early Riser", diet: "Any" },
-      "usr_student_3": { looking_for: "Christ Univ / Shared Flat", budget: 7500, sleep: "Studious", diet: "Eggetarian" },
-      "usr_student_4": { looking_for: "NIFT Delhi / Girls Flat", budget: 10000, sleep: "Flexible", diet: "Veg" },
-      "usr_student_5": { looking_for: "Kota Coaching / Boys PG", budget: 6500, sleep: "Night Owl", diet: "Non-Veg" },
-      "usr_student_6": { looking_for: "Hyderabad / Shared Room", budget: 7000, sleep: "Early Riser", diet: "Veg" }
-    };
-
     tbody.innerHTML = students.map(u => {
       const dateStr = u.created_at ? new Date(u.created_at).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" }) : "Recently";
       
-      const rm = (this.roommates || []).find(r => r.user_id === u.id || (u.full_name && r.name && r.name.toLowerCase() === u.full_name.toLowerCase())) || reqMap[u.id];
+      const rm = (this.roommates || []).find(r => r.user_id === u.id || (u.full_name && r.name && r.name.toLowerCase() === u.full_name.toLowerCase()));
 
       let reqBadge = "";
       if (rm) {
@@ -1482,14 +1392,14 @@ class HostelKhojoApp {
         <tr style="border-bottom: 1px solid var(--border-color);">
           <td style="padding: 12px 16px; font-weight: 600;">
             <div style="display: flex; align-items: center; gap: 8px;">
-              <div style="width: 34px; height: 34px; border-radius: 50%; background: rgba(79, 70, 229, 0.15); color: #4f46e5; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.9rem;">
-                ${u.full_name ? u.full_name.charAt(0).toUpperCase() : 'S'}
+              <div style="width: 32px; height: 32px; border-radius: 50%; background: #4f46e5; color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem;">
+                ${(u.full_name || 'Student').charAt(0).toUpperCase()}
               </div>
-              <div>${u.full_name || 'Student Account'}</div>
+              <div>${u.full_name || 'Student'}</div>
             </div>
           </td>
           <td style="padding: 12px 16px; font-weight: 500;">
-            ${u.phone ? `<i class="fa-solid fa-phone" style="color: #4f46e5;"></i> ${u.phone}` : '<span class="text-muted font-xs">N/A</span>'}
+            ${u.phone ? `<i class="fa-solid fa-phone" style="color: #059669;"></i> ${u.phone}` : '<span class="text-muted font-xs">N/A</span>'}
           </td>
           <td style="padding: 12px 16px;">
             <div style="font-weight: 600; font-family: monospace; font-size: 0.82rem; color: #4f46e5;"><i class="fa-solid fa-id-card"></i> ${u.id || 'usr_student'}</div>
@@ -1532,9 +1442,9 @@ class HostelKhojoApp {
 
     tbody.innerHTML = hostels.map(h => {
       const owner = (this.adminUsers || []).find(u => u.id === h.owner_id || u.email === h.contact_email) || {
-        full_name: h.owner_name || "Rajesh Sharma",
-        phone: h.contact_phone || "9876543210",
-        email: h.contact_email || "owner@hostelkhojo.in"
+        full_name: h.owner_name || "PG Owner",
+        phone: h.contact_phone || "N/A",
+        email: h.contact_email || "N/A"
       };
 
       const bookings = (this.ownerBookings || []).filter(b => b.hostel_id === h.id || b.hostel_name === h.name);
@@ -1552,15 +1462,9 @@ class HostelKhojoApp {
         `;
       } else {
         interestedHtml = `
-          <div>
-            <span class="badge badge-accent" style="padding: 4px 10px; font-weight: 600; margin-bottom: 4px; display: inline-block;">
-              <i class="fa-solid fa-user-clock"></i> Interested Students
-            </span>
-            <div class="font-xs text-muted" style="line-height: 1.4;">
-              <i class="fa-solid fa-user-check" style="color: #4f46e5;"></i> Aarav Kumar (9123456789)<br>
-              <i class="fa-solid fa-user-check" style="color: #4f46e5;"></i> Ananya Roy (9234567890)
-            </div>
-          </div>
+          <span class="badge badge-outline" style="padding: 4px 10px; font-size: 0.8rem; color: var(--text-muted);">
+            <i class="fa-solid fa-user-clock"></i> 0 Visit Requests
+          </span>
         `;
       }
 
