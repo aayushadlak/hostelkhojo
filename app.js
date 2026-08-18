@@ -1577,6 +1577,47 @@ class HostelKhojoApp {
       const propRes = await apiFetch("/owner/properties", { headers });
       if (propRes.ok) {
         this.ownerProperties = await propRes.json();
+
+        // Auto-sync any locally saved custom properties to cloud database
+        const customProps = JSON.parse(localStorage.getItem("hostelkhojo_custom_properties") || "[]");
+        if (customProps.length > 0 && token) {
+          for (const cp of customProps) {
+            const existsOnServer = this.ownerProperties.some(op => op.id === cp.id || op.name === cp.name);
+            if (!existsOnServer) {
+              try {
+                const syncRes = await apiFetch("/owner/properties", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+                  body: JSON.stringify({
+                    name: cp.name,
+                    university: cp.university || cp.city,
+                    city: cp.city,
+                    gender: cp.gender || "Co-ed",
+                    type: cp.type || "PG",
+                    rent: cp.rent || 8000,
+                    deposit: cp.deposit || 5000,
+                    distance: cp.distance || 0.5,
+                    address: cp.address || cp.city,
+                    description: cp.description || "",
+                    amenities: cp.amenities || ["Wi-Fi", "4-Time Mess", "AC"],
+                    curfew: cp.curfew || "11:00 PM",
+                    roomSharing: cp.roomSharing || ["Single", "Double"],
+                    verified: true,
+                    featured: true,
+                    owner_id: activeOwner.id
+                  })
+                });
+                if (syncRes.ok) {
+                  const syncedHostel = await syncRes.json();
+                  this.ownerProperties.unshift(syncedHostel);
+                  this.hostels.unshift(syncedHostel);
+                }
+              } catch (syncErr) {
+                console.warn("Auto-sync notice:", syncErr);
+              }
+            }
+          }
+        }
       } else {
         const currentOwnerId = activeOwner ? activeOwner.id : null;
         this.ownerProperties = currentOwnerId 

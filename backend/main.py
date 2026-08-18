@@ -475,6 +475,8 @@ def submit_property(sub_in: PropertySubmissionCreate, db: Session = Depends(get_
     return new_sub
 
 
+from sqlalchemy import or_
+
 # DEDICATED OWNER PORTAL ENDPOINTS
 @app.get("/api/owner/properties", response_model=List[HostelResponse])
 def get_owner_properties(
@@ -488,7 +490,12 @@ def get_owner_properties(
     if current_user.role == "admin":
         hostels = db.query(HostelDB).all()
     else:
-        hostels = db.query(HostelDB).filter(HostelDB.owner_id == current_user.id).all()
+        filters = [HostelDB.owner_id == current_user.id]
+        if current_user.email:
+            filters.append(HostelDB.owner_id == current_user.email)
+        if current_user.phone:
+            filters.append(HostelDB.owner_id == current_user.phone)
+        hostels = db.query(HostelDB).filter(or_(*filters)).all()
 
     results = []
     for h in hostels:
