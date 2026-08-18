@@ -180,12 +180,17 @@ class HostelKhojoApp {
       const res = await apiFetch("/hostels");
       if (res.ok) {
         const data = await res.json();
-        if (Array.isArray(data)) {
+        if (Array.isArray(data) && data.length > 0) {
           this.hostels = data;
+        } else if (!this.hostels || this.hostels.length === 0) {
+          this.hostels = [...MOCK_SEED_HOSTELS];
         }
       }
     } catch (err) {
       console.log("FastAPI Backend offline, using local mock hostels.");
+      if (!this.hostels || this.hostels.length === 0) {
+        this.hostels = [...MOCK_SEED_HOSTELS];
+      }
     }
 
     // Auto-clear legacy local storage draft overrides so screen renders 100% live database data
@@ -193,8 +198,9 @@ class HostelKhojoApp {
       localStorage.removeItem("hostelkhojo_custom_properties");
     } catch (e) {}
 
-
-
+    if (!this.hostels || this.hostels.length === 0) {
+      this.hostels = [...MOCK_SEED_HOSTELS];
+    }
     this.filteredHostels = [...this.hostels];
     this.renderHostels();
     this.renderMapPins();
@@ -223,7 +229,8 @@ class HostelKhojoApp {
   }
 
   updateBudgetLabel(val) {
-    document.getElementById("budget-val").innerText = Number(val).toLocaleString('en-IN');
+    const el = document.getElementById("budget-val");
+    if (el) el.innerText = Number(val).toLocaleString('en-IN');
   }
 
   togglePillFilter(btn, filterKey) {
@@ -237,35 +244,49 @@ class HostelKhojoApp {
   }
 
   applyFilters() {
-    const searchTerm = document.getElementById("search-input").value.toLowerCase().trim();
-    const gender = document.getElementById("gender-filter").value;
-    const roomType = document.getElementById("room-type-filter").value;
-    const maxBudget = parseFloat(document.getElementById("budget-range").value);
+    const searchEl = document.getElementById("search-input");
+    const searchTerm = searchEl ? searchEl.value.toLowerCase().trim() : "";
 
-    this.filteredHostels = this.hostels.filter(h => {
+    const genderEl = document.getElementById("gender-filter");
+    const gender = genderEl ? genderEl.value : "all";
+
+    const roomTypeEl = document.getElementById("room-type-filter");
+    const roomType = roomTypeEl ? roomTypeEl.value : "all";
+
+    const budgetEl = document.getElementById("budget-range");
+    const maxBudget = budgetEl ? (parseFloat(budgetEl.value) || 999999) : 999999;
+
+    if (!Array.isArray(this.hostels) || this.hostels.length === 0) {
+      this.hostels = [...MOCK_SEED_HOSTELS];
+    }
+
+    this.filteredHostels = (this.hostels || []).filter(h => {
+      if (!h) return false;
+
       // Keyword search
       const matchesText = !searchTerm ||
-        h.name.toLowerCase().includes(searchTerm) ||
-        h.university.toLowerCase().includes(searchTerm) ||
-        h.city.toLowerCase().includes(searchTerm) ||
-        h.address.toLowerCase().includes(searchTerm);
+        (h.name && h.name.toLowerCase().includes(searchTerm)) ||
+        (h.university && h.university.toLowerCase().includes(searchTerm)) ||
+        (h.city && h.city.toLowerCase().includes(searchTerm)) ||
+        (h.address && h.address.toLowerCase().includes(searchTerm));
 
       // Gender filter
-      const matchesGender = gender === "all" || h.gender === gender;
+      const matchesGender = gender === "all" || (h.gender && h.gender.toLowerCase() === gender.toLowerCase());
 
       // Room type filter
-      const matchesRoom = roomType === "all" || h.roomSharing.includes(roomType);
+      const matchesRoom = roomType === "all" || (h.roomSharing && (Array.isArray(h.roomSharing) ? h.roomSharing.includes(roomType) : String(h.roomSharing).includes(roomType)));
 
       // Budget filter
-      const matchesBudget = h.rent <= maxBudget;
+      const matchesBudget = !h.rent || h.rent <= maxBudget;
 
       // Pill tags filter
       let matchesPills = true;
-      if (this.activePills.has("walkable") && h.distance > 0.5) matchesPills = false;
-      if (this.activePills.has("mess") && !h.amenities.some(a => a.toLowerCase().includes("mess"))) matchesPills = false;
-      if (this.activePills.has("ac") && !h.amenities.some(a => a.toLowerCase().includes("ac"))) matchesPills = false;
-      if (this.activePills.has("wifi") && !h.amenities.some(a => a.toLowerCase().includes("wi-fi"))) matchesPills = false;
-      if (this.activePills.has("gym") && !h.amenities.some(a => a.toLowerCase().includes("power backup") || a.toLowerCase().includes("gym"))) matchesPills = false;
+      const amenities = Array.isArray(h.amenities) ? h.amenities : [];
+      if (this.activePills.has("walkable") && h.distance && h.distance > 0.5) matchesPills = false;
+      if (this.activePills.has("mess") && !amenities.some(a => a && a.toLowerCase().includes("mess"))) matchesPills = false;
+      if (this.activePills.has("ac") && !amenities.some(a => a && a.toLowerCase().includes("ac"))) matchesPills = false;
+      if (this.activePills.has("wifi") && !amenities.some(a => a && a.toLowerCase().includes("wi-fi"))) matchesPills = false;
+      if (this.activePills.has("gym") && !amenities.some(a => a && (a.toLowerCase().includes("power backup") || a.toLowerCase().includes("gym")))) matchesPills = false;
 
       return matchesText && matchesGender && matchesRoom && matchesBudget && matchesPills;
     });
@@ -274,23 +295,29 @@ class HostelKhojoApp {
   }
 
   quickSearch(keyword) {
-    document.getElementById("search-input").value = keyword;
+    const searchEl = document.getElementById("search-input");
+    if (searchEl) searchEl.value = keyword;
     this.switchTab("hostels");
     this.applyFilters();
   }
 
   applySorting() {
-    const sortVal = document.getElementById("sort-select").value;
+    const sortEl = document.getElementById("sort-select");
+    const sortVal = sortEl ? sortEl.value : "recommended";
     this.currentSort = sortVal;
 
+    if (!Array.isArray(this.filteredHostels) || this.filteredHostels.length === 0) {
+      this.filteredHostels = [...(this.hostels || MOCK_SEED_HOSTELS)];
+    }
+
     if (sortVal === "price-asc") {
-      this.filteredHostels.sort((a, b) => a.rent - b.rent);
+      this.filteredHostels.sort((a, b) => (a.rent || 0) - (b.rent || 0));
     } else if (sortVal === "price-desc") {
-      this.filteredHostels.sort((a, b) => b.rent - a.rent);
+      this.filteredHostels.sort((a, b) => (b.rent || 0) - (a.rent || 0));
     } else if (sortVal === "rating-desc") {
-      this.filteredHostels.sort((a, b) => b.rating - a.rating);
+      this.filteredHostels.sort((a, b) => (b.rating || 0) - (a.rating || 0));
     } else if (sortVal === "distance-asc") {
-      this.filteredHostels.sort((a, b) => a.distance - b.distance);
+      this.filteredHostels.sort((a, b) => (a.distance || 0) - (b.distance || 0));
     } else {
       // Recommended / Featured
       this.filteredHostels.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
@@ -308,9 +335,9 @@ class HostelKhojoApp {
     const splitBtn = document.getElementById("view-split-btn");
 
     if (mode === "split") {
-      layout.className = "explorer-layout split-view";
-      gridBtn.classList.remove("active");
-      splitBtn.classList.add("active");
+      if (layout) layout.className = "explorer-layout split-view";
+      if (gridBtn) gridBtn.classList.remove("active");
+      if (splitBtn) splitBtn.classList.add("active");
       setTimeout(() => {
         if (this.mapProvider === "osm" || this.mapProvider === "google") {
           this.renderOpenStreetMap();
@@ -322,9 +349,9 @@ class HostelKhojoApp {
         }
       }, 150);
     } else {
-      layout.className = "explorer-layout grid-view";
-      gridBtn.classList.add("active");
-      splitBtn.classList.remove("active");
+      if (layout) layout.className = "explorer-layout grid-view";
+      if (gridBtn) gridBtn.classList.add("active");
+      if (splitBtn) splitBtn.classList.remove("active");
     }
   }
 
@@ -334,7 +361,11 @@ class HostelKhojoApp {
     const countNum = document.getElementById("results-count-num");
     if (!grid) return;
 
-    countNum.innerText = this.filteredHostels.length;
+    if (!Array.isArray(this.filteredHostels) || this.filteredHostels.length === 0) {
+      this.filteredHostels = [...(this.hostels || MOCK_SEED_HOSTELS)];
+    }
+
+    if (countNum) countNum.innerText = this.filteredHostels.length;
 
     if (this.filteredHostels.length === 0) {
       grid.innerHTML = `
