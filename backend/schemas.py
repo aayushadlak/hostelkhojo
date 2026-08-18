@@ -99,12 +99,12 @@ class HostelBase(BaseModel):
     imageShared: Optional[str] = None
     imageMess: Optional[str] = None
     address: str
-    mapCoords: Optional[MapCoordsSchema] = MapCoordsSchema(top=40, left=50)
+    mapCoords: Optional[Dict[str, Any]] = {"top": 40, "left": 50}
     amenities: List[str] = []
     curfew: str = "11:00 PM"
     roomSharing: List[str] = []
-    description: str
-    messMenu: Optional[MessMenuSchema] = MessMenuSchema()
+    description: str = ""
+    messMenu: Optional[Dict[str, Any]] = {}
 
 class HostelCreate(HostelBase):
     pass

@@ -584,12 +584,12 @@ def create_owner_property(
         image_shared=hostel_in.imageShared or "assets/images/room_shared.png",
         image_mess=hostel_in.imageMess or "assets/images/mess.png",
         address=hostel_in.address,
-        map_coords_json=json.dumps(hostel_in.mapCoords.dict() if hasattr(hostel_in.mapCoords, "dict") else (hostel_in.mapCoords if isinstance(hostel_in.mapCoords, dict) else {"top": 40, "left": 50})),
+        map_coords_json=json.dumps(hostel_in.mapCoords if isinstance(hostel_in.mapCoords, dict) else {"top": 40, "left": 50}),
         amenities_json=json.dumps(hostel_in.amenities or ["Wi-Fi", "4-Time Mess", "AC"]),
         curfew=hostel_in.curfew or "11:00 PM",
         room_sharing_json=json.dumps(hostel_in.roomSharing or ["Single", "Double"]),
-        description=hostel_in.description,
-        mess_menu_json=json.dumps(hostel_in.messMenu.dict() if hasattr(hostel_in.messMenu, "dict") else (hostel_in.messMenu if isinstance(hostel_in.messMenu, dict) else {})),
+        description=hostel_in.description or "",
+        mess_menu_json=json.dumps(hostel_in.messMenu if isinstance(hostel_in.messMenu, dict) else {}),
         owner_id=current_user.id
     )
     db.add(new_hostel)
