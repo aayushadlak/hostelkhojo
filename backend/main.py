@@ -841,4 +841,23 @@ def delete_user_account(
     return {"status": "success", "message": "User account deleted successfully."}
 
 
+@app.delete("/api/admin/hostels/{hostel_id}")
+def delete_admin_hostel_property(
+    hostel_id: str,
+    current_user: UserDB = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Super Admin authorization required.")
+
+    h = db.query(HostelDB).filter(HostelDB.id == hostel_id).first()
+    if not h:
+        raise HTTPException(status_code=404, detail="Hostel property not found.")
+
+    db.delete(h)
+    db.commit()
+    return {"status": "success", "message": "Hostel property deleted successfully by Super Admin."}
+
+
+
 
