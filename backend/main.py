@@ -173,87 +173,91 @@ def get_hostels(
     room_sharing: Optional[str] = Query(None, description="Filter by room sharing (Single, Double, Triple)"),
     db: Session = Depends(get_db)
 ):
-    query = db.query(HostelDB)
+    try:
+        query = db.query(HostelDB)
 
-    if isinstance(city, str) and city and city != "all":
-        query = query.filter(HostelDB.city.ilike(f"%{city}%"))
+        if isinstance(city, str) and city and city != "all":
+            query = query.filter(HostelDB.city.ilike(f"%{city}%"))
 
-    if isinstance(gender, str) and gender and gender != "all":
-        query = query.filter(HostelDB.gender.ilike(f"%{gender}%"))
+        if isinstance(gender, str) and gender and gender != "all":
+            query = query.filter(HostelDB.gender.ilike(f"%{gender}%"))
 
-    if isinstance(max_rent, (int, float)) and max_rent > 0:
-        query = query.filter(HostelDB.rent <= max_rent)
+        if isinstance(max_rent, (int, float)) and max_rent > 0:
+            query = query.filter(HostelDB.rent <= max_rent)
 
-    if isinstance(search, str) and search:
-        s = f"%{search.lower()}%"
-        query = query.filter(
-            (HostelDB.name.ilike(s)) |
-            (HostelDB.university.ilike(s)) |
-            (HostelDB.city.ilike(s)) |
-            (HostelDB.address.ilike(s))
-        )
+        if isinstance(search, str) and search:
+            s = f"%{search.lower()}%"
+            query = query.filter(
+                (HostelDB.name.ilike(s)) |
+                (HostelDB.university.ilike(s)) |
+                (HostelDB.city.ilike(s)) |
+                (HostelDB.address.ilike(s))
+            )
 
-    hostels = query.all()
+        hostels = query.all()
 
-    # Filter room_sharing in Python if specified (since stored as JSON)
-    results = []
-    for h in hostels:
-        try:
-            sharing_list = h.room_sharing or []
-            if isinstance(room_sharing, str) and room_sharing and room_sharing != "all":
-                if room_sharing not in sharing_list:
-                    continue
-
-            # Get reviews for this hostel safely
-            reviews_res = []
+        # Filter room_sharing in Python if specified (since stored as JSON)
+        results = []
+        for h in hostels:
             try:
-                reviews_db = db.query(ReviewDB).filter(ReviewDB.hostel_id == h.id).all()
-                for r in reviews_db:
-                    reviews_res.append({
-                        "id": str(r.id),
-                        "hostel_id": str(r.hostel_id),
-                        "user_name": str(r.user_name),
-                        "major": str(r.major or "Student"),
-                        "rating": float(r.rating) if r.rating is not None else 5.0,
-                        "comment": str(r.comment or ""),
-                        "created_at": r.created_at.isoformat() if hasattr(r.created_at, "isoformat") and r.created_at else str(r.created_at)
-                    })
-            except Exception as rev_err:
-                print(f"Notice: Failed to fetch reviews for hostel {h.id}: {rev_err}")
+                sharing_list = h.room_sharing or []
+                if isinstance(room_sharing, str) and room_sharing and room_sharing != "all":
+                    if room_sharing not in sharing_list:
+                        continue
 
-            h_dict = {
-                "id": str(h.id),
-                "name": str(h.name or "Student Hostel"),
-                "university": str(h.university or "Campus Area"),
-                "city": str(h.city or "India"),
-                "gender": str(h.gender or "Co-ed"),
-                "type": str(h.type or "Student Stay"),
-                "rent": float(h.rent) if h.rent is not None else 8000.0,
-                "deposit": float(h.deposit) if h.deposit is not None else 5000.0,
-                "distance": float(h.distance) if h.distance is not None else 0.5,
-                "rating": float(h.rating) if h.rating is not None else 4.8,
-                "reviewsCount": int(h.reviews_count) if h.reviews_count is not None else 0,
-                "verified": bool(h.verified) if h.verified is not None else True,
-                "featured": bool(h.featured) if h.featured is not None else False,
-                "imageMain": h.image_main or "assets/images/exterior1.png",
-                "imageSingle": h.image_single or "assets/images/room_single.png",
-                "imageShared": h.image_shared or "assets/images/room_shared.png",
-                "imageMess": h.image_mess or "assets/images/mess.png",
-                "address": str(h.address or ""),
-                "mapCoords": h.map_coords if isinstance(h.map_coords, dict) else {"top": 40, "left": 50},
-                "amenities": h.amenities if isinstance(h.amenities, list) else [],
-                "curfew": str(h.curfew or "11:00 PM"),
-                "roomSharing": h.room_sharing if isinstance(h.room_sharing, list) else [],
-                "description": str(h.description or ""),
-                "messMenu": h.mess_menu if isinstance(h.mess_menu, dict) else {},
-                "owner_id": h.owner_id,
-                "reviews": reviews_res
-            }
-            results.append(h_dict)
-        except Exception as h_err:
-            print(f"Error processing hostel {getattr(h, 'id', 'unknown')}: {h_err}")
+                # Get reviews for this hostel safely
+                reviews_res = []
+                try:
+                    reviews_db = db.query(ReviewDB).filter(ReviewDB.hostel_id == h.id).all()
+                    for r in reviews_db:
+                        reviews_res.append({
+                            "id": str(r.id),
+                            "hostel_id": str(r.hostel_id),
+                            "user_name": str(r.user_name),
+                            "major": str(r.major or "Student"),
+                            "rating": float(r.rating) if r.rating is not None else 5.0,
+                            "comment": str(r.comment or ""),
+                            "created_at": r.created_at.isoformat() if hasattr(r.created_at, "isoformat") and r.created_at else str(r.created_at)
+                        })
+                except Exception as rev_err:
+                    print(f"Notice: Failed to fetch reviews for hostel {h.id}: {rev_err}")
 
-    return results
+                h_dict = {
+                    "id": str(h.id),
+                    "name": str(h.name or "Student Hostel"),
+                    "university": str(h.university or "Campus Area"),
+                    "city": str(h.city or "India"),
+                    "gender": str(h.gender or "Co-ed"),
+                    "type": str(h.type or "Student Stay"),
+                    "rent": float(h.rent) if h.rent is not None else 8000.0,
+                    "deposit": float(h.deposit) if h.deposit is not None else 5000.0,
+                    "distance": float(h.distance) if h.distance is not None else 0.5,
+                    "rating": float(h.rating) if h.rating is not None else 4.8,
+                    "reviewsCount": int(h.reviews_count) if h.reviews_count is not None else 0,
+                    "verified": bool(h.verified) if h.verified is not None else True,
+                    "featured": bool(h.featured) if h.featured is not None else False,
+                    "imageMain": h.image_main or "assets/images/exterior1.png",
+                    "imageSingle": h.image_single or "assets/images/room_single.png",
+                    "imageShared": h.image_shared or "assets/images/room_shared.png",
+                    "imageMess": h.image_mess or "assets/images/mess.png",
+                    "address": str(h.address or ""),
+                    "mapCoords": h.map_coords if isinstance(h.map_coords, dict) else {"top": 40, "left": 50},
+                    "amenities": h.amenities if isinstance(h.amenities, list) else [],
+                    "curfew": str(h.curfew or "11:00 PM"),
+                    "roomSharing": h.room_sharing if isinstance(h.room_sharing, list) else [],
+                    "description": str(h.description or ""),
+                    "messMenu": h.mess_menu if isinstance(h.mess_menu, dict) else {},
+                    "owner_id": getattr(h, "owner_id", None),
+                    "reviews": reviews_res
+                }
+                results.append(h_dict)
+            except Exception as h_err:
+                print(f"Error processing hostel {getattr(h, 'id', 'unknown')}: {h_err}")
+
+        return results
+    except Exception as err:
+        print(f"Top-level get_hostels error: {err}")
+        return []
 
 @app.get("/api/hostels/{hostel_id}")
 def get_hostel_detail(hostel_id: str, db: Session = Depends(get_db)):
