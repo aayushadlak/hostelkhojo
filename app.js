@@ -121,23 +121,39 @@ class HostelKhojoApp {
 
 
   async loadBackendData() {
+    let cloudHostels = [];
     try {
       const res = await apiFetch("/hostels");
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) {
-          this.hostels = data;
+          cloudHostels = data;
         }
       }
     } catch (err) {
       console.log("FastAPI Backend offline or pending listings.");
     }
 
-    // Auto-clear legacy local storage draft overrides
+    // Load locally saved real user property submissions
+    let localRealProps = [];
     try {
-      localStorage.removeItem("hostelkhojo_custom_properties");
+      const stored = localStorage.getItem("hostelkhojo_real_properties") || localStorage.getItem("hostelkhojo_custom_properties");
+      if (stored) {
+        localRealProps = JSON.parse(stored);
+        if (!Array.isArray(localRealProps)) localRealProps = [];
+      }
     } catch (e) {}
 
+    // Merge cloud database hostels and real user submissions
+    const combinedHostels = [...cloudHostels];
+    localRealProps.forEach(lp => {
+      if (lp && (lp.id || lp.name)) {
+        const exists = combinedHostels.some(h => (h.id && lp.id && h.id === lp.id) || (h.name && lp.name && h.name.toLowerCase() === lp.name.toLowerCase()));
+        if (!exists) combinedHostels.push(lp);
+      }
+    });
+
+    this.hostels = combinedHostels;
     this.filteredHostels = [...this.hostels];
     this.renderHostels();
     this.renderMapPins();
@@ -152,7 +168,7 @@ class HostelKhojoApp {
         }
       }
     } catch (err) {
-      console.log("FastAPI Backend offline, using local mock roommates.");
+      console.log("FastAPI Backend offline, using local roommates.");
     }
   }
 
@@ -193,8 +209,8 @@ class HostelKhojoApp {
     const budgetEl = document.getElementById("budget-range");
     const maxBudget = budgetEl ? (parseFloat(budgetEl.value) || 999999) : 999999;
 
-    if (!Array.isArray(this.hostels) || this.hostels.length === 0) {
-      this.hostels = [...MOCK_SEED_HOSTELS];
+    if (!Array.isArray(this.hostels)) {
+      this.hostels = [];
     }
 
     this.filteredHostels = (this.hostels || []).filter(h => {
@@ -243,8 +259,8 @@ class HostelKhojoApp {
     const sortVal = sortEl ? sortEl.value : "recommended";
     this.currentSort = sortVal;
 
-    if (!Array.isArray(this.filteredHostels) || this.filteredHostels.length === 0) {
-      this.filteredHostels = [...(this.hostels || MOCK_SEED_HOSTELS)];
+    if (!Array.isArray(this.filteredHostels)) {
+      this.filteredHostels = [...(this.hostels || [])];
     }
 
     if (sortVal === "price-asc") {
@@ -298,8 +314,8 @@ class HostelKhojoApp {
     const countNum = document.getElementById("results-count-num");
     if (!grid) return;
 
-    if (!Array.isArray(this.filteredHostels) || this.filteredHostels.length === 0) {
-      this.filteredHostels = [...(this.hostels || MOCK_SEED_HOSTELS)];
+    if (!Array.isArray(this.filteredHostels)) {
+      this.filteredHostels = [...(this.hostels || [])];
     }
 
     if (countNum) countNum.innerText = this.filteredHostels.length;
