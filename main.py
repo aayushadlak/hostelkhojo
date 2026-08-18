@@ -17,5 +17,12 @@ except ImportError:
 
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.getenv("PORT", 10000))
-    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
+    # Safely parse PORT environment variable provided by Render or default to 10000
+    raw_port = os.environ.get("PORT", "10000")
+    try:
+        port = int(raw_port)
+    except ValueError:
+        port = 10000
+
+    print(f"Starting Hostel Khojo FastAPI server on 0.0.0.0:{port}...")
+    uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
