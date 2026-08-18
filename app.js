@@ -2065,12 +2065,12 @@ class HostelKhojoApp {
             <div class="card-image-wrapper">
               <img src="${h.imageMain || 'assets/images/exterior1.png'}" alt="${h.name}" class="card-image" />
               ${h.is_live === false ? `
-                <span class="badge badge-danger" style="position: absolute; top: 12px; left: 12px; font-weight: 600; padding: 4px 10px; border-radius: 12px; background: #dc2626; color: white; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">
-                  <i class="fa-solid fa-eye-slash"></i> Offline (Hidden)
+                <span class="badge badge-danger" onclick="app.toggleHostelLiveStatus('${h.id}', true)" style="position: absolute; top: 12px; left: 12px; font-weight: 600; padding: 6px 12px; border-radius: 12px; background: #dc2626; color: white; box-shadow: 0 2px 6px rgba(0,0,0,0.2); cursor: pointer;" title="Click to publish Live globally">
+                  <i class="fa-solid fa-eye-slash"></i> Offline (Click to Go Live)
                 </span>
               ` : `
-                <span class="badge badge-success" style="position: absolute; top: 12px; left: 12px; font-weight: 600; padding: 4px 10px; border-radius: 12px; background: #059669; color: white; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">
-                  <i class="fa-solid fa-wifi"></i> Live on Website
+                <span class="badge badge-success" onclick="app.toggleHostelLiveStatus('${h.id}', false)" style="position: absolute; top: 12px; left: 12px; font-weight: 600; padding: 6px 12px; border-radius: 12px; background: #059669; color: white; box-shadow: 0 2px 6px rgba(0,0,0,0.2); cursor: pointer;" title="Click to make Offline (Hide from website)">
+                  <i class="fa-solid fa-wifi"></i> Live on Website (Click to Hide)
                 </span>
               `}
               <span class="gender-badge gender-${(h.gender || 'Co-ed').toLowerCase()}">${h.gender}</span>
@@ -2088,11 +2088,11 @@ class HostelKhojoApp {
               </div>
               <div style="display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap;">
                 ${h.is_live === false ? `
-                  <button class="btn btn-sm" style="background: #10b981; color: white; border: none; font-weight: 600; padding: 6px 12px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 6px;" onclick="app.toggleHostelLiveStatus('${h.id}', true)" title="Publish Hostel Live globally">
+                  <button class="btn btn-sm" style="background: #10b981; color: white; border: none; font-weight: 600; padding: 8px 14px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px;" onclick="app.toggleHostelLiveStatus('${h.id}', true)" title="Publish Hostel Live globally">
                     <i class="fa-solid fa-globe"></i> Go Live
                   </button>
                 ` : `
-                  <button class="btn btn-sm" style="background: #f59e0b; color: white; border: none; font-weight: 600; padding: 6px 12px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 6px;" onclick="app.toggleHostelLiveStatus('${h.id}', false)" title="Make Hostel Offline (Hide from website)">
+                  <button class="btn btn-sm" style="background: #f59e0b; color: white; border: none; font-weight: 600; padding: 8px 14px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px;" onclick="app.toggleHostelLiveStatus('${h.id}', false)" title="Make Hostel Offline (Hide from website)">
                     <i class="fa-solid fa-eye-slash"></i> Make Offline
                   </button>
                 `}
@@ -2108,6 +2108,7 @@ class HostelKhojoApp {
               </div>
             </div>
           </div>
+
 
         `).join('');
       }
@@ -2197,14 +2198,15 @@ class HostelKhojoApp {
           <div class="card-image-wrapper">
             <img src="${h.imageMain || 'assets/images/exterior1.png'}" alt="${h.name}" class="card-image" />
             ${h.is_live === false ? `
-              <span class="badge badge-danger" style="position: absolute; top: 12px; left: 12px; font-weight: 600; padding: 4px 10px; border-radius: 12px; background: #dc2626; color: white; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">
-                <i class="fa-solid fa-eye-slash"></i> Offline (Hidden)
+              <span class="badge badge-danger" onclick="app.toggleHostelLiveStatus('${h.id}', true)" style="position: absolute; top: 12px; left: 12px; font-weight: 600; padding: 6px 12px; border-radius: 12px; background: #dc2626; color: white; box-shadow: 0 2px 6px rgba(0,0,0,0.2); cursor: pointer;" title="Click to publish Live globally">
+                <i class="fa-solid fa-eye-slash"></i> Offline (Click to Go Live)
               </span>
             ` : `
-              <span class="badge badge-success" style="position: absolute; top: 12px; left: 12px; font-weight: 600; padding: 4px 10px; border-radius: 12px; background: #059669; color: white; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">
-                <i class="fa-solid fa-wifi"></i> Live on Website
+              <span class="badge badge-success" onclick="app.toggleHostelLiveStatus('${h.id}', false)" style="position: absolute; top: 12px; left: 12px; font-weight: 600; padding: 6px 12px; border-radius: 12px; background: #059669; color: white; box-shadow: 0 2px 6px rgba(0,0,0,0.2); cursor: pointer;" title="Click to make Offline (Hide from website)">
+                <i class="fa-solid fa-wifi"></i> Live on Website (Click to Hide)
               </span>
             `}
+
             <span class="gender-badge gender-${(h.gender || 'Co-ed').toLowerCase()}">${h.gender}</span>
           </div>
           <div class="card-body">
