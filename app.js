@@ -128,6 +128,11 @@ class HostelKhojoApp {
       console.log("FastAPI Backend offline, using local mock hostels.");
     }
 
+    // Auto-clear legacy local storage draft overrides so screen renders 100% live database data
+    try {
+      localStorage.removeItem("hostelkhojo_custom_properties");
+    } catch (e) {}
+
 
 
     this.filteredHostels = [...this.hostels];
