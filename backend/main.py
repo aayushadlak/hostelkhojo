@@ -164,7 +164,7 @@ def get_me(current_user: UserDB = Depends(get_current_user)):
     return current_user
 
 # HOSTELS ENDPOINTS
-@app.get("/api/hostels", response_model=List[HostelResponse])
+@app.get("/api/hostels")
 def get_hostels(
     search: Optional[str] = Query(None, description="Search query for name, university, or location"),
     city: Optional[str] = Query(None, description="Filter by city"),
@@ -208,7 +208,16 @@ def get_hostels(
             reviews_res = []
             try:
                 reviews_db = db.query(ReviewDB).filter(ReviewDB.hostel_id == h.id).all()
-                reviews_res = [ReviewResponse.from_orm(r) for r in reviews_db]
+                for r in reviews_db:
+                    reviews_res.append({
+                        "id": str(r.id),
+                        "hostel_id": str(r.hostel_id),
+                        "user_name": str(r.user_name),
+                        "major": str(r.major or "Student"),
+                        "rating": float(r.rating) if r.rating is not None else 5.0,
+                        "comment": str(r.comment or ""),
+                        "created_at": r.created_at.isoformat() if hasattr(r.created_at, "isoformat") and r.created_at else str(r.created_at)
+                    })
             except Exception as rev_err:
                 print(f"Notice: Failed to fetch reviews for hostel {h.id}: {rev_err}")
 
@@ -246,7 +255,7 @@ def get_hostels(
 
     return results
 
-@app.get("/api/hostels/{hostel_id}", response_model=HostelResponse)
+@app.get("/api/hostels/{hostel_id}")
 def get_hostel_detail(hostel_id: str, db: Session = Depends(get_db)):
     h = db.query(HostelDB).filter(HostelDB.id == hostel_id).first()
     if not h:
@@ -255,7 +264,16 @@ def get_hostel_detail(hostel_id: str, db: Session = Depends(get_db)):
     reviews_res = []
     try:
         reviews_db = db.query(ReviewDB).filter(ReviewDB.hostel_id == h.id).all()
-        reviews_res = [ReviewResponse.from_orm(r) for r in reviews_db]
+        for r in reviews_db:
+            reviews_res.append({
+                "id": str(r.id),
+                "hostel_id": str(r.hostel_id),
+                "user_name": str(r.user_name),
+                "major": str(r.major or "Student"),
+                "rating": float(r.rating) if r.rating is not None else 5.0,
+                "comment": str(r.comment or ""),
+                "created_at": r.created_at.isoformat() if hasattr(r.created_at, "isoformat") and r.created_at else str(r.created_at)
+            })
     except Exception:
         pass
 
@@ -478,7 +496,7 @@ def submit_property(sub_in: PropertySubmissionCreate, db: Session = Depends(get_
 from sqlalchemy import or_
 
 # DEDICATED OWNER PORTAL ENDPOINTS
-@app.get("/api/owner/properties", response_model=List[HostelResponse])
+@app.get("/api/owner/properties")
 def get_owner_properties(
     current_user: UserDB = Depends(get_current_user),
     db: Session = Depends(get_db)
