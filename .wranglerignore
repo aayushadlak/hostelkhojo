@@ -1,4 +1,10 @@
 .git
+.gitignore
+wrangler.toml
+worker.js
+package.json
+package-lock.json
+README.md
 backend/
 *.db
 .env
@@ -6,3 +12,6 @@ backend/
 requirements.txt
 Procfile
 netlify.toml
+vercel.json
+_headers
+_redirects
