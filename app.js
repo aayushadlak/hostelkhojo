@@ -128,16 +128,7 @@ class HostelKhojoApp {
       console.log("FastAPI Backend offline, using local mock hostels.");
     }
 
-    // Merge custom locally saved properties to guarantee live rendering across reloads
-    const customProps = JSON.parse(localStorage.getItem("hostelkhojo_custom_properties") || "[]");
-    customProps.forEach(cp => {
-      const existingIdx = this.hostels.findIndex(h => h.id === cp.id);
-      if (existingIdx !== -1) {
-        this.hostels[existingIdx] = cp;
-      } else {
-        this.hostels.unshift(cp);
-      }
-    });
+
 
     this.filteredHostels = [...this.hostels];
     this.renderHostels();
