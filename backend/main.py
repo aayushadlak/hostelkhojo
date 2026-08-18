@@ -1,3 +1,4 @@
+import os
 import time
 import uuid
 import json
@@ -5,13 +6,15 @@ import json
 from typing import List, Optional
 from fastapi import FastAPI, Depends, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 
 try:
     from .database import engine, Base, get_db
     from .models import HostelDB, BookingDB, RoommateDB, PropertySubmissionDB, ReviewDB, UserDB
     from .schemas import (
-        HostelResponse, HostelCreate,
+        HostelResponse, HostelCreate, HostelStatusUpdate,
         BookingResponse, BookingCreate, BookingStatusUpdate,
         RoommateResponse, RoommateCreate,
         PropertySubmissionResponse, PropertySubmissionCreate,
@@ -24,7 +27,7 @@ except ImportError:
     from database import engine, Base, get_db
     from models import HostelDB, BookingDB, RoommateDB, PropertySubmissionDB, ReviewDB, UserDB
     from schemas import (
-        HostelResponse, HostelCreate,
+        HostelResponse, HostelCreate, HostelStatusUpdate,
         BookingResponse, BookingCreate, BookingStatusUpdate,
         RoommateResponse, RoommateCreate,
         PropertySubmissionResponse, PropertySubmissionCreate,
@@ -34,11 +37,14 @@ except ImportError:
     from auth import get_password_hash, verify_password, create_access_token, get_current_user
     from seed import seed_database
 
+
 app = FastAPI(
     title="Hostel Khojo India API",
     description="Production REST API backend for Hostel Khojo India website",
     version="1.0.0"
 )
+
+ROOT_PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 @app.on_event("startup")
 def startup_db_event():
@@ -60,6 +66,19 @@ app.add_middleware(
 # ROOT & HEALTHCHECK
 @app.get("/")
 def root():
+    index_file = os.path.join(ROOT_PROJECT_DIR, "index.html")
+    if os.path.exists(index_file):
+        return FileResponse(index_file)
+    return {
+        "status": "online",
+        "service": "Hostel Khojo India Backend API 🇮🇳",
+        "docs": "/docs",
+        "health": "/api/health",
+        "hostels": "/api/hostels"
+    }
+
+@app.get("/api")
+def api_root():
     return {
         "status": "online",
         "service": "Hostel Khojo India Backend API 🇮🇳",
@@ -75,6 +94,41 @@ def health_check():
         "service": "Hostel Khojo India Backend API",
         "timestamp": time.time()
     }
+
+@app.get("/app.js")
+def serve_app_js():
+    f = os.path.join(ROOT_PROJECT_DIR, "app.js")
+    if os.path.exists(f):
+        return FileResponse(f, media_type="application/javascript")
+    raise HTTPException(status_code=404)
+
+@app.get("/styles.css")
+def serve_styles_css():
+    f = os.path.join(ROOT_PROJECT_DIR, "styles.css")
+    if os.path.exists(f):
+        return FileResponse(f, media_type="text/css")
+    raise HTTPException(status_code=404)
+
+@app.get("/favicon.ico")
+def serve_favicon():
+    f = os.path.join(ROOT_PROJECT_DIR, "favicon.ico")
+    if os.path.exists(f):
+        return FileResponse(f)
+    raise HTTPException(status_code=404)
+
+@app.get("/favicon.png")
+def serve_favicon_png():
+    f = os.path.join(ROOT_PROJECT_DIR, "favicon.png")
+    if os.path.exists(f):
+        return FileResponse(f)
+    raise HTTPException(status_code=404)
+
+# Mount subportals if available
+for folder_name in ["admin", "owner", "user"]:
+    f_path = os.path.join(ROOT_PROJECT_DIR, folder_name)
+    if os.path.exists(f_path):
+        app.mount(f"/{folder_name}", StaticFiles(directory=f_path, html=True), name=folder_name)
+
 
 
 # AUTH ENDPOINTS
@@ -266,9 +320,11 @@ def get_hostels(
                     "description": str(h.description or ""),
                     "messMenu": h.mess_menu if isinstance(h.mess_menu, dict) else {},
                     "owner_id": getattr(h, "owner_id", None),
+                    "is_live": bool(getattr(h, "is_live", True) if getattr(h, "is_live", True) is not None else True),
                     "reviews": reviews_res
                 }
                 results.append(h_dict)
+
             except Exception as h_err:
                 print(f"Error processing hostel {getattr(h, 'id', 'unknown')}: {h_err}")
 
@@ -729,15 +785,56 @@ def delete_owner_property(
         raise HTTPException(status_code=403, detail="Students cannot delete properties. Please log in as a Hostel/PG Owner.")
 
     h = db.query(HostelDB).filter(HostelDB.id == hostel_id).first()
-    if not h:
-        raise HTTPException(status_code=404, detail="Hostel not found")
+    sub = db.query(PropertySubmissionDB).filter(PropertySubmissionDB.id == hostel_id).first()
 
-    if h.owner_id and h.owner_id != current_user.id and current_user.role != "admin":
+    if not h and not sub:
+        raise HTTPException(status_code=404, detail="Hostel property not found")
+
+    if h and h.owner_id and h.owner_id != current_user.id and current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Not authorized to delete this property.")
 
-    db.delete(h)
+    # Cascade delete associated records across all database tables
+    try:
+        db.query(BookingDB).filter(BookingDB.hostel_id == hostel_id).delete(synchronize_session=False)
+        db.query(ReviewDB).filter(ReviewDB.hostel_id == hostel_id).delete(synchronize_session=False)
+        db.query(PropertySubmissionDB).filter(PropertySubmissionDB.id == hostel_id).delete(synchronize_session=False)
+        if h:
+            db.delete(h)
+        db.commit()
+    except Exception as del_err:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to delete property globally: {del_err}")
+
+    return {"status": "success", "message": "Property listing deleted globally."}
+
+
+@app.put("/api/owner/properties/{hostel_id}/status")
+def toggle_hostel_live_status(
+    hostel_id: str,
+    status_in: HostelStatusUpdate,
+    current_user: UserDB = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if current_user.role not in ["owner", "admin"]:
+        raise HTTPException(status_code=403, detail="Hostel Owner or Admin authorization required.")
+
+    h = db.query(HostelDB).filter(HostelDB.id == hostel_id).first()
+    if not h:
+        raise HTTPException(status_code=404, detail="Hostel property not found.")
+
+    if h.owner_id and h.owner_id != current_user.id and current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized to modify status for this property.")
+
+    h.is_live = status_in.is_live
     db.commit()
-    return {"status": "success", "message": "Property removed successfully"}
+    return {
+        "status": "success",
+        "message": f"Hostel status updated to {'Online (Live)' if h.is_live else 'Offline (Hidden)'}",
+        "is_live": h.is_live
+    }
+
+
+
 
 
 
@@ -869,12 +966,26 @@ def delete_admin_hostel_property(
         raise HTTPException(status_code=403, detail="Super Admin authorization required.")
 
     h = db.query(HostelDB).filter(HostelDB.id == hostel_id).first()
-    if not h:
+    sub = db.query(PropertySubmissionDB).filter(PropertySubmissionDB.id == hostel_id).first()
+
+    if not h and not sub:
         raise HTTPException(status_code=404, detail="Hostel property not found.")
 
-    db.delete(h)
-    db.commit()
-    return {"status": "success", "message": "Hostel property deleted successfully by Super Admin."}
+    try:
+        # Cascade delete associated bookings, reviews, and property submissions
+        db.query(BookingDB).filter(BookingDB.hostel_id == hostel_id).delete(synchronize_session=False)
+        db.query(ReviewDB).filter(ReviewDB.hostel_id == hostel_id).delete(synchronize_session=False)
+        db.query(PropertySubmissionDB).filter(PropertySubmissionDB.id == hostel_id).delete(synchronize_session=False)
+
+        if h:
+            db.delete(h)
+        db.commit()
+    except Exception as del_err:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to delete hostel property globally: {del_err}")
+
+    return {"status": "success", "message": "Hostel property deleted globally by Super Admin."}
+
 
 
 if __name__ == "__main__":

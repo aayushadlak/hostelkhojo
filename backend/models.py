@@ -34,6 +34,8 @@ class HostelDB(Base):
     reviews_count = Column(Integer, default=0)
     verified = Column(Boolean, default=True)
     featured = Column(Boolean, default=False)
+    is_live = Column(Boolean, default=True)
+
 
     image_main = Column(String, nullable=True)
     image_single = Column(String, nullable=True)

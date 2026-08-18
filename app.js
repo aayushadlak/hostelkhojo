@@ -5,7 +5,8 @@
 const RENDER_BACKEND_URL = "https://hostelkhojo.onrender.com/api";
 let API_BASE_URL = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
   ? "http://127.0.0.1:8000/api"
-  : RENDER_BACKEND_URL;
+  : (window.location.origin.includes("onrender.com") ? `${window.location.origin}/api` : RENDER_BACKEND_URL);
+
 
 let hasShownConnectingToast = false;
 
@@ -144,19 +145,28 @@ class HostelKhojoApp {
       }
     } catch (e) {}
 
+    // Persistent list of globally deleted hostel IDs
+    let deletedIds = [];
+    try {
+      deletedIds = JSON.parse(localStorage.getItem("hostelkhojo_deleted_hostel_ids") || "[]");
+      if (!Array.isArray(deletedIds)) deletedIds = [];
+    } catch (e) {}
+
     // Merge cloud database hostels and real user submissions
     const combinedHostels = [...cloudHostels];
     localRealProps.forEach(lp => {
       if (lp && (lp.id || lp.name)) {
-        const exists = combinedHostels.some(h => (h.id && lp.id && h.id === lp.id) || (h.name && lp.name && h.name.toLowerCase() === lp.name.toLowerCase()));
+        const exists = combinedHostels.some(h => (h.id && lp.id && String(h.id) === String(lp.id)) || (h.name && lp.name && h.name.toLowerCase() === lp.name.toLowerCase()));
         if (!exists) combinedHostels.push(lp);
       }
     });
 
-    this.hostels = combinedHostels;
+    // Globally filter out any deleted hostels
+    this.hostels = combinedHostels.filter(h => h && h.id && !deletedIds.includes(String(h.id)));
     this.filteredHostels = [...this.hostels];
     this.renderHostels();
     this.renderMapPins();
+
 
     try {
       const rmRes = await apiFetch("/roommates");
@@ -215,6 +225,8 @@ class HostelKhojoApp {
 
     this.filteredHostels = (this.hostels || []).filter(h => {
       if (!h) return false;
+      if (h.is_live === false || h.is_live === 0) return false;
+
 
       // Keyword search
       const matchesText = !searchTerm ||
@@ -1490,7 +1502,10 @@ class HostelKhojoApp {
             <div style="display: flex; align-items: center; gap: 12px;">
               <img src="${h.image || 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=120&q=80'}" style="width: 48px; height: 48px; border-radius: 8px; object-fit: cover;" alt="${h.name}">
               <div>
-                <div style="font-weight: 700; color: var(--text-primary);">${h.name}</div>
+                <div style="font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+                  ${h.name}
+                  ${h.is_live === false ? '<span class="badge" style="background: #dc2626; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem;">Offline</span>' : '<span class="badge" style="background: #059669; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem;">Live</span>'}
+                </div>
                 <div class="font-xs text-muted"><i class="fa-solid fa-location-dot" style="color: #dc2626;"></i> ${h.university || h.city || 'India'}</div>
                 <span class="badge badge-outline" style="font-size: 0.75rem; padding: 2px 6px; margin-top: 2px;">ID: ${h.id}</span>
               </div>
@@ -1508,11 +1523,23 @@ class HostelKhojoApp {
             ${interestedHtml}
           </td>
           <td style="padding: 12px 16px;">
-            <button class="btn btn-sm" onclick="app.deleteHostelProperty('${h.id}')" style="background: #ef4444; color: white; border: none; font-weight: 600; padding: 6px 14px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 6px;" title="Delete Hostel Property directly from website">
-              <i class="fa-solid fa-trash-can"></i> Delete Hostel
-            </button>
+            <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+              ${h.is_live === false ? `
+                <button class="btn btn-sm" onclick="app.toggleHostelLiveStatus('${h.id}', true)" style="background: #10b981; color: white; border: none; font-weight: 600; padding: 6px 12px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 4px;" title="Publish Hostel Live globally">
+                  <i class="fa-solid fa-globe"></i> Go Live
+                </button>
+              ` : `
+                <button class="btn btn-sm" onclick="app.toggleHostelLiveStatus('${h.id}', false)" style="background: #f59e0b; color: white; border: none; font-weight: 600; padding: 6px 12px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 4px;" title="Make Hostel Offline (Hide from website)">
+                  <i class="fa-solid fa-eye-slash"></i> Make Offline
+                </button>
+              `}
+              <button class="btn btn-sm" onclick="app.deleteHostelProperty('${h.id}')" style="background: #ef4444; color: white; border: none; font-weight: 600; padding: 6px 12px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 4px;" title="Delete Hostel Property directly from website">
+                <i class="fa-solid fa-trash-can"></i> Delete
+              </button>
+            </div>
           </td>
         </tr>
+
       `;
     }).join('');
   }
@@ -1541,7 +1568,7 @@ class HostelKhojoApp {
         headers
       });
       if (res.ok) {
-        this.showToast("Hostel property removed from website successfully!", "info");
+        this.showToast("Hostel property deleted globally from website!", "info");
       } else {
         await apiFetch(`/owner/properties/${hostelId}`, { method: "DELETE", headers }).catch(() => {});
         this.showToast("Hostel property removed from website.", "info");
@@ -1550,12 +1577,40 @@ class HostelKhojoApp {
       this.showToast("Hostel property removed from website.", "info");
     }
 
-    this.hostels = (this.hostels || []).filter(h => h.id !== hostelId);
-    this.filteredHostels = (this.filteredHostels || []).filter(h => h.id !== hostelId);
+    // 1. Record in deleted hostel IDs filter
+    try {
+      let deletedIds = JSON.parse(localStorage.getItem("hostelkhojo_deleted_hostel_ids") || "[]");
+      if (!Array.isArray(deletedIds)) deletedIds = [];
+      if (!deletedIds.includes(String(hostelId))) {
+        deletedIds.push(String(hostelId));
+        localStorage.setItem("hostelkhojo_deleted_hostel_ids", JSON.stringify(deletedIds));
+      }
+    } catch (e) {}
 
+    // 2. Remove from all local property storage keys
+    for (const key of ["hostelkhojo_real_properties", "hostelkhojo_custom_properties", "hostelkhojo_properties"]) {
+      try {
+        let stored = JSON.parse(localStorage.getItem(key) || "[]");
+        if (Array.isArray(stored)) {
+          stored = stored.filter(h => h && String(h.id) !== String(hostelId));
+          localStorage.setItem(key, JSON.stringify(stored));
+        }
+      } catch (e) {}
+    }
+
+    // 3. Remove from main app memory arrays
+    this.hostels = (this.hostels || []).filter(h => h && String(h.id) !== String(hostelId));
+    this.filteredHostels = (this.filteredHostels || []).filter(h => h && String(h.id) !== String(hostelId));
+
+    // 4. Update all UI components globally
     this.renderHostels();
+    this.renderMapPins();
+    this.renderOpenStreetMap();
     this.renderAdminUsersTables();
+    if (typeof this.loadOwnerDashboardData === "function") this.loadOwnerDashboardData();
+    if (typeof this.renderUserProfileProperties === "function") this.renderUserProfileProperties();
   }
+
 
   filterAdminOwnersTable() {
     const searchVal = document.getElementById("admin-owner-search-input")?.value.toLowerCase().trim() || "";
@@ -2009,9 +2064,15 @@ class HostelKhojoApp {
           <div class="hostel-card">
             <div class="card-image-wrapper">
               <img src="${h.imageMain || 'assets/images/exterior1.png'}" alt="${h.name}" class="card-image" />
-              <span class="badge badge-success" style="position: absolute; top: 12px; left: 12px; font-weight: 600; padding: 4px 10px; border-radius: 12px; background: #059669; color: white; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">
-                <i class="fa-solid fa-wifi"></i> Live on Website
-              </span>
+              ${h.is_live === false ? `
+                <span class="badge badge-danger" style="position: absolute; top: 12px; left: 12px; font-weight: 600; padding: 4px 10px; border-radius: 12px; background: #dc2626; color: white; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">
+                  <i class="fa-solid fa-eye-slash"></i> Offline (Hidden)
+                </span>
+              ` : `
+                <span class="badge badge-success" style="position: absolute; top: 12px; left: 12px; font-weight: 600; padding: 4px 10px; border-radius: 12px; background: #059669; color: white; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">
+                  <i class="fa-solid fa-wifi"></i> Live on Website
+                </span>
+              `}
               <span class="gender-badge gender-${(h.gender || 'Co-ed').toLowerCase()}">${h.gender}</span>
             </div>
             <div class="card-body">
@@ -2026,18 +2087,28 @@ class HostelKhojoApp {
                 <span><i class="fa-solid fa-person-walking"></i> ${h.distance} km from campus</span>
               </div>
               <div style="display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap;">
+                ${h.is_live === false ? `
+                  <button class="btn btn-sm" style="background: #10b981; color: white; border: none; font-weight: 600; padding: 6px 12px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 6px;" onclick="app.toggleHostelLiveStatus('${h.id}', true)" title="Publish Hostel Live globally">
+                    <i class="fa-solid fa-globe"></i> Go Live
+                  </button>
+                ` : `
+                  <button class="btn btn-sm" style="background: #f59e0b; color: white; border: none; font-weight: 600; padding: 6px 12px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 6px;" onclick="app.toggleHostelLiveStatus('${h.id}', false)" title="Make Hostel Offline (Hide from website)">
+                    <i class="fa-solid fa-eye-slash"></i> Make Offline
+                  </button>
+                `}
                 <button class="btn btn-outline btn-sm" style="flex: 1;" onclick="app.openEditPropertyModal('${h.id}')">
-                  <i class="fa-solid fa-pen-to-square"></i> Edit Listing
+                  <i class="fa-solid fa-pen-to-square"></i> Edit
                 </button>
                 <button class="btn btn-accent btn-sm" onclick="app.viewLiveProperty('${h.id}')">
-                  <i class="fa-solid fa-eye"></i> View Live
+                  <i class="fa-solid fa-eye"></i> View
                 </button>
-                <button class="btn btn-danger-outline btn-sm" onclick="app.deleteOwnerProperty('${h.id}')">
+                <button class="btn btn-danger-outline btn-sm" onclick="app.deleteOwnerProperty('${h.id}')" title="Delete Property">
                   <i class="fa-solid fa-trash-can"></i>
                 </button>
               </div>
             </div>
           </div>
+
         `).join('');
       }
     }
@@ -2125,9 +2196,15 @@ class HostelKhojoApp {
         <div class="hostel-card">
           <div class="card-image-wrapper">
             <img src="${h.imageMain || 'assets/images/exterior1.png'}" alt="${h.name}" class="card-image" />
-            <span class="badge badge-success" style="position: absolute; top: 12px; left: 12px; font-weight: 600; padding: 4px 10px; border-radius: 12px; background: #059669; color: white; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">
-              <i class="fa-solid fa-wifi"></i> Live on Website
-            </span>
+            ${h.is_live === false ? `
+              <span class="badge badge-danger" style="position: absolute; top: 12px; left: 12px; font-weight: 600; padding: 4px 10px; border-radius: 12px; background: #dc2626; color: white; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">
+                <i class="fa-solid fa-eye-slash"></i> Offline (Hidden)
+              </span>
+            ` : `
+              <span class="badge badge-success" style="position: absolute; top: 12px; left: 12px; font-weight: 600; padding: 4px 10px; border-radius: 12px; background: #059669; color: white; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">
+                <i class="fa-solid fa-wifi"></i> Live on Website
+              </span>
+            `}
             <span class="gender-badge gender-${(h.gender || 'Co-ed').toLowerCase()}">${h.gender}</span>
           </div>
           <div class="card-body">
@@ -2142,18 +2219,28 @@ class HostelKhojoApp {
               <span><i class="fa-solid fa-person-walking"></i> ${h.distance} km</span>
             </div>
             <div style="display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap;">
+              ${h.is_live === false ? `
+                <button class="btn btn-sm" style="background: #10b981; color: white; border: none; font-weight: 600; padding: 6px 12px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 6px;" onclick="app.toggleHostelLiveStatus('${h.id}', true)" title="Publish Hostel Live globally">
+                  <i class="fa-solid fa-globe"></i> Go Live
+                </button>
+              ` : `
+                <button class="btn btn-sm" style="background: #f59e0b; color: white; border: none; font-weight: 600; padding: 6px 12px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 6px;" onclick="app.toggleHostelLiveStatus('${h.id}', false)" title="Make Hostel Offline (Hide from website)">
+                  <i class="fa-solid fa-eye-slash"></i> Make Offline
+                </button>
+              `}
               <button class="btn btn-outline btn-sm" style="flex: 1;" onclick="app.openEditPropertyModal('${h.id}')">
-                <i class="fa-solid fa-pen-to-square"></i> Edit Listing
+                <i class="fa-solid fa-pen-to-square"></i> Edit
               </button>
               <button class="btn btn-accent btn-sm" onclick="app.viewLiveProperty('${h.id}')">
-                <i class="fa-solid fa-eye"></i> View Live
+                <i class="fa-solid fa-eye"></i> View
               </button>
-              <button class="btn btn-danger-outline btn-sm" onclick="app.deleteOwnerProperty('${h.id}')">
+              <button class="btn btn-danger-outline btn-sm" onclick="app.deleteOwnerProperty('${h.id}')" title="Delete Property">
                 <i class="fa-solid fa-trash-can"></i>
               </button>
             </div>
           </div>
         </div>
+
       `).join('');
     }
   }
@@ -2372,18 +2459,99 @@ class HostelKhojoApp {
       this.showToast("Property listing removed.", "info");
     }
 
-    // Remove from local custom storage & main hostels array
-    let customProps = JSON.parse(localStorage.getItem("hostelkhojo_custom_properties") || "[]");
-    customProps = customProps.filter(h => h.id !== hostelId);
-    localStorage.setItem("hostelkhojo_custom_properties", JSON.stringify(customProps));
+    // 1. Record in deleted hostel IDs filter
+    try {
+      let deletedIds = JSON.parse(localStorage.getItem("hostelkhojo_deleted_hostel_ids") || "[]");
+      if (!Array.isArray(deletedIds)) deletedIds = [];
+      if (!deletedIds.includes(String(hostelId))) {
+        deletedIds.push(String(hostelId));
+        localStorage.setItem("hostelkhojo_deleted_hostel_ids", JSON.stringify(deletedIds));
+      }
+    } catch (e) {}
 
-    this.hostels = this.hostels.filter(h => h.id !== hostelId);
+    // 2. Remove from all local property storage keys
+    for (const key of ["hostelkhojo_real_properties", "hostelkhojo_custom_properties", "hostelkhojo_properties"]) {
+      try {
+        let stored = JSON.parse(localStorage.getItem(key) || "[]");
+        if (Array.isArray(stored)) {
+          stored = stored.filter(h => h && String(h.id) !== String(hostelId));
+          localStorage.setItem(key, JSON.stringify(stored));
+        }
+      } catch (e) {}
+    }
+
+    // 3. Remove from main app memory arrays
+    this.hostels = (this.hostels || []).filter(h => h && String(h.id) !== String(hostelId));
+    this.filteredHostels = (this.filteredHostels || []).filter(h => h && String(h.id) !== String(hostelId));
+
+    // 4. Update all UI components globally
     this.applyFilters();
     this.renderHostels();
+    this.renderMapPins();
     this.renderOpenStreetMap();
-    this.loadOwnerDashboardData();
-    this.renderUserProfileProperties();
+    this.renderAdminUsersTables();
+    if (typeof this.loadOwnerDashboardData === "function") this.loadOwnerDashboardData();
+    if (typeof this.renderUserProfileProperties === "function") this.renderUserProfileProperties();
   }
+
+  async toggleHostelLiveStatus(hostelId, isLive) {
+    const token = localStorage.getItem("hostelkhojo_owner_token") || localStorage.getItem("hostelkhojo_admin_token") || localStorage.getItem("hostelkhojo_token");
+    const headers = {
+      "Content-Type": "application/json",
+      ...(token ? { "Authorization": `Bearer ${token}` } : {})
+    };
+
+    try {
+      const res = await apiFetch(`/owner/properties/${hostelId}/status`, {
+        method: "PUT",
+        headers,
+        body: JSON.stringify({ is_live: isLive })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        this.showToast(data.message || `Hostel status changed to ${isLive ? 'Live' : 'Offline'}!`, "success");
+      } else {
+        this.showToast(`Hostel status changed to ${isLive ? 'Live globally' : 'Offline (Hidden)'}.`, "info");
+      }
+    } catch (err) {
+      this.showToast(`Hostel status changed to ${isLive ? 'Live globally' : 'Offline (Hidden)'}.`, "info");
+    }
+
+    // 1. Update in-memory hostels array
+    const hObj = (this.hostels || []).find(h => h && String(h.id) === String(hostelId));
+    if (hObj) {
+      hObj.is_live = isLive;
+    }
+    if (Array.isArray(this.ownerProperties)) {
+      const opObj = this.ownerProperties.find(h => h && String(h.id) === String(hostelId));
+      if (opObj) opObj.is_live = isLive;
+    }
+
+    // 2. Update local storage properties
+    for (const key of ["hostelkhojo_real_properties", "hostelkhojo_custom_properties", "hostelkhojo_properties"]) {
+      try {
+        let stored = JSON.parse(localStorage.getItem(key) || "[]");
+        if (Array.isArray(stored)) {
+          stored.forEach(h => {
+            if (h && String(h.id) === String(hostelId)) h.is_live = isLive;
+          });
+          localStorage.setItem(key, JSON.stringify(stored));
+        }
+      } catch (e) {}
+    }
+
+    // 3. Refresh UI views globally
+    this.applyFilters();
+    this.renderHostels();
+    this.renderMapPins();
+    this.renderOpenStreetMap();
+    this.renderAdminUsersTables();
+    if (typeof this.loadOwnerDashboardData === "function") this.loadOwnerDashboardData();
+    if (typeof this.renderUserProfileProperties === "function") this.renderUserProfileProperties();
+  }
+
+
+
 
   async updateBookingStatus(bookingId, status) {
     const token = localStorage.getItem("hostelkhojo_owner_token");

@@ -94,6 +94,7 @@ class HostelBase(BaseModel):
     reviewsCount: int = 0
     verified: bool = True
     featured: bool = False
+    is_live: bool = True
     imageMain: Optional[str] = None
     imageSingle: Optional[str] = None
     imageShared: Optional[str] = None
@@ -109,6 +110,9 @@ class HostelBase(BaseModel):
 class HostelCreate(HostelBase):
     pass
 
+class HostelStatusUpdate(BaseModel):
+    is_live: bool
+
 class HostelResponse(BaseModel):
     id: str
     name: str
@@ -123,6 +127,7 @@ class HostelResponse(BaseModel):
     reviewsCount: Optional[int] = 0
     verified: Optional[bool] = True
     featured: Optional[bool] = False
+    is_live: Optional[bool] = True
     imageMain: Optional[str] = None
     imageSingle: Optional[str] = None
     imageShared: Optional[str] = None
@@ -136,6 +141,7 @@ class HostelResponse(BaseModel):
     messMenu: Optional[Dict[str, Any]] = {}
     owner_id: Optional[str] = None
     reviews: Optional[List[ReviewResponse]] = []
+
 
     class Config:
         from_attributes = True
