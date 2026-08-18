@@ -1859,6 +1859,8 @@ class HostelKhojoApp {
 
     let newHostelObj = null;
 
+    let isCloudSaved = false;
+
     try {
       let res;
       if (id) {
@@ -1877,6 +1879,7 @@ class HostelKhojoApp {
 
       if (res.ok) {
         newHostelObj = await res.json();
+        isCloudSaved = true;
       } else {
         const errData = await res.json().catch(() => ({}));
         if (res.status === 403 && errData.detail) {
@@ -1938,7 +1941,12 @@ class HostelKhojoApp {
     this.renderOpenStreetMap();
     this.loadOwnerDashboardData();
     this.renderUserProfileProperties();
-    this.showToast(id ? "Property listing updated live on website!" : "New PG/Hostel published live on website!", "success");
+    
+    if (isCloudSaved) {
+      this.showToast(id ? "Property listing updated live on all devices!" : "New PG/Hostel published live to all devices worldwide!", "success");
+    } else {
+      this.showToast("Property saved locally on this browser. Log in as an Owner to sync your listing to all devices worldwide!", "info");
+    }
   }
 
   async deleteOwnerProperty(hostelId) {
