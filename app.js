@@ -43,7 +43,74 @@ async function apiFetch(endpoint, options = {}, retries = 3) {
 }
 
 
-const INITIAL_HOSTELS = [];
+const INITIAL_HOSTELS = [
+  {
+    id: "h_1",
+    name: "St. Xavier's Luxury Student Residency",
+    university: "Delhi University North Campus",
+    city: "Delhi",
+    gender: "Co-ed",
+    type: "Verified Luxury PG & Co-Living",
+    rent: 12500,
+    deposit: 10000,
+    distance: 0.3,
+    rating: 4.9,
+    reviewsCount: 42,
+    verified: true,
+    featured: true,
+    imageMain: "assets/images/exterior1.png",
+    imageSingle: "assets/images/room_single.png",
+    imageShared: "assets/images/room_shared.png",
+    imageMess: "assets/images/mess.png",
+    address: "Hudson Lane, Vijay Nagar, DU North Campus, New Delhi",
+    mapCoords: { top: 35, left: 48 },
+    amenities: ["Wi-Fi", "4-Time Mess", "AC", "Laundry", "24x7 Power Backup", "Biometric Entry"],
+    curfew: "11:00 PM",
+    roomSharing: ["Single", "Double", "Triple"],
+    description: "Premium verified student living space with high-speed Wi-Fi, biometric security, air conditioning, and nutritious 4-time meals daily.",
+    messMenu: {
+      breakfast: "Aloo Paratha / Poha & Chai",
+      lunch: "Paneer, Dal Tadka, Roti, Rice, Salad",
+      snacks: "Samosa / Tea",
+      dinner: "Special Thali & Sweet Dish"
+    },
+    reviews: [
+      { id: "rev_1", user_name: "Aayush Sharma", major: "B.Tech CSE", rating: 5, comment: "Best hostel near campus! Food quality is clean and Wi-Fi is super fast." }
+    ]
+  },
+  {
+    id: "h_2",
+    name: "Kota Scholars Girls Residency",
+    university: "Allen & Resonance Institute Area",
+    city: "Kota",
+    gender: "Girls",
+    type: "Verified Girls PG & Hostel",
+    rent: 9500,
+    deposit: 8000,
+    distance: 0.2,
+    rating: 4.8,
+    reviewsCount: 28,
+    verified: true,
+    featured: true,
+    imageMain: "assets/images/exterior1.png",
+    imageSingle: "assets/images/room_single.png",
+    imageShared: "assets/images/room_shared.png",
+    imageMess: "assets/images/mess.png",
+    address: "Rajeev Gandhi Nagar, Landmark City, Kota, Rajasthan",
+    mapCoords: { top: 55, left: 62 },
+    amenities: ["Wi-Fi", "4-Time Mess", "AC", "CCTV Security", "Study Lounge", "24x7 Power Backup"],
+    curfew: "10:00 PM",
+    roomSharing: ["Single", "Double"],
+    description: "Safe, quiet, and academic-friendly residency for female students. Includes 24/7 security guard, study tables, and quiet ambiance.",
+    messMenu: {
+      breakfast: "Idli Sambhar / Upma & Milk",
+      lunch: "Rajma Chawal, Chapati, Curd",
+      snacks: "Tea & Biscuits",
+      dinner: "Mixed Veg, Dal, Roti, Kheer"
+    },
+    reviews: []
+  }
+];
 const INITIAL_ROOMMATES = [];
 
 

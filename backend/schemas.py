@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Any
 from datetime import datetime
 
 # AUTH SCHEMAS
@@ -117,25 +117,25 @@ class HostelResponse(BaseModel):
     gender: str
     type: str
     rent: float
-    deposit: float
-    distance: float
-    rating: float
-    reviewsCount: int
-    verified: bool
-    featured: bool
-    imageMain: Optional[str]
-    imageSingle: Optional[str]
-    imageShared: Optional[str]
-    imageMess: Optional[str]
+    deposit: Optional[float] = 0.0
+    distance: Optional[float] = 0.0
+    rating: Optional[float] = 4.8
+    reviewsCount: Optional[int] = 0
+    verified: Optional[bool] = True
+    featured: Optional[bool] = False
+    imageMain: Optional[str] = None
+    imageSingle: Optional[str] = None
+    imageShared: Optional[str] = None
+    imageMess: Optional[str] = None
     address: str
-    mapCoords: Dict[str, float]
-    amenities: List[str]
-    curfew: str
-    roomSharing: List[str]
-    description: str
-    messMenu: Dict[str, str]
+    mapCoords: Optional[Dict[str, Any]] = {"top": 40, "left": 50}
+    amenities: Optional[List[str]] = []
+    curfew: Optional[str] = "11:00 PM"
+    roomSharing: Optional[List[str]] = []
+    description: Optional[str] = ""
+    messMenu: Optional[Dict[str, Any]] = {}
     owner_id: Optional[str] = None
-    reviews: List[ReviewResponse] = []
+    reviews: Optional[List[ReviewResponse]] = []
 
     class Config:
         from_attributes = True

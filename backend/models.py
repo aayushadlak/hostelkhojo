@@ -51,35 +51,59 @@ class HostelDB(Base):
     # Helper getters/setters for JSON structures
     @property
     def amenities(self):
-        return json.loads(self.amenities_json) if self.amenities_json else []
+        if not self.amenities_json:
+            return []
+        try:
+            val = json.loads(self.amenities_json)
+            return val if isinstance(val, list) else []
+        except Exception:
+            return []
 
     @amenities.setter
     def amenities(self, value):
-        self.amenities_json = json.dumps(value)
+        self.amenities_json = json.dumps(value if value is not None else [])
 
     @property
     def room_sharing(self):
-        return json.loads(self.room_sharing_json) if self.room_sharing_json else []
+        if not self.room_sharing_json:
+            return []
+        try:
+            val = json.loads(self.room_sharing_json)
+            return val if isinstance(val, list) else []
+        except Exception:
+            return []
 
     @room_sharing.setter
     def room_sharing(self, value):
-        self.room_sharing_json = json.dumps(value)
+        self.room_sharing_json = json.dumps(value if value is not None else [])
 
     @property
     def mess_menu(self):
-        return json.loads(self.mess_menu_json) if self.mess_menu_json else {}
+        if not self.mess_menu_json:
+            return {}
+        try:
+            val = json.loads(self.mess_menu_json)
+            return val if isinstance(val, dict) else {}
+        except Exception:
+            return {}
 
     @mess_menu.setter
     def mess_menu(self, value):
-        self.mess_menu_json = json.dumps(value)
+        self.mess_menu_json = json.dumps(value if value is not None else {})
 
     @property
     def map_coords(self):
-        return json.loads(self.map_coords_json) if self.map_coords_json else {"top": 40, "left": 50}
+        if not self.map_coords_json:
+            return {"top": 40, "left": 50}
+        try:
+            val = json.loads(self.map_coords_json)
+            return val if isinstance(val, dict) else {"top": 40, "left": 50}
+        except Exception:
+            return {"top": 40, "left": 50}
 
     @map_coords.setter
     def map_coords(self, value):
-        self.map_coords_json = json.dumps(value)
+        self.map_coords_json = json.dumps(value if value is not None else {"top": 40, "left": 50})
 
 class BookingDB(Base):
     __tablename__ = "bookings"
