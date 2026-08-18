@@ -2279,6 +2279,15 @@ class HostelKhojoApp {
           return;
         }
       }
+
+      // Sync property to live production cloud backend if currently on local host
+      if (API_BASE_URL !== RENDER_BACKEND_URL) {
+        fetch(`${RENDER_BACKEND_URL}/owner/properties`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        }).catch(() => {});
+      }
     } catch (err) {
       console.warn("Backend save notice:", err);
     }
