@@ -20,15 +20,19 @@ from .schemas import (
 from .auth import get_password_hash, verify_password, create_access_token, get_current_user
 from .seed import seed_database
 
-# Create database tables and seed initial data
-Base.metadata.create_all(bind=engine)
-seed_database()
-
 app = FastAPI(
     title="Hostel Khojo India API",
     description="Production REST API backend for Hostel Khojo India website",
     version="1.0.0"
 )
+
+@app.on_event("startup")
+def startup_db_event():
+    try:
+        Base.metadata.create_all(bind=engine)
+        seed_database()
+    except Exception as db_err:
+        print(f"Startup DB init notice: {db_err}")
 
 # Enable CORS for localhost development and standard web hosting
 app.add_middleware(
@@ -857,6 +861,14 @@ def delete_admin_hostel_property(
     db.delete(h)
     db.commit()
     return {"status": "success", "message": "Hostel property deleted successfully by Super Admin."}
+
+
+if __name__ == "__main__":
+    import os
+    import uvicorn
+    port = int(os.getenv("PORT", 8000))
+    uvicorn.run("backend.main:app", host="0.0.0.0", port=port, reload=False)
+
 
 
 
