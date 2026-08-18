@@ -7,6 +7,8 @@ let API_BASE_URL = (window.location.hostname === "localhost" || window.location.
   ? "http://127.0.0.1:8000/api"
   : "/api";
 
+let hasShownConnectingToast = false;
+
 /**
  * Smart fetch wrapper that handles API requests.
  * Automatically handles localhost vs Render cloud backend, cold-start delays, and proxy fallbacks.
@@ -17,25 +19,37 @@ async function apiFetch(endpoint, options = {}, retries = 3) {
     let res = await fetch(url, options);
     const contentType = res.headers.get("content-type") || "";
 
-    if ((contentType.includes("text/html") || res.status === 502 || res.status === 503 || res.status === 504) && API_BASE_URL !== RENDER_BACKEND_URL) {
-      console.warn(`API server returned status ${res.status} at ${url}. Retrying with direct Render backend URL: ${RENDER_BACKEND_URL}`);
+    // If local proxy/static server returned 404 HTML, switch to direct Render cloud URL
+    if ((contentType.includes("text/html") && res.status !== 200) && API_BASE_URL !== RENDER_BACKEND_URL) {
+      console.warn(`Local endpoint returned HTML at ${url}. Switching to direct Render backend: ${RENDER_BACKEND_URL}`);
       API_BASE_URL = RENDER_BACKEND_URL;
       url = `${API_BASE_URL}${endpoint}`;
       res = await fetch(url, options);
     }
+
+    // Handle Render free tier cold-start status (502, 503, 504) with quiet retries
+    if ((res.status === 502 || res.status === 503 || res.status === 504) && retries > 0) {
+      if (!hasShownConnectingToast && window.app && typeof window.app.showToast === "function") {
+        hasShownConnectingToast = true;
+        window.app.showToast("Waking up live cloud database server... Please wait a few seconds.", "info");
+      }
+      await new Promise(r => setTimeout(r, 3000));
+      return await apiFetch(endpoint, options, retries - 1);
+    }
+
     return res;
   } catch (err) {
     if (API_BASE_URL !== RENDER_BACKEND_URL) {
-      console.warn(`Local request failed at ${url}. Retrying with direct Render backend URL: ${RENDER_BACKEND_URL}`);
+      console.warn(`Local request failed at ${url}. Retrying with direct Render backend: ${RENDER_BACKEND_URL}`);
       API_BASE_URL = RENDER_BACKEND_URL;
-      url = `${API_BASE_URL}${endpoint}`;
-      return await fetch(url, options);
+      return await apiFetch(endpoint, options, retries);
     }
     if (retries > 0) {
-      if (window.app && typeof window.app.showToast === "function" && retries === 3) {
-        window.app.showToast("Connecting to live backend cloud database...", "info");
+      if (!hasShownConnectingToast && window.app && typeof window.app.showToast === "function") {
+        hasShownConnectingToast = true;
+        window.app.showToast("Connecting to live cloud database... Please wait.", "info");
       }
-      await new Promise(r => setTimeout(r, 2000));
+      await new Promise(r => setTimeout(r, 2500));
       return await apiFetch(endpoint, options, retries - 1);
     }
     throw err;
