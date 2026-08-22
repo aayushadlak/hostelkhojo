@@ -3078,7 +3078,7 @@ class HostelKhojoApp {
         <div class="user-badge-container">
           <button class="user-badge-btn admin-badge-btn" onclick="app.openAdminPortal()" title="View Super Admin Control Panel (/admin)" style="border-color: #dc2626; background: rgba(220, 38, 38, 0.08);">
             <div class="user-badge-avatar" style="background: #dc2626; color: white;">${initials}</div>
-            <span style="font-weight: 600; font-size: 0.88rem; color: var(--text-primary);">${this.currentAdminUser.full_name}</span>
+            <span class="user-badge-name" style="font-weight: 600; font-size: 0.88rem; color: var(--text-primary);">${this.currentAdminUser.full_name}</span>
             <span class="badge badge-rose" style="margin-left: 4px; font-size: 0.72rem; padding: 2px 8px; background: #dc2626; color: white; border-radius: 12px;"><i class="fa-solid fa-shield-halved"></i> Super Admin</span>
           </button>
         </div>
@@ -3095,7 +3095,7 @@ class HostelKhojoApp {
         <div class="user-badge-container">
           <button class="user-badge-btn owner-badge-btn" onclick="app.openOwnerPortal()" title="View Owner Dashboard (/owner)" style="border-color: #059669; background: rgba(5, 150, 105, 0.08);">
             <div class="user-badge-avatar" style="background: #059669; color: white;">${initials}</div>
-            <span style="font-weight: 600; font-size: 0.88rem; color: var(--text-primary);">${this.currentOwnerUser.full_name}</span>
+            <span class="user-badge-name" style="font-weight: 600; font-size: 0.88rem; color: var(--text-primary);">${this.currentOwnerUser.full_name}</span>
             <span class="badge badge-success" style="margin-left: 4px; font-size: 0.72rem; padding: 2px 8px; background: #059669; color: white; border-radius: 12px;"><i class="fa-solid fa-building-user"></i> Owner</span>
           </button>
         </div>
@@ -3112,15 +3112,17 @@ class HostelKhojoApp {
         <div class="user-badge-container">
           <button class="user-badge-btn" onclick="app.switchTab('user')" title="View Student Profile (/user)">
             <div class="user-badge-avatar">${initials}</div>
-            <span>${this.currentUser.full_name}</span>
+            <span class="user-badge-name">${this.currentUser.full_name}</span>
             <i class="fa-solid fa-user font-xs" style="margin-left: 6px; opacity: 0.7;"></i>
           </button>
         </div>
       `;
     } else {
       container.innerHTML = `
-        <button class="btn btn-primary" onclick="app.openModal('auth-modal')" id="nav-login-btn">
-          <i class="fa-solid fa-circle-user"></i> Student Login
+        <button class="btn btn-primary nav-login-btn" onclick="app.openModal('auth-modal')" id="nav-login-btn">
+          <i class="fa-solid fa-circle-user"></i>
+          <span class="btn-text-full">Student Login</span>
+          <span class="btn-text-short">Login</span>
         </button>
       `;
     }

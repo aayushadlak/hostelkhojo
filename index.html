@@ -60,31 +60,42 @@
         <span class="logo-badge">India Stay 🇮🇳</span>
       </a>
 
+      <!-- Desktop & Laptop Nav Links -->
       <div class="nav-links">
         <button class="nav-link active" id="nav-hostels-btn" onclick="app.switchTab('hostels')">
-          <i class="fa-solid fa-compass"></i> <span>Explore Hostels & PGs</span>
+          <i class="fa-solid fa-compass"></i>
+          <span class="nav-text-full">Explore Hostels & PGs</span>
+          <span class="nav-text-short">Explore</span>
         </button>
         <button class="nav-link" id="nav-roommates-btn" onclick="app.switchTab('roommates')">
-          <i class="fa-solid fa-user-group"></i> <span>Roommate Matcher</span>
+          <i class="fa-solid fa-user-group"></i>
+          <span class="nav-text-full">Roommate Matcher</span>
+          <span class="nav-text-short">Roommates</span>
           <span class="pulse-dot"></span>
         </button>
         <button class="nav-link" id="nav-saved-btn" onclick="app.showSavedHostels()">
-          <i class="fa-solid fa-bookmark"></i> <span>Saved (<span id="saved-count">0</span>)</span>
+          <i class="fa-solid fa-bookmark"></i>
+          <span>Saved (<span id="saved-count">0</span>)</span>
         </button>
       </div>
 
+      <!-- Action items (Theme toggle, List PG, Login/Profile) -->
       <div class="nav-actions">
         <button class="theme-toggle" id="theme-toggle-btn" onclick="app.toggleTheme()" title="Toggle Light/Dark Theme">
           <i class="fa-solid fa-moon" id="theme-icon"></i>
         </button>
 
-        <button class="btn btn-outline" onclick="app.openOwnerPortal()">
-          <i class="fa-solid fa-plus-circle"></i> List Your PG / Hostel
+        <button class="btn btn-outline nav-list-btn" onclick="app.openOwnerPortal()" title="List Your PG / Hostel">
+          <i class="fa-solid fa-plus-circle"></i>
+          <span class="btn-text-full">List Your PG / Hostel</span>
+          <span class="btn-text-short">List PG</span>
         </button>
 
         <div id="nav-auth-container">
-          <button class="btn btn-primary" onclick="app.openModal('auth-modal')" id="nav-login-btn">
-            <i class="fa-solid fa-circle-user"></i> Student Login
+          <button class="btn btn-primary nav-login-btn" onclick="app.openModal('auth-modal')" id="nav-login-btn">
+            <i class="fa-solid fa-circle-user"></i>
+            <span class="btn-text-full">Student Login</span>
+            <span class="btn-text-short">Login</span>
           </button>
         </div>
       </div>
