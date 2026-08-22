@@ -1233,29 +1233,36 @@
 
 
 
-  <!-- MODAL: ADMIN MASTER AUTHENTICATION -->
+  <!-- MODAL: ADMIN MASTER AUTHENTICATION (PASSWORD PROTECTED LOCK) -->
   <div class="modal-backdrop" id="admin-auth-modal">
-    <div class="modal-box modal-sm text-center">
+    <div class="modal-box modal-sm text-center" style="border: 1.5px solid rgba(220, 38, 38, 0.4); box-shadow: 0 16px 40px rgba(220, 38, 38, 0.15);">
       <button class="modal-close" onclick="app.closeModal('admin-auth-modal')">&times;</button>
-      <div style="width: 60px; height: 60px; border-radius: 50%; background: rgba(220, 38, 38, 0.15); color: #dc2626; font-size: 1.8rem; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px auto;">
-        <i class="fa-solid fa-user-shield"></i>
+      <div style="width: 68px; height: 68px; border-radius: 50%; background: rgba(220, 38, 38, 0.12); color: #dc2626; font-size: 2rem; display: flex; align-items: center; justify-content: center; margin: 0 auto 14px auto; box-shadow: 0 0 0 6px rgba(220, 38, 38, 0.08);">
+        <i class="fa-solid fa-lock"></i>
       </div>
-      <h2 class="modal-title" style="margin-bottom: 4px;">Super Admin Portal</h2>
-      <p class="text-muted font-xs margin-bottom-md">Authorized access only for platform administrators</p>
+      <h2 class="modal-title" style="margin-bottom: 4px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+        Super Admin Lock <span class="badge badge-rose" style="font-size: 0.7rem; padding: 2px 8px; background: #dc2626; color: white;">Protected</span>
+      </h2>
+      <p class="text-muted font-xs margin-bottom-md">Enter authorized Master Admin password to unlock the Control Panel.</p>
 
       <form id="admin-login-form" onsubmit="app.handleAdminLoginSubmit(event)">
         <div class="form-group text-left">
-          <label><i class="fa-solid fa-envelope"></i> Admin Email / Phone</label>
-          <input type="text" id="admin-login-identifier" required placeholder="admin@hostelkhojo.in or 9999999999" class="form-control" value="admin@hostelkhojo.in" />
+          <label><i class="fa-solid fa-envelope"></i> Admin Email / Username / Phone</label>
+          <input type="text" id="admin-login-identifier" required placeholder="admin@hostelkhojo.in" class="form-control" value="admin@hostelkhojo.in" />
         </div>
 
         <div class="form-group text-left">
           <label><i class="fa-solid fa-key"></i> Master Admin Password</label>
-          <input type="password" id="admin-login-password" required placeholder="Enter admin password" class="form-control" />
+          <div style="position: relative; display: flex; align-items: center;">
+            <input type="password" id="admin-login-password" required placeholder="Enter password to unlock" class="form-control" style="padding-right: 40px;" />
+            <button type="button" onclick="app.toggleAdminPasswordVisibility()" style="position: absolute; right: 12px; background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem;" title="Show/Hide password">
+              <i class="fa-solid fa-eye" id="admin-pwd-eye"></i>
+            </button>
+          </div>
         </div>
 
-        <button type="submit" class="btn btn-primary btn-block btn-lg margin-top-md" style="background: #dc2626; border-color: #dc2626;">
-          <i class="fa-solid fa-shield-halved"></i> Access Admin Command Center
+        <button type="submit" class="btn btn-primary btn-block btn-lg margin-top-md" style="background: #dc2626; border-color: #dc2626; font-weight: 700;">
+          <i class="fa-solid fa-lock-open"></i> Unlock Admin Command Center
         </button>
       </form>
     </div>

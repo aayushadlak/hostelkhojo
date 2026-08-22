@@ -112,7 +112,14 @@ class HostelKhojoApp {
     const hash = window.location.hash.toLowerCase();
 
     if (path.includes("/admin") || hash === "#admin") {
-      this.openAdminPortal();
+      const token = localStorage.getItem("hostelkhojo_admin_token");
+      const activeAdmin = (this.currentAdminUser && this.currentAdminUser.role === "admin") ? this.currentAdminUser : null;
+      if (!activeAdmin || !token) {
+        this.switchTab("hostels");
+        this.openModal("admin-auth-modal");
+      } else {
+        this.openAdminPortal();
+      }
     } else if (path.includes("/owner") || hash === "#owner") {
       this.openOwnerPortal();
     } else if (path.includes("/user") || path.includes("/profile") || hash === "#user" || hash === "#profile") {
@@ -1036,29 +1043,24 @@ class HostelKhojoApp {
      ========================================================================== */
 
   openAdminPortal() {
-    let activeAdmin = this.currentAdminUser || (this.currentUser && this.currentUser.role === "admin" ? this.currentUser : (this.currentOwnerUser && this.currentOwnerUser.role === "admin" ? this.currentOwnerUser : null));
+    const token = localStorage.getItem("hostelkhojo_admin_token");
+    const activeAdmin = (this.currentAdminUser && this.currentAdminUser.role === "admin") ? this.currentAdminUser : null;
     
-    if (!activeAdmin) {
-      activeAdmin = {
-        id: "usr_admin_master",
-        full_name: "Super Admin Command",
-        email: "admin@hostelkhojo.in",
-        phone: "9999999999",
-        role: "admin",
-        created_at: new Date().toISOString()
-      };
-      localStorage.setItem("hostelkhojo_admin_token", "admin_master_jwt_token_2026");
-      localStorage.setItem("hostelkhojo_admin_user", JSON.stringify(activeAdmin));
+    if (!activeAdmin || !token) {
+      this.openModal("admin-auth-modal");
+      return;
     }
 
-    this.currentAdminUser = activeAdmin;
     this.switchTab("admin");
     this.loadAdminDashboardData();
   }
 
   async checkAdminSession() {
     const token = localStorage.getItem("hostelkhojo_admin_token");
-    if (!token) return;
+    if (!token) {
+      this.currentAdminUser = null;
+      return;
+    }
 
     try {
       const res = await apiFetch("/auth/me", {
@@ -1069,15 +1071,47 @@ class HostelKhojoApp {
         if (userData.role === "admin") {
           this.currentAdminUser = userData;
           localStorage.setItem("hostelkhojo_admin_user", JSON.stringify(userData));
+        } else {
+          this.currentAdminUser = null;
+          localStorage.removeItem("hostelkhojo_admin_token");
+          localStorage.removeItem("hostelkhojo_admin_user");
         }
       }
-    } catch (e) { }
+    } catch (e) {
+      const stored = JSON.parse(localStorage.getItem("hostelkhojo_admin_user") || "null");
+      if (stored && stored.role === "admin") {
+        this.currentAdminUser = stored;
+      } else {
+        this.currentAdminUser = null;
+      }
+    }
+  }
+
+  toggleAdminPasswordVisibility() {
+    const input = document.getElementById("admin-login-password");
+    const eye = document.getElementById("admin-pwd-eye");
+    if (!input || !eye) return;
+
+    if (input.type === "password") {
+      input.type = "text";
+      eye.className = "fa-solid fa-eye-slash";
+    } else {
+      input.type = "password";
+      eye.className = "fa-solid fa-eye";
+    }
   }
 
   async handleAdminLoginSubmit(e) {
     e.preventDefault();
-    const identifier = document.getElementById("admin-login-identifier").value.trim();
-    const password = document.getElementById("admin-login-password").value.trim();
+    const identifierEl = document.getElementById("admin-login-identifier");
+    const passwordEl = document.getElementById("admin-login-password");
+    const identifier = identifierEl ? identifierEl.value.trim() : "";
+    const password = passwordEl ? passwordEl.value.trim() : "";
+
+    if (!password) {
+      this.showToast("Please enter the Master Admin password to unlock.", "warning");
+      return;
+    }
 
     const validPasskeys = ["adminpassword123", "admin123", "admin", "root", "master123"];
     const isMasterIdentifier = identifier.toLowerCase().includes("admin") || identifier === "9999999999" || identifier.toLowerCase().includes("hostelkhojo");
@@ -1094,7 +1128,7 @@ class HostelKhojoApp {
       if (res.ok) {
         const data = await res.json();
         if (data.user.role !== "admin") {
-          this.showToast("This account does not have Super Admin privileges.", "warning");
+          this.showToast("Access Denied: Account does not have Super Admin privileges.", "warning");
           return;
         }
         localStorage.setItem("hostelkhojo_admin_token", data.access_token);
@@ -1102,8 +1136,10 @@ class HostelKhojoApp {
         this.currentAdminUser = data.user;
         this.saveUserToLocalAllUsers(data.user);
         this.closeModal("admin-auth-modal");
-        this.showToast(`Welcome to Master Admin Command Center, ${data.user.full_name}! 🚀`, "success");
-        this.openAdminPortal();
+        this.showToast(`Admin Command Center unlocked! Welcome, ${data.user.full_name}! 🚀`, "success");
+        this.renderAuthNavUI();
+        this.switchTab("admin");
+        this.loadAdminDashboardData();
         return;
       }
     } catch (err) {
@@ -1115,7 +1151,7 @@ class HostelKhojoApp {
       const adminUser = {
         id: "usr_admin_master",
         full_name: "Super Admin Command",
-        email: "admin@hostelkhojo.in",
+        email: identifier.includes("@") ? identifier : "admin@hostelkhojo.in",
         phone: "9999999999",
         role: "admin",
         created_at: new Date().toISOString()
@@ -1125,23 +1161,36 @@ class HostelKhojoApp {
       this.currentAdminUser = adminUser;
       this.saveUserToLocalAllUsers(adminUser);
       this.closeModal("admin-auth-modal");
-      this.showToast(`Welcome to Master Admin Command Center, ${adminUser.full_name}! 🚀`, "success");
-      this.openAdminPortal();
+      this.showToast(`Admin Command Center unlocked! Welcome, ${adminUser.full_name}! 🚀`, "success");
+      this.renderAuthNavUI();
+      this.switchTab("admin");
+      this.loadAdminDashboardData();
       return;
     }
 
-    this.showToast("Invalid Admin Credentials.", "warning");
+    // Access Denied / Invalid password
+    if (passwordEl) {
+      passwordEl.value = "";
+      passwordEl.focus();
+    }
+    const modalBox = document.querySelector("#admin-auth-modal .modal-box");
+    if (modalBox) {
+      modalBox.style.animation = "none";
+      setTimeout(() => { modalBox.style.animation = "shake 0.4s ease"; }, 10);
+    }
+    this.showToast("Access Denied: Incorrect Admin Password 🔒", "warning");
   }
 
   logoutAdmin() {
     localStorage.removeItem("hostelkhojo_admin_token");
     localStorage.removeItem("hostelkhojo_admin_user");
     this.currentAdminUser = null;
-    if (window.location.pathname === "/admin") {
-      try { history.pushState(null, "", "/"); } catch (e) { }
+    if (window.location.pathname === "/admin" || window.location.hash === "#admin") {
+      try { history.pushState(null, "", "/"); } catch (e) { window.location.hash = ""; }
     }
     this.switchTab("hostels");
-    this.showToast("Logged out of Super Admin Portal.", "info");
+    this.renderAuthNavUI();
+    this.showToast("Admin session locked. Logged out successfully. 🔒", "info");
   }
 
   async loadAdminDashboardData() {
@@ -2972,7 +3021,24 @@ class HostelKhojoApp {
     const container = document.getElementById("nav-auth-container");
     if (!container) return;
 
-    if (this.currentOwnerUser) {
+    if (this.currentAdminUser && this.currentAdminUser.role === "admin") {
+      const initials = (this.currentAdminUser.full_name || "SA")
+        .split(" ")
+        .map(n => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2);
+
+      container.innerHTML = `
+        <div class="user-badge-container">
+          <button class="user-badge-btn admin-badge-btn" onclick="app.openAdminPortal()" title="View Super Admin Control Panel (/admin)" style="border-color: #dc2626; background: rgba(220, 38, 38, 0.08);">
+            <div class="user-badge-avatar" style="background: #dc2626; color: white;">${initials}</div>
+            <span style="font-weight: 600; font-size: 0.88rem; color: var(--text-primary);">${this.currentAdminUser.full_name}</span>
+            <span class="badge badge-rose" style="margin-left: 4px; font-size: 0.72rem; padding: 2px 8px; background: #dc2626; color: white; border-radius: 12px;"><i class="fa-solid fa-shield-halved"></i> Super Admin</span>
+          </button>
+        </div>
+      `;
+    } else if (this.currentOwnerUser) {
       const initials = (this.currentOwnerUser.full_name || "OW")
         .split(" ")
         .map(n => n[0])
@@ -3217,6 +3283,14 @@ class HostelKhojoApp {
 
   /* MODAL HELPERS */
   openModal(id) {
+    if (id === "admin-auth-modal") {
+      const pwd = document.getElementById("admin-login-password");
+      if (pwd) {
+        pwd.value = "";
+        setTimeout(() => pwd.focus(), 150);
+      }
+    }
+
     if (id === "post-roommate-modal" && !this.currentUser) {
       this.showToast("Please log in or register first to post your roommate requirement profile.", "warning");
       const authModal = document.getElementById("auth-modal");
