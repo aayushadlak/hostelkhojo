@@ -381,6 +381,7 @@ def get_hostel_detail(hostel_id: str, db: Session = Depends(get_db)):
         "description": str(h.description or ""),
         "messMenu": h.mess_menu if isinstance(h.mess_menu, dict) else {},
         "owner_id": h.owner_id,
+        "is_live": bool(getattr(h, "is_live", True) if getattr(h, "is_live", True) is not None else True),
         "reviews": reviews_res
     }
 
@@ -623,6 +624,7 @@ def get_owner_properties(
             "description": h.description,
             "messMenu": h.mess_menu,
             "owner_id": h.owner_id,
+            "is_live": bool(getattr(h, "is_live", True) if getattr(h, "is_live", True) is not None else True),
             "reviews": reviews_res
         }
         results.append(h_dict)
@@ -654,6 +656,7 @@ def create_owner_property(
             reviews_count=hostel_in.reviewsCount,
             verified=True,
             featured=hostel_in.featured,
+            is_live=True,
             image_main=hostel_in.imageMain or "assets/images/exterior1.png",
             image_single=hostel_in.imageSingle or "assets/images/room_single.png",
             image_shared=hostel_in.imageShared or "assets/images/room_shared.png",
@@ -685,6 +688,7 @@ def create_owner_property(
             "reviewsCount": new_hostel.reviews_count,
             "verified": new_hostel.verified,
             "featured": new_hostel.featured,
+            "is_live": bool(getattr(new_hostel, "is_live", True)),
             "imageMain": new_hostel.image_main,
             "imageSingle": new_hostel.image_single,
             "imageShared": new_hostel.image_shared,
@@ -759,6 +763,7 @@ def update_owner_property(
         "reviewsCount": h.reviews_count,
         "verified": h.verified,
         "featured": h.featured,
+        "is_live": bool(getattr(h, "is_live", True) if getattr(h, "is_live", True) is not None else True),
         "imageMain": h.image_main,
         "imageSingle": h.image_single,
         "imageShared": h.image_shared,
@@ -809,6 +814,7 @@ def delete_owner_property(
 
 
 @app.put("/api/owner/properties/{hostel_id}/status")
+@app.put("/api/admin/hostels/{hostel_id}/status")
 def toggle_hostel_live_status(
     hostel_id: str,
     status_in: HostelStatusUpdate,
@@ -818,19 +824,32 @@ def toggle_hostel_live_status(
     if current_user.role not in ["owner", "admin"]:
         raise HTTPException(status_code=403, detail="Hostel Owner or Admin authorization required.")
 
-    h = db.query(HostelDB).filter(HostelDB.id == hostel_id).first()
+    h = db.query(HostelDB).filter(
+        (HostelDB.id == hostel_id) | (HostelDB.name.ilike(hostel_id))
+    ).first()
+
     if not h:
-        raise HTTPException(status_code=404, detail="Hostel property not found.")
+        sub = db.query(PropertySubmissionDB).filter(
+            (PropertySubmissionDB.id == hostel_id) | (PropertySubmissionDB.name.ilike(hostel_id))
+        ).first()
+        if not sub:
+            raise HTTPException(status_code=404, detail="Hostel property not found.")
+        return {
+            "status": "success",
+            "message": f"Hostel status updated to {'Online (Live)' if status_in.is_live else 'Offline (Hidden)'}",
+            "is_live": status_in.is_live
+        }
 
     if h.owner_id and h.owner_id != current_user.id and current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Not authorized to modify status for this property.")
 
     h.is_live = status_in.is_live
     db.commit()
+    db.refresh(h)
     return {
         "status": "success",
         "message": f"Hostel status updated to {'Online (Live)' if h.is_live else 'Offline (Hidden)'}",
-        "is_live": h.is_live
+        "is_live": bool(h.is_live)
     }
 
 

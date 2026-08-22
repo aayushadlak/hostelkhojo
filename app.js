@@ -163,7 +163,7 @@ class HostelKhojoApp {
 
     // Globally filter out any deleted hostels
     this.hostels = combinedHostels.filter(h => h && h.id && !deletedIds.includes(String(h.id)));
-    this.filteredHostels = [...this.hostels];
+    this.applyFilters();
     this.renderHostels();
     this.renderMapPins();
 
@@ -1496,15 +1496,18 @@ class HostelKhojoApp {
         `;
       }
 
+      const isOffline = (h.is_live === false || h.is_live === 0 || h.is_live === "false");
+      const safeId = String(h.id || '').replace(/'/g, "\\'");
+
       return `
         <tr style="border-bottom: 1px solid var(--border-color);">
           <td style="padding: 12px 16px;">
             <div style="display: flex; align-items: center; gap: 12px;">
-              <img src="${h.image || 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=120&q=80'}" style="width: 48px; height: 48px; border-radius: 8px; object-fit: cover;" alt="${h.name}">
+              <img src="${h.imageMain || h.image || 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=120&q=80'}" style="width: 48px; height: 48px; border-radius: 8px; object-fit: cover;" alt="${h.name}">
               <div>
                 <div style="font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
                   ${h.name}
-                  ${h.is_live === false ? '<span class="badge" style="background: #dc2626; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem;">Offline</span>' : '<span class="badge" style="background: #059669; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem;">Live</span>'}
+                  ${isOffline ? '<span class="badge" style="background: #dc2626; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem;">Offline</span>' : '<span class="badge" style="background: #059669; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem;">Live</span>'}
                 </div>
                 <div class="font-xs text-muted"><i class="fa-solid fa-location-dot" style="color: #dc2626;"></i> ${h.university || h.city || 'India'}</div>
                 <span class="badge badge-outline" style="font-size: 0.75rem; padding: 2px 6px; margin-top: 2px;">ID: ${h.id}</span>
@@ -1524,22 +1527,21 @@ class HostelKhojoApp {
           </td>
           <td style="padding: 12px 16px;">
             <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
-              ${h.is_live === false ? `
-                <button class="btn btn-sm" onclick="app.toggleHostelLiveStatus('${h.id}', true)" style="background: #10b981; color: white; border: none; font-weight: 600; padding: 6px 12px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 4px;" title="Publish Hostel Live globally">
+              ${isOffline ? `
+                <button class="btn btn-sm" onclick="app.toggleHostelLiveStatus('${safeId}', true)" style="background: #10b981; color: white; border: none; font-weight: 600; padding: 6px 12px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 4px;" title="Publish Hostel Live globally">
                   <i class="fa-solid fa-globe"></i> Go Live
                 </button>
               ` : `
-                <button class="btn btn-sm" onclick="app.toggleHostelLiveStatus('${h.id}', false)" style="background: #f59e0b; color: white; border: none; font-weight: 600; padding: 6px 12px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 4px;" title="Make Hostel Offline (Hide from website)">
+                <button class="btn btn-sm" onclick="app.toggleHostelLiveStatus('${safeId}', false)" style="background: #f59e0b; color: white; border: none; font-weight: 600; padding: 6px 12px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 4px;" title="Make Hostel Offline (Hide from website)">
                   <i class="fa-solid fa-eye-slash"></i> Make Offline
                 </button>
               `}
-              <button class="btn btn-sm" onclick="app.deleteHostelProperty('${h.id}')" style="background: #ef4444; color: white; border: none; font-weight: 600; padding: 6px 12px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 4px;" title="Delete Hostel Property directly from website">
+              <button class="btn btn-sm" onclick="app.deleteHostelProperty('${safeId}')" style="background: #ef4444; color: white; border: none; font-weight: 600; padding: 6px 12px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 4px;" title="Delete Hostel Property directly from website">
                 <i class="fa-solid fa-trash-can"></i> Delete
               </button>
             </div>
           </td>
         </tr>
-
       `;
     }).join('');
   }
@@ -2060,17 +2062,20 @@ class HostelKhojoApp {
           </div>
         `;
       } else {
-        propContainer.innerHTML = this.ownerProperties.map(h => `
+        propContainer.innerHTML = this.ownerProperties.map(h => {
+          const isOffline = (h.is_live === false || h.is_live === 0 || h.is_live === "false");
+          const safeId = String(h.id || h.name || '').replace(/'/g, "\\'");
+          return `
           <div class="hostel-card">
             <div class="card-image-wrapper">
               <img src="${h.imageMain || 'assets/images/exterior1.png'}" alt="${h.name}" class="card-image" />
-              ${h.is_live === false ? `
-                <span class="badge badge-danger" style="position: absolute; top: 12px; left: 12px; font-weight: 600; padding: 4px 10px; border-radius: 12px; background: #dc2626; color: white; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">
-                  <i class="fa-solid fa-eye-slash"></i> Offline (Hidden)
+              ${isOffline ? `
+                <span class="badge badge-danger" onclick="app.toggleHostelLiveStatus('${safeId}', true)" style="position: absolute; top: 12px; left: 12px; font-weight: 600; padding: 4px 10px; border-radius: 12px; background: #dc2626; color: white; box-shadow: 0 2px 6px rgba(0,0,0,0.2); cursor: pointer;" title="Click to publish Live globally">
+                  <i class="fa-solid fa-eye-slash"></i> Offline (Click to Go Live)
                 </span>
               ` : `
-                <span class="badge badge-success" style="position: absolute; top: 12px; left: 12px; font-weight: 600; padding: 4px 10px; border-radius: 12px; background: #059669; color: white; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">
-                  <i class="fa-solid fa-wifi"></i> Live on Website
+                <span class="badge badge-success" onclick="app.toggleHostelLiveStatus('${safeId}', false)" style="position: absolute; top: 12px; left: 12px; font-weight: 600; padding: 4px 10px; border-radius: 12px; background: #059669; color: white; box-shadow: 0 2px 6px rgba(0,0,0,0.2); cursor: pointer;" title="Click to make Offline (Hide from website)">
+                  <i class="fa-solid fa-wifi"></i> Live on Website (Click to Hide)
                 </span>
               `}
               <span class="gender-badge gender-${(h.gender || 'Co-ed').toLowerCase()}">${h.gender}</span>
@@ -2087,31 +2092,29 @@ class HostelKhojoApp {
                 <span><i class="fa-solid fa-person-walking"></i> ${h.distance} km from campus</span>
               </div>
               <div style="display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap;">
-                ${h.is_live === false ? `
-                  <button class="btn btn-sm" style="background: #10b981; color: white; border: none; font-weight: 600; padding: 8px 14px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px;" onclick="app.toggleHostelLiveStatus('${h.id || h.name}', true); return false;" title="Publish Hostel Live globally">
+                ${isOffline ? `
+                  <button class="btn btn-sm" style="background: #10b981; color: white; border: none; font-weight: 600; padding: 8px 14px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px;" onclick="app.toggleHostelLiveStatus('${safeId}', true); return false;" title="Publish Hostel Live globally">
                     <i class="fa-solid fa-globe"></i> Go Live
                   </button>
                 ` : `
-                  <button class="btn btn-sm" style="background: #f59e0b; color: white; border: none; font-weight: 600; padding: 8px 14px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px;" onclick="app.toggleHostelLiveStatus('${h.id || h.name}', false); return false;" title="Make Hostel Offline (Hide from website)">
+                  <button class="btn btn-sm" style="background: #f59e0b; color: white; border: none; font-weight: 600; padding: 8px 14px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px;" onclick="app.toggleHostelLiveStatus('${safeId}', false); return false;" title="Make Hostel Offline (Hide from website)">
                     <i class="fa-solid fa-eye-slash"></i> Make Offline
                   </button>
                 `}
-                <button class="btn btn-outline btn-sm" style="flex: 1;" onclick="app.openEditPropertyModal('${h.id || h.name}')">
+                <button class="btn btn-outline btn-sm" style="flex: 1;" onclick="app.openEditPropertyModal('${safeId}')">
                   <i class="fa-solid fa-pen-to-square"></i> Edit
                 </button>
-                <button class="btn btn-accent btn-sm" onclick="app.viewLiveProperty('${h.id || h.name}')">
+                <button class="btn btn-accent btn-sm" onclick="app.viewLiveProperty('${safeId}')">
                   <i class="fa-solid fa-eye"></i> View
                 </button>
-                <button class="btn btn-danger-outline btn-sm" onclick="app.deleteOwnerProperty('${h.id || h.name}')" title="Delete Property">
+                <button class="btn btn-danger-outline btn-sm" onclick="app.deleteOwnerProperty('${safeId}')" title="Delete Property">
                   <i class="fa-solid fa-trash-can"></i>
                 </button>
               </div>
             </div>
           </div>
-
-
-
-        `).join('');
+          `;
+        }).join('');
       }
     }
 
@@ -2194,16 +2197,19 @@ class HostelKhojoApp {
         </div>
       `;
     } else {
-      container.innerHTML = userProps.map(h => `
+      container.innerHTML = userProps.map(h => {
+        const isOffline = (h.is_live === false || h.is_live === 0 || h.is_live === "false");
+        const safeId = String(h.id || h.name || '').replace(/'/g, "\\'");
+        return `
         <div class="hostel-card">
           <div class="card-image-wrapper">
             <img src="${h.imageMain || 'assets/images/exterior1.png'}" alt="${h.name}" class="card-image" />
-            ${h.is_live === false ? `
-              <span class="badge badge-danger" onclick="app.toggleHostelLiveStatus('${h.id}', true)" style="position: absolute; top: 12px; left: 12px; font-weight: 600; padding: 6px 12px; border-radius: 12px; background: #dc2626; color: white; box-shadow: 0 2px 6px rgba(0,0,0,0.2); cursor: pointer;" title="Click to publish Live globally">
+            ${isOffline ? `
+              <span class="badge badge-danger" onclick="app.toggleHostelLiveStatus('${safeId}', true)" style="position: absolute; top: 12px; left: 12px; font-weight: 600; padding: 6px 12px; border-radius: 12px; background: #dc2626; color: white; box-shadow: 0 2px 6px rgba(0,0,0,0.2); cursor: pointer;" title="Click to publish Live globally">
                 <i class="fa-solid fa-eye-slash"></i> Offline (Click to Go Live)
               </span>
             ` : `
-              <span class="badge badge-success" onclick="app.toggleHostelLiveStatus('${h.id}', false)" style="position: absolute; top: 12px; left: 12px; font-weight: 600; padding: 6px 12px; border-radius: 12px; background: #059669; color: white; box-shadow: 0 2px 6px rgba(0,0,0,0.2); cursor: pointer;" title="Click to make Offline (Hide from website)">
+              <span class="badge badge-success" onclick="app.toggleHostelLiveStatus('${safeId}', false)" style="position: absolute; top: 12px; left: 12px; font-weight: 600; padding: 6px 12px; border-radius: 12px; background: #059669; color: white; box-shadow: 0 2px 6px rgba(0,0,0,0.2); cursor: pointer;" title="Click to make Offline (Hide from website)">
                 <i class="fa-solid fa-wifi"></i> Live on Website (Click to Hide)
               </span>
             `}
@@ -2222,47 +2228,48 @@ class HostelKhojoApp {
               <span><i class="fa-solid fa-person-walking"></i> ${h.distance} km</span>
             </div>
             <div style="display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap;">
-              ${h.is_live === false ? `
-                <button class="btn btn-sm" style="background: #10b981; color: white; border: none; font-weight: 600; padding: 6px 12px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 6px;" onclick="app.toggleHostelLiveStatus('${h.id}', true)" title="Publish Hostel Live globally">
+              ${isOffline ? `
+                <button class="btn btn-sm" style="background: #10b981; color: white; border: none; font-weight: 600; padding: 6px 12px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 6px;" onclick="app.toggleHostelLiveStatus('${safeId}', true)" title="Publish Hostel Live globally">
                   <i class="fa-solid fa-globe"></i> Go Live
                 </button>
               ` : `
-                <button class="btn btn-sm" style="background: #f59e0b; color: white; border: none; font-weight: 600; padding: 6px 12px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 6px;" onclick="app.toggleHostelLiveStatus('${h.id}', false)" title="Make Hostel Offline (Hide from website)">
+                <button class="btn btn-sm" style="background: #f59e0b; color: white; border: none; font-weight: 600; padding: 6px 12px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 6px;" onclick="app.toggleHostelLiveStatus('${safeId}', false)" title="Make Hostel Offline (Hide from website)">
                   <i class="fa-solid fa-eye-slash"></i> Make Offline
                 </button>
               `}
-              <button class="btn btn-outline btn-sm" style="flex: 1;" onclick="app.openEditPropertyModal('${h.id}')">
+              <button class="btn btn-outline btn-sm" style="flex: 1;" onclick="app.openEditPropertyModal('${safeId}')">
                 <i class="fa-solid fa-pen-to-square"></i> Edit
               </button>
-              <button class="btn btn-accent btn-sm" onclick="app.viewLiveProperty('${h.id}')">
+              <button class="btn btn-accent btn-sm" onclick="app.viewLiveProperty('${safeId}')">
                 <i class="fa-solid fa-eye"></i> View
               </button>
-              <button class="btn btn-danger-outline btn-sm" onclick="app.deleteOwnerProperty('${h.id}')" title="Delete Property">
+              <button class="btn btn-danger-outline btn-sm" onclick="app.deleteOwnerProperty('${safeId}')" title="Delete Property">
                 <i class="fa-solid fa-trash-can"></i>
               </button>
             </div>
           </div>
         </div>
-
-      `).join('');
+        `;
+      }).join('');
     }
   }
 
   viewLiveProperty(hostelId) {
     this.switchTab('hostels');
-    const hostel = this.hostels.find(h => h.id === hostelId);
+    const hostel = this.hostels.find(h => h.id === hostelId || (h.name && h.name.toLowerCase() === String(hostelId).toLowerCase()));
     if (hostel) {
       setTimeout(() => {
-        this.openHostelDetail(hostelId);
+        this.openHostelDetail(hostel.id || hostelId);
       }, 200);
     }
   }
 
   openEditPropertyModal(hostelId) {
-    const hostel = this.ownerProperties.find(h => h.id === hostelId) || this.hostels.find(h => h.id === hostelId);
+    const hostel = (this.ownerProperties && this.ownerProperties.find(h => h.id === hostelId || (h.name && h.name.toLowerCase() === String(hostelId).toLowerCase()))) ||
+                   (this.hostels && this.hostels.find(h => h.id === hostelId || (h.name && h.name.toLowerCase() === String(hostelId).toLowerCase())));
     if (!hostel) return;
 
-    document.getElementById("owner-prop-id").value = hostel.id;
+    document.getElementById("owner-prop-id").value = hostel.id || "";
     document.getElementById("owner-prop-modal-title").innerHTML = `<i class="fa-solid fa-pen-to-square" style="color: #059669;"></i> Edit Property Listing`;
     document.getElementById("prop-name").value = hostel.name || "";
     document.getElementById("prop-university").value = hostel.university || "";
@@ -2330,6 +2337,7 @@ class HostelKhojoApp {
       roomSharing: ["Single", "Double", "Triple"],
       verified: true,
       featured: true,
+      is_live: true,
       owner_id: ownerId
     };
 
@@ -2498,31 +2506,34 @@ class HostelKhojoApp {
   }
 
   async toggleHostelLiveStatus(hostelId, isLive) {
-    // 1. INSTANTLY update state in memory for 0ms UI reactivity
+    const targetId = String(hostelId || '').trim();
+    const boolLive = Boolean(isLive);
+
     const matchFn = (h) => h && (
-      (h.id && hostelId && String(h.id) === String(hostelId)) ||
-      (h.name && hostelId && String(h.name).toLowerCase() === String(hostelId).toLowerCase())
+      (h.id && String(h.id).trim() === targetId) ||
+      (h.name && String(h.name).trim().toLowerCase() === targetId.toLowerCase())
     );
 
+    // 1. INSTANTLY update state in memory for 0ms UI reactivity
     if (Array.isArray(this.hostels)) {
       this.hostels.forEach(h => {
-        if (matchFn(h)) h.is_live = isLive;
+        if (matchFn(h)) h.is_live = boolLive;
       });
     }
 
     if (Array.isArray(this.ownerProperties)) {
       this.ownerProperties.forEach(h => {
-        if (matchFn(h)) h.is_live = isLive;
+        if (matchFn(h)) h.is_live = boolLive;
       });
     }
 
-    // 2. INSTANTLY update local storage
-    for (const key of ["hostelkhojo_real_properties", "hostelkhojo_custom_properties", "hostelkhojo_properties"]) {
+    // 2. INSTANTLY update all relevant localStorage keys
+    for (const key of ["hostelkhojo_real_properties", "hostelkhojo_custom_properties", "hostelkhojo_properties", "hostelkhojo_hostels"]) {
       try {
         let stored = JSON.parse(localStorage.getItem(key) || "[]");
         if (Array.isArray(stored)) {
           stored.forEach(h => {
-            if (matchFn(h)) h.is_live = isLive;
+            if (matchFn(h)) h.is_live = boolLive;
           });
           localStorage.setItem(key, JSON.stringify(stored));
         }
@@ -2530,11 +2541,11 @@ class HostelKhojoApp {
     }
 
     // 3. INSTANTLY re-render all UI screens (0ms delay)
-    this.renderOwnerDashboard();
     this.applyFilters();
     this.renderHostels();
     this.renderMapPins();
     this.renderOpenStreetMap();
+    this.renderOwnerDashboard();
     this.renderAdminUsersTables();
     if (typeof this.renderUserProfileProperties === "function") this.renderUserProfileProperties();
 
@@ -2546,19 +2557,19 @@ class HostelKhojoApp {
     };
 
     try {
-      const res = await apiFetch(`/owner/properties/${hostelId}/status`, {
+      const res = await apiFetch(`/owner/properties/${encodeURIComponent(targetId)}/status`, {
         method: "PUT",
         headers,
-        body: JSON.stringify({ is_live: isLive })
+        body: JSON.stringify({ is_live: boolLive })
       });
       if (res.ok) {
         const data = await res.json();
-        this.showToast(data.message || `Hostel status updated to ${isLive ? 'Live' : 'Offline'}!`, "success");
+        this.showToast(data.message || (boolLive ? "Hostel is now Live globally! 🌐" : "Hostel is now Offline (Hidden from website) 🔒"), "success");
       } else {
-        this.showToast(`Hostel is now ${isLive ? 'Live globally' : 'Offline (Hidden)'}.`, "info");
+        this.showToast(`Hostel is now ${boolLive ? 'Live globally 🌐' : 'Offline (Hidden) 🔒'}.`, "info");
       }
     } catch (err) {
-      this.showToast(`Hostel is now ${isLive ? 'Live globally' : 'Offline (Hidden)'}.`, "info");
+      this.showToast(`Hostel is now ${boolLive ? 'Live globally 🌐' : 'Offline (Hidden) 🔒'}.`, "info");
     }
   }
 
