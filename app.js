@@ -760,127 +760,196 @@ class HostelKhojoApp {
     this.openModal("comparison-modal");
   }
 
-  /* HOSTEL DETAIL MODAL & MESS MENU TABS */
+  /* HOSTEL DETAIL MODAL & MESS MENU TABS (STITCH SANCTUARY) */
   openHostelDetail(id) {
     const h = this.hostels.find(item => item.id === id);
     if (!h) return;
 
     const modalContent = document.getElementById("modal-detail-content");
+    const genderClass = (h.gender || 'Boys').toLowerCase().replace(/[^a-z]/g, '');
+
+    const galleryImages = [
+      h.imageMain || 'assets/images/exterior1.png',
+      h.imageSingle || 'assets/images/room1.png',
+      h.imageMess || 'assets/images/mess1.png',
+      'assets/images/exterior1.png'
+    ];
 
     modalContent.innerHTML = `
-      <div class="detail-gallery-grid">
-        <img src="${h.imageMain}" class="detail-main-img" alt="${h.name}" />
-        <div class="detail-sub-imgs">
-          <img src="${h.imageSingle}" alt="Single Room" />
-          <img src="${h.imageMess}" alt="Mess Hall" />
-        </div>
-      </div>
-
-      <div class="detail-header-section">
-        <div>
-          <div class="flex-gap align-center margin-bottom-sm">
-            <span class="badge-gender ${h.gender.toLowerCase()}">${h.gender}</span>
-            ${h.verified ? `<span class="badge-verified"><i class="fa-solid fa-circle-check"></i> Verified Property</span>` : ''}
-          </div>
-          <h2>${h.name}</h2>
-          <p class="card-location"><i class="fa-solid fa-location-dot"></i> ${h.address} (${h.distance} km to ${h.university})</p>
-        </div>
-
-        <div class="text-right">
-          <div class="price-num" style="font-size: 1.8rem;">₹${h.rent.toLocaleString('en-IN')}<span style="font-size: 0.9rem; color: var(--text-muted);">/month</span></div>
-          <div class="card-rating" style="justify-content: flex-end; margin-top: 4px;">
-            <i class="fa-solid fa-star"></i> ${h.rating} (${h.reviewsCount} verified reviews)
-          </div>
-        </div>
-      </div>
-
-      <div class="detail-grid-layout margin-top-lg">
-        <div class="detail-main-col">
+      <div class="modal-detail-layout">
+        <div class="detail-content-col">
           
-          <h3><i class="fa-solid fa-circle-info"></i> About Property</h3>
-          <p class="text-secondary line-height-md margin-bottom-lg">${h.description}</p>
-
-          <h3><i class="fa-solid fa-layer-group"></i> Room Sharing & Pricing Breakdown</h3>
-          <div class="room-options-grid margin-bottom-lg">
-            ${h.roomSharing.map(type => `
-              <div class="room-option-card">
-                <div class="room-type-title">${type} Room</div>
-                <div class="room-price">₹${(h.rent * (type === 'Single' ? 1.3 : type === 'Double' ? 1.0 : 0.8)).toFixed(0)}/mo</div>
-                <ul class="room-specs">
-                  <li><i class="fa-solid fa-check"></i> ${type === 'Single' ? 'Private Study Desk & Almirah' : 'Personal Wardrobe & Desk'}</li>
-                  <li><i class="fa-solid fa-check"></i> Attached Balcony & Bath</li>
-                </ul>
+          <!-- Photo Gallery with Stitch Thumbnail Selector -->
+          <div class="detail-gallery-main">
+            <img id="detail-active-img" src="${galleryImages[0]}" alt="${h.name}" />
+          </div>
+          <div class="detail-thumbs-grid">
+            ${galleryImages.map((img, idx) => `
+              <div class="detail-thumb ${idx === 0 ? 'active' : ''}" onclick="app.switchDetailImage(this, '${img}')">
+                <img src="${img}" alt="${h.name} thumbnail ${idx + 1}" />
               </div>
             `).join('')}
           </div>
 
-          <h3><i class="fa-solid fa-utensils"></i> Weekly Homestyle Mess Menu</h3>
-          <div class="mess-menu-card margin-bottom-lg">
-            <div class="mess-tabs">
-              <button class="mess-tab active" onclick="app.switchMessTab(this, 'mess-bf')">Breakfast</button>
-              <button class="mess-tab" onclick="app.switchMessTab(this, 'mess-lunch')">Lunch</button>
-              <button class="mess-tab" onclick="app.switchMessTab(this, 'mess-snacks')">Evening Snacks</button>
-              <button class="mess-tab" onclick="app.switchMessTab(this, 'mess-dinner')">Dinner</button>
+          <!-- Header & Title -->
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 20px; flex-wrap: wrap;">
+            <div>
+              <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
+                <span class="badge-gender ${genderClass}">${h.gender}</span>
+                ${h.verified ? `<span class="badge-verified"><i class="fa-solid fa-circle-check"></i> Verified Stay</span>` : ''}
+                <span class="badge" style="background: var(--surface-container); color: var(--text-secondary);"><i class="fa-solid fa-shield-halved"></i> 100% Deposit Safe</span>
+              </div>
+              <h2 style="font-size: 1.6rem; font-weight: 800; color: var(--text-primary);">${h.name}</h2>
+              <p class="card-location" style="margin-top: 4px; font-size: 0.92rem;"><i class="fa-solid fa-location-dot"></i> ${h.address} (${h.distance} km to ${h.university})</p>
             </div>
-            <div class="mess-content-box">
-              <div id="mess-bf" class="mess-tab-pane active"><i class="fa-solid fa-mug-hot"></i> ${h.messMenu.breakfast}</div>
-              <div id="mess-lunch" class="mess-tab-pane"><i class="fa-solid fa-bowl-rice"></i> ${h.messMenu.lunch}</div>
-              <div id="mess-snacks" class="mess-tab-pane"><i class="fa-solid fa-cookie-bite"></i> ${h.messMenu.snacks}</div>
-              <div id="mess-dinner" class="mess-tab-pane"><i class="fa-solid fa-utensils"></i> ${h.messMenu.dinner}</div>
+            
+            <div style="text-align: right;">
+              <div class="price-num" style="font-size: 1.8rem; font-weight: 800; color: var(--success-green);">
+                ₹${Number(h.rent).toLocaleString('en-IN')}<span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">/month</span>
+              </div>
+              <div class="card-rating" style="margin-top: 4px; display: inline-flex;">
+                <i class="fa-solid fa-star"></i> ${h.rating} (${h.reviewsCount || 12} reviews)
+              </div>
             </div>
           </div>
 
-          <h3><i class="fa-solid fa-comments"></i> Student Reviews</h3>
-          <div class="reviews-list margin-top-md">
-            ${h.reviews.map(r => `
-              <div class="review-item">
-                <div class="review-user-row">
-                  <strong>${r.name}</strong> • <span class="text-muted">${r.major}</span>
-                  <div class="card-rating"><i class="fa-solid fa-star"></i> ${r.rating}</div>
+          <!-- Key Highlights & Warden Rules Banner -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 24px; background: var(--surface-low); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+            <div>
+              <span style="font-size: 0.76rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; display: block;">Gate Curfew</span>
+              <strong style="font-size: 0.92rem; color: var(--text-primary);"><i class="fa-solid fa-clock" style="color: var(--warning-amber);"></i> ${h.curfew || '10:30 PM'}</strong>
+            </div>
+            <div>
+              <span style="font-size: 0.76rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; display: block;">Security Deposit</span>
+              <strong style="font-size: 0.92rem; color: var(--text-primary);"><i class="fa-solid fa-indian-rupee-sign" style="color: var(--success-green);"></i> ₹${Number(h.deposit || 5000).toLocaleString('en-IN')} (Refundable)</strong>
+            </div>
+            <div>
+              <span style="font-size: 0.76rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; display: block;">Notice Period</span>
+              <strong style="font-size: 0.92rem; color: var(--text-primary);"><i class="fa-solid fa-calendar-day" style="color: var(--primary);"></i> 30 Days</strong>
+            </div>
+          </div>
+
+          <!-- About Property -->
+          <div style="margin-bottom: 24px;">
+            <h3 style="font-size: 1.15rem; margin-bottom: 8px;"><i class="fa-solid fa-circle-info" style="color: var(--primary);"></i> About Property</h3>
+            <p style="color: var(--text-secondary); line-height: 1.6; font-size: 0.92rem;">${h.description}</p>
+          </div>
+
+          <!-- Amenities Tag Cloud -->
+          <div style="margin-bottom: 24px;">
+            <h3 style="font-size: 1.15rem; margin-bottom: 12px;"><i class="fa-solid fa-wand-magic-sparkles" style="color: var(--secondary);"></i> Included Amenities & Facilities</h3>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+              ${(h.amenities || []).map(a => `
+                <span class="amenity-chip" style="padding: 6px 12px; font-size: 0.85rem;">
+                  <i class="fa-solid fa-check"></i> ${a}
+                </span>
+              `).join('')}
+            </div>
+          </div>
+
+          <!-- Room Sharing Options -->
+          <div style="margin-bottom: 24px;">
+            <h3 style="font-size: 1.15rem; margin-bottom: 12px;"><i class="fa-solid fa-bed" style="color: var(--primary);"></i> Room Sharing & Pricing</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
+              ${(h.roomSharing || ['Single', 'Double']).map(type => `
+                <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; text-align: center;">
+                  <div style="font-weight: 700; font-size: 0.95rem; margin-bottom: 4px;">${type} Room</div>
+                  <div style="font-size: 1.25rem; font-weight: 800; color: var(--primary); margin-bottom: 8px;">
+                    ₹${(h.rent * (type === 'Single' ? 1.3 : type === 'Double' ? 1.0 : 0.8)).toFixed(0)}/mo
+                  </div>
+                  <span class="badge badge-accent" style="font-size: 0.72rem;">Available</span>
                 </div>
-                <p class="review-text">"${r.comment}"</p>
-              </div>
-            `).join('')}
+              `).join('')}
+            </div>
           </div>
+
+          <!-- Weekly Mess Menu -->
+          ${h.messMenu ? `
+            <div style="margin-bottom: 24px;">
+              <h3 style="font-size: 1.15rem; margin-bottom: 12px;"><i class="fa-solid fa-utensils" style="color: var(--warning-amber);"></i> 4-Time Homestyle Mess Menu</h3>
+              <div class="user-page-card" style="padding: 16px;">
+                <div class="auth-tabs" style="margin-bottom: 14px;">
+                  <button class="auth-tab active" onclick="app.switchMessTab(this, 'mess-bf')">Breakfast</button>
+                  <button class="auth-tab" onclick="app.switchMessTab(this, 'mess-lunch')">Lunch</button>
+                  <button class="auth-tab" onclick="app.switchMessTab(this, 'mess-snacks')">Snacks</button>
+                  <button class="auth-tab" onclick="app.switchMessTab(this, 'mess-dinner')">Dinner</button>
+                </div>
+                <div style="padding: 4px 8px; font-size: 0.92rem; color: var(--text-primary);">
+                  <div id="mess-bf" class="mess-tab-pane active"><i class="fa-solid fa-mug-hot" style="color: var(--warning-amber); margin-right: 6px;"></i> ${h.messMenu.breakfast}</div>
+                  <div id="mess-lunch" class="mess-tab-pane" style="display:none;"><i class="fa-solid fa-bowl-rice" style="color: var(--success-green); margin-right: 6px;"></i> ${h.messMenu.lunch}</div>
+                  <div id="mess-snacks" class="mess-tab-pane" style="display:none;"><i class="fa-solid fa-cookie-bite" style="color: var(--secondary); margin-right: 6px;"></i> ${h.messMenu.snacks}</div>
+                  <div id="mess-dinner" class="mess-tab-pane" style="display:none;"><i class="fa-solid fa-utensils" style="color: var(--primary); margin-right: 6px;"></i> ${h.messMenu.dinner}</div>
+                </div>
+              </div>
+            </div>
+          ` : ''}
+
+          <!-- Student Reviews -->
+          ${(h.reviews && h.reviews.length > 0) ? `
+            <div>
+              <h3 style="font-size: 1.15rem; margin-bottom: 12px;"><i class="fa-solid fa-comments" style="color: var(--primary);"></i> Verified Student Reviews</h3>
+              <div style="display: flex; flex-direction: column; gap: 12px;">
+                ${h.reviews.map(r => `
+                  <div style="background: var(--surface-low); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 14px 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                      <div><strong>${r.name}</strong> • <span class="text-muted" style="font-size: 0.8rem;">${r.major}</span></div>
+                      <div class="card-rating"><i class="fa-solid fa-star"></i> ${r.rating}</div>
+                    </div>
+                    <p style="font-size: 0.88rem; color: var(--text-secondary); margin: 0;">"${r.comment}"</p>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          ` : ''}
 
         </div>
 
-        <div class="detail-sidebar-col">
-          <div class="sidebar-card">
-            <h4><i class="fa-solid fa-calendar-check"></i> Book a Free Visit / Bed</h4>
-            <p class="text-muted font-sm">Zero brokerage fee guarantee with 100% deposit protection.</p>
+        <!-- Booking Sidebar (Glassmorphic Card) -->
+        <div class="booking-sidebar-card">
+          <h4 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 6px; color: var(--text-primary);">
+            <i class="fa-solid fa-calendar-check" style="color: var(--primary);"></i> Schedule Free Campus Visit
+          </h4>
+          <p class="text-muted" style="font-size: 0.82rem; margin-bottom: 18px;">Zero broker fee & instant warden WhatsApp confirmation.</p>
 
-            <form onsubmit="app.handleBookingSubmit(event, '${h.id}')" class="margin-top-md">
-              <div class="form-group">
-                <label>Select Room Sharing</label>
-                <select class="form-control" required>
-                  ${h.roomSharing.map(s => `<option value="${s}">${s} Room Sharing</option>`).join('')}
-                </select>
-              </div>
+          <form onsubmit="app.handleBookingSubmit(event, '${h.id}')">
+            <div class="form-group">
+              <label>Room Sharing Choice</label>
+              <select class="form-control" required>
+                ${(h.roomSharing || ['Single', 'Double']).map(s => `<option value="${s}">${s} Sharing Room</option>`).join('')}
+              </select>
+            </div>
 
-              <div class="form-group">
-                <label>Preferred Visit Date</label>
-                <input type="date" class="form-control" required />
-              </div>
+            <div class="form-group">
+              <label>Preferred Visit Date</label>
+              <input type="date" class="form-control" required value="${new Date(Date.now() + 86400000).toISOString().split('T')[0]}" />
+            </div>
 
-              <div class="form-group">
-                <label>Your Phone / WhatsApp</label>
-                <input type="tel" placeholder="+91 98765 43210" class="form-control" required />
-              </div>
+            <div class="form-group">
+              <label>Student WhatsApp Number</label>
+              <input type="tel" placeholder="+91 98765 43210" class="form-control" required />
+            </div>
 
-              <button type="submit" class="btn btn-accent btn-block btn-lg margin-top-md">
-                <i class="fa-solid fa-paper-plane"></i> Schedule Free Campus Visit
-              </button>
-              <button type="button" class="btn btn-outline btn-block margin-top-sm" onclick="app.openGoogleDirections(${h.lat || 28.6922}, ${h.lng || 77.2100}, '${encodeURIComponent(h.name)}')" style="border-color: #4285F4; color: #4285F4; font-weight: 600;">
-                <i class="fa-solid fa-map-location-dot" style="color: #ea4335;"></i> Open in Google Maps
-              </button>
-            </form>
-          </div>
+            <button type="submit" class="btn btn-accent btn-block btn-lg" style="margin-top: 16px;">
+              <i class="fa-solid fa-paper-plane"></i> Confirm Free Visit
+            </button>
+
+            <button type="button" class="btn btn-outline btn-block" onclick="app.openGoogleDirections(${h.lat || 28.6922}, ${h.lng || 77.2100}, '${encodeURIComponent(h.name)}')"
+              style="margin-top: 10px; border-color: #4285F4; color: #4285F4; font-weight: 600;">
+              <i class="fa-solid fa-map-location-dot" style="color: #ea4335;"></i> Open in Google Maps
+            </button>
+          </form>
         </div>
       </div>
     `;
 
     this.openModal("hostel-detail-modal");
+  }
+
+  switchDetailImage(thumbEl, src) {
+    const activeImg = document.getElementById("detail-active-img");
+    if (activeImg) activeImg.src = src;
+    document.querySelectorAll(".detail-thumb").forEach(t => t.classList.remove("active"));
+    if (thumbEl) thumbEl.classList.add("active");
   }
 
   switchMessTab(btn, paneId) {
@@ -956,27 +1025,32 @@ class HostelKhojoApp {
     }
 
     grid.innerHTML = filtered.map(r => `
-
       <div class="roommate-card">
         <div class="rm-header">
-          <div class="rm-avatar">${r.avatar || "ST"}</div>
-          <div>
+          <div class="rm-avatar">${r.avatar || (r.name ? r.name.substring(0, 2).toUpperCase() : "ST")}</div>
+          <div class="rm-info">
             <h3 class="rm-name">${r.name}</h3>
-            <p class="rm-uni">${r.university || "Indian Campus"} (${r.major})</p>
+            <p class="rm-major"><i class="fa-solid fa-graduation-cap"></i> ${r.university || "Indian Campus"} (${r.major})</p>
           </div>
         </div>
 
         <div class="rm-tags">
-          <span class="rm-tag"><i class="fa-solid fa-moon"></i> ${r.sleepHabit || r.sleep_habit}</span>
-          <span class="rm-tag"><i class="fa-solid fa-utensils"></i> ${r.diet}</span>
-          <span class="rm-tag"><i class="fa-solid fa-indian-rupee-sign"></i> Max ₹${Number(r.budget).toLocaleString('en-IN')}/mo</span>
+          <span class="rm-tag"><i class="fa-solid fa-moon"></i> ${r.sleepHabit || r.sleep_habit || 'Flexible'}</span>
+          <span class="rm-tag"><i class="fa-solid fa-bowl-food"></i> ${r.diet || 'Any Diet'}</span>
+          <span class="rm-tag" style="background: var(--primary-light); color: var(--primary);"><i class="fa-solid fa-venus-mars"></i> ${r.gender || 'Any'}</span>
         </div>
 
-        <p class="rm-bio">"${r.bio}"</p>
+        <p class="rm-bio">"${r.bio || 'Looking for friendly, respectful roommate near campus with clean habits.'}"</p>
 
-        <button class="btn btn-outline btn-block margin-top-md" onclick="app.connectRoommate('${r.name}')">
-          <i class="fa-solid fa-paper-plane"></i> Send Roommate Request
-        </button>
+        <div class="rm-footer">
+          <div>
+            <div class="rm-budget-label">Max Budget</div>
+            <div class="rm-budget">₹${Number(r.budget || 10000).toLocaleString('en-IN')}<span style="font-size: 0.72rem; color: var(--text-muted);">/mo</span></div>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="app.connectRoommate('${r.name}')">
+            <i class="fa-solid fa-paper-plane"></i> Connect
+          </button>
+        </div>
       </div>
     `).join('');
   }
