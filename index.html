@@ -44,7 +44,16 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <!-- Main Stylesheet -->
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=12.0" />
+
+  <!-- Security Initialization: Ensure Admin is Always Locked by Default -->
+  <script>
+    try {
+      localStorage.removeItem("hostelkhojo_admin_token");
+      localStorage.removeItem("hostelkhojo_admin_user");
+      sessionStorage.removeItem("hostelkhojo_admin_unlocked");
+    } catch (e) { }
+  </script>
 </head>
 
 <body>
@@ -1574,7 +1583,7 @@
   </nav>
 
   <!-- Main JavaScript App Logic -->
-  <script src="app.js?v=9.0"></script>
+  <script src="app.js?v=12.0&t=20260822_adminlock"></script>
 </body>
 
 </html>
