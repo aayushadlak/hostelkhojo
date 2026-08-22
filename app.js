@@ -65,16 +65,9 @@ class HostelKhojoApp {
     this.comparisonIds = [];
     this.activePills = new Set();
 
-    // Purge any legacy dummy admin tokens created by previous versions
-    const savedAdminToken = localStorage.getItem("hostelkhojo_admin_token");
-    if (savedAdminToken === "admin_master_jwt_token_2026") {
-      localStorage.removeItem("hostelkhojo_admin_token");
-      localStorage.removeItem("hostelkhojo_admin_user");
-    }
-
     this.currentUser = JSON.parse(localStorage.getItem("hostelkhojo_user") || "null");
     this.currentOwnerUser = JSON.parse(localStorage.getItem("hostelkhojo_owner_user") || "null");
-    this.currentAdminUser = JSON.parse(localStorage.getItem("hostelkhojo_admin_user") || "null");
+    this.currentAdminUser = null; // Super Admin always requires password verification on access
     this.ownerProperties = [];
     this.ownerBookings = [];
 
@@ -119,10 +112,7 @@ class HostelKhojoApp {
     const hash = window.location.hash.toLowerCase();
 
     if (path.includes("/admin") || hash === "#admin") {
-      const isUnlocked = sessionStorage.getItem("hostelkhojo_admin_unlocked") === "true";
-      const token = localStorage.getItem("hostelkhojo_admin_token");
-      const activeAdmin = (this.currentAdminUser && this.currentAdminUser.role === "admin") ? this.currentAdminUser : null;
-      if (!isUnlocked || !activeAdmin || !token) {
+      if (!this.currentAdminUser || this.currentAdminUser.role !== "admin") {
         this.switchTab("hostels");
         this.openModal("admin-auth-modal");
       } else {
@@ -1051,11 +1041,7 @@ class HostelKhojoApp {
      ========================================================================== */
 
   openAdminPortal() {
-    const isUnlocked = sessionStorage.getItem("hostelkhojo_admin_unlocked") === "true";
-    const token = localStorage.getItem("hostelkhojo_admin_token");
-    const activeAdmin = (this.currentAdminUser && this.currentAdminUser.role === "admin") ? this.currentAdminUser : null;
-    
-    if (!isUnlocked || !activeAdmin || !token) {
+    if (!this.currentAdminUser || this.currentAdminUser.role !== "admin") {
       this.openModal("admin-auth-modal");
       return;
     }
@@ -1065,34 +1051,8 @@ class HostelKhojoApp {
   }
 
   async checkAdminSession() {
-    const isUnlocked = sessionStorage.getItem("hostelkhojo_admin_unlocked") === "true";
-    const token = localStorage.getItem("hostelkhojo_admin_token");
-    if (!token || !isUnlocked) {
-      this.currentAdminUser = null;
-      return;
-    }
-
-    try {
-      const res = await apiFetch("/auth/me", {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const userData = await res.json();
-        if (userData.role === "admin") {
-          this.currentAdminUser = userData;
-          localStorage.setItem("hostelkhojo_admin_user", JSON.stringify(userData));
-        } else {
-          this.logoutAdmin();
-        }
-      }
-    } catch (e) {
-      const stored = JSON.parse(localStorage.getItem("hostelkhojo_admin_user") || "null");
-      if (stored && stored.role === "admin") {
-        this.currentAdminUser = stored;
-      } else {
-        this.currentAdminUser = null;
-      }
-    }
+    // Super Admin portal access strictly requires password verification in each browser session
+    this.currentAdminUser = null;
   }
 
   toggleAdminPasswordVisibility() {
@@ -3133,11 +3093,7 @@ class HostelKhojoApp {
   /* GENERAL TAB SWITCHER & /user ROUTER */
   switchTab(tabName) {
     if (tabName === "admin") {
-      const isUnlocked = sessionStorage.getItem("hostelkhojo_admin_unlocked") === "true";
-      const token = localStorage.getItem("hostelkhojo_admin_token");
-      const activeAdmin = (this.currentAdminUser && this.currentAdminUser.role === "admin") ? this.currentAdminUser : null;
-
-      if (!isUnlocked || !activeAdmin || !token) {
+      if (!this.currentAdminUser || this.currentAdminUser.role !== "admin") {
         this.openAdminPortal();
         return;
       }
