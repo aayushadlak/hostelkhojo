@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <!-- Location Pin Marker (Navy/Indigo) -->
+  <path d="M 256 90 
+           C 160 90, 140 180, 140 230 
+           C 140 310, 256 425, 256 425 
+           C 256 425, 372 310, 372 230 
+           C 372 180, 352 90, 256 90 Z" 
+        fill="#1c2d4a" />
+
+  <!-- Inner Pure White Circular Container -->
+  <circle cx="256" cy="210" r="92" fill="#ffffff" />
+
+  <!-- Orange Window Icon inside circle -->
+  <!-- Top Semicircular Arch -->
+  <path d="M 222 188 
+           A 34 34 0 0 1 290 188 
+           L 222 188 Z" 
+        fill="#f97d10" />
+  
+  <!-- Left Window Pane -->
+  <rect x="222" y="196" width="30" height="38" rx="3" fill="#f97d10" />
+  
+  <!-- Right Window Pane -->
+  <rect x="260" y="196" width="30" height="38" rx="3" fill="#f97d10" />
+
+  <!-- Chimney on Right Side of Roof -->
+  <path d="M 334 145 
+           L 334 92 
+           C 334 88, 338 85, 342 85 
+           L 364 85 
+           C 368 85, 372 88, 372 92 
+           L 372 185 Z" 
+        fill="#f97d10" />
+
+  <!-- Roof Structure (Orange chevron with rounded caps) -->
+  <!-- Outer white outline/accent for separation from pin -->
+  <path d="M 125 242 
+           L 256 126 
+           L 387 242" 
+        fill="none" 
+        stroke="#ffffff" 
+        stroke-width="50" 
+        stroke-linecap="round" 
+        stroke-linejoin="round" />
+
+  <path d="M 125 242 
+           L 256 126 
+           L 387 242" 
+        fill="none" 
+        stroke="#f97d10" 
+        stroke-width="36" 
+        stroke-linecap="round" 
+        stroke-linejoin="round" />
+</svg>
