@@ -553,39 +553,48 @@ button, input, select, textarea {
 }
 
 .brand-logo {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 10px;
-  font-size: 1.45rem;
+  font-size: 1.42rem;
   font-weight: 800;
   color: var(--text-primary);
   letter-spacing: -0.03em;
   text-decoration: none;
   flex-shrink: 0;
   cursor: pointer;
-}
-
-.logo-icon-img {
-  width: 40px;
   height: 40px;
-  border-radius: var(--radius-md);
-  object-fit: contain;
-  box-shadow: 0 3px 10px rgba(245, 130, 32, 0.2);
-  background: #ffffff;
-  padding: 2px;
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
-  flex-shrink: 0;
+  line-height: 1;
 }
 
+.brand-logo img,
+.logo-icon-img {
+  width: 36px !important;
+  height: 36px !important;
+  max-width: 36px !important;
+  max-height: 36px !important;
+  object-fit: contain !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  display: inline-block !important;
+  vertical-align: middle !important;
+  flex-shrink: 0 !important;
+  transition: transform 0.25s ease;
+}
+
+.brand-logo:hover img,
 .brand-logo:hover .logo-icon-img {
-  transform: scale(1.06) rotate(-2deg);
-  box-shadow: 0 6px 16px rgba(245, 130, 32, 0.35);
+  transform: scale(1.08);
 }
 
 .logo-text {
   font-weight: 800;
   white-space: nowrap;
   letter-spacing: -0.03em;
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
 }
 
 .logo-highlight {
