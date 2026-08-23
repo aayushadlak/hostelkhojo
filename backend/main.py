@@ -331,6 +331,7 @@ def get_hostels(
                     "amenities": h.amenities if isinstance(h.amenities, list) else [],
                     "curfew": str(h.curfew or "11:00 PM"),
                     "roomSharing": h.room_sharing if isinstance(h.room_sharing, list) else [],
+                    "occupancyPricing": h.occupancy_pricing if isinstance(h.occupancy_pricing, dict) else {},
                     "description": str(h.description or ""),
                     "messMenu": h.mess_menu if isinstance(h.mess_menu, dict) else {},
                     "owner_id": getattr(h, "owner_id", None),
@@ -392,6 +393,7 @@ def get_hostel_detail(hostel_id: str, db: Session = Depends(get_db)):
         "amenities": h.amenities if isinstance(h.amenities, list) else [],
         "curfew": str(h.curfew or "11:00 PM"),
         "roomSharing": h.room_sharing if isinstance(h.room_sharing, list) else [],
+        "occupancyPricing": h.occupancy_pricing if isinstance(h.occupancy_pricing, dict) else {},
         "description": str(h.description or ""),
         "messMenu": h.mess_menu if isinstance(h.mess_menu, dict) else {},
         "owner_id": h.owner_id,
@@ -635,6 +637,7 @@ def get_owner_properties(
             "amenities": h.amenities,
             "curfew": h.curfew,
             "roomSharing": h.room_sharing,
+            "occupancyPricing": h.occupancy_pricing if isinstance(h.occupancy_pricing, dict) else {},
             "description": h.description,
             "messMenu": h.mess_menu,
             "owner_id": h.owner_id,
@@ -680,6 +683,7 @@ def create_owner_property(
             amenities_json=json.dumps(hostel_in.amenities or ["Wi-Fi", "4-Time Mess", "AC"]),
             curfew=hostel_in.curfew or "11:00 PM",
             room_sharing_json=json.dumps(hostel_in.roomSharing or ["Single", "Double"]),
+            occupancy_pricing_json=json.dumps(hostel_in.occupancyPricing if isinstance(hostel_in.occupancyPricing, dict) else {}),
             description=hostel_in.description or "",
             mess_menu_json=json.dumps(hostel_in.messMenu if isinstance(hostel_in.messMenu, dict) else {}),
             owner_id=current_user.id
@@ -712,6 +716,7 @@ def create_owner_property(
             "amenities": new_hostel.amenities,
             "curfew": new_hostel.curfew,
             "roomSharing": new_hostel.room_sharing,
+            "occupancyPricing": new_hostel.occupancy_pricing if isinstance(new_hostel.occupancy_pricing, dict) else {},
             "description": new_hostel.description,
             "messMenu": new_hostel.mess_menu,
             "owner_id": new_hostel.owner_id,
@@ -750,10 +755,12 @@ def update_owner_property(
     h.distance = hostel_in.distance
     h.address = hostel_in.address
     h.description = hostel_in.description
-    if hostel_in.amenities:
+    if hostel_in.amenities is not None:
         h.amenities = hostel_in.amenities
-    if hostel_in.roomSharing:
+    if hostel_in.roomSharing is not None:
         h.room_sharing = hostel_in.roomSharing
+    if hostel_in.occupancyPricing is not None:
+        h.occupancy_pricing = hostel_in.occupancyPricing
     if hostel_in.curfew:
         h.curfew = hostel_in.curfew
 
@@ -787,6 +794,7 @@ def update_owner_property(
         "amenities": h.amenities,
         "curfew": h.curfew,
         "roomSharing": h.room_sharing,
+        "occupancyPricing": h.occupancy_pricing if isinstance(h.occupancy_pricing, dict) else {},
         "description": h.description,
         "messMenu": h.mess_menu,
         "owner_id": h.owner_id,

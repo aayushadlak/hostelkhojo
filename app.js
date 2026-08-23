@@ -892,17 +892,21 @@ class HostelKhojoApp {
             <h3 style="font-size: 1.15rem; margin-bottom: 12px;"><i class="fa-solid fa-bed" style="color: var(--primary);"></i> Room Occupancy & Pricing</h3>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
               ${(h.roomSharing || ['1 Occupancy', '2 Occupancy']).map(type => {
-                let multiplier = 1.0;
-                const tLower = String(type).toLowerCase();
-                if (tLower.includes('1') || tLower.includes('single')) multiplier = 1.35;
-                else if (tLower.includes('2') || tLower.includes('double')) multiplier = 1.0;
-                else if (tLower.includes('3') || tLower.includes('triple')) multiplier = 0.8;
-                else if (tLower.includes('4') || tLower.includes('quad')) multiplier = 0.65;
+                let exactRent = (h.occupancyPricing && h.occupancyPricing[type]) ? h.occupancyPricing[type] : null;
+                if (!exactRent) {
+                  let multiplier = 1.0;
+                  const tLower = String(type).toLowerCase();
+                  if (tLower.includes('1') || tLower.includes('single')) multiplier = 1.35;
+                  else if (tLower.includes('2') || tLower.includes('double')) multiplier = 1.0;
+                  else if (tLower.includes('3') || tLower.includes('triple')) multiplier = 0.8;
+                  else if (tLower.includes('4') || tLower.includes('quad')) multiplier = 0.65;
+                  exactRent = Math.round(h.rent * multiplier);
+                }
                 return `
                 <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; text-align: center;">
                   <div style="font-weight: 700; font-size: 0.95rem; margin-bottom: 4px;">${type}</div>
                   <div style="font-size: 1.25rem; font-weight: 800; color: var(--primary); margin-bottom: 8px;">
-                    ₹${(h.rent * multiplier).toFixed(0)}/mo
+                    ₹${Number(exactRent).toLocaleString('en-IN')}/mo
                   </div>
                   <span class="badge badge-accent" style="font-size: 0.72rem;">Available</span>
                 </div>
@@ -963,7 +967,10 @@ class HostelKhojoApp {
             <div class="form-group">
               <label>Room Occupancy Choice</label>
               <select class="form-control" required>
-                ${(h.roomSharing || ['1 Occupancy', '2 Occupancy']).map(s => `<option value="${s}">${s}</option>`).join('')}
+                ${(h.roomSharing || ['1 Occupancy', '2 Occupancy']).map(s => {
+                  const pr = (h.occupancyPricing && h.occupancyPricing[s]) ? ` (₹${Number(h.occupancyPricing[s]).toLocaleString('en-IN')}/mo)` : '';
+                  return `<option value="${s}">${s}${pr}</option>`;
+                }).join('')}
               </select>
             </div>
 
@@ -2656,6 +2663,9 @@ class HostelKhojoApp {
       });
     });
 
+    // Render individual monthly rent inputs for each checked occupancy
+    this.renderOccupancyRentInputs(hostel.occupancyPricing || {});
+
     document.getElementById("prop-rent").value = hostel.rent || "";
     document.getElementById("prop-deposit").value = hostel.deposit || "";
     document.getElementById("prop-distance").value = hostel.distance || "";
@@ -2665,6 +2675,73 @@ class HostelKhojoApp {
     if (document.getElementById("prop-lng")) document.getElementById("prop-lng").value = hostel.lng || "";
 
     this.openModal("owner-property-modal");
+  }
+
+  renderOccupancyRentInputs(existingPricing = {}) {
+    const container = document.getElementById("prop-occupancy-pricing-container");
+    if (!container) return;
+
+    const checkedBoxes = Array.from(document.querySelectorAll("#prop-occupancy-grid input[type='checkbox']:checked"));
+    if (checkedBoxes.length === 0) {
+      container.innerHTML = `
+        <div style="background: rgba(245, 158, 11, 0.08); border: 1px dashed rgba(245, 158, 11, 0.4); border-radius: var(--radius-md); padding: 12px 16px; color: var(--warning-amber); font-size: 0.85rem;">
+          <i class="fa-solid fa-triangle-exclamation"></i> Please select at least one room occupancy option above.
+        </div>
+      `;
+      return;
+    }
+
+    // Preserve any currently typed values
+    const currentInputValues = { ...existingPricing };
+    document.querySelectorAll(".occupancy-rent-input").forEach(inp => {
+      const occ = inp.getAttribute("data-occupancy");
+      if (occ && inp.value) {
+        currentInputValues[occ] = parseFloat(inp.value);
+      }
+    });
+
+    const defaultRents = {
+      "1 Occupancy": 12000,
+      "2 Occupancy": 8500,
+      "3 Occupancy": 6500,
+      "4 Occupancy": 5000
+    };
+
+    container.innerHTML = `
+      <div style="background: var(--bg-card-hover); border: 1.5px solid var(--border-color); border-radius: var(--radius-md); padding: 18px 20px; animation: fadeIn 0.2s ease;">
+        <label style="font-weight: 700; color: var(--text-primary); font-size: 0.95rem; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+          <span><i class="fa-solid fa-indian-rupee-sign" style="color: var(--success-green);"></i> Set Monthly Rent for Selected Occupancy Types (${checkedBoxes.length} Selected)</span>
+          <span class="font-xs text-muted font-weight-normal">1 Monthly rent field per selected occupancy</span>
+        </label>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px;">
+          ${checkedBoxes.map(cb => {
+            const occName = cb.value;
+            const currentVal = currentInputValues[occName] || defaultRents[occName] || "";
+            const safeOcc = occName.replace(/[^a-zA-Z0-9]/g, '_');
+            return `
+              <div class="form-group" style="margin-bottom: 0;">
+                <label style="font-size: 0.84rem; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                  <i class="fa-solid fa-bed font-xs" style="color: var(--primary);"></i> ${occName} Rent (₹/mo) <span style="color: var(--danger-red);">*</span>
+                </label>
+                <input type="number" id="rent-${safeOcc}" class="form-control occupancy-rent-input" data-occupancy="${occName}" value="${currentVal}" placeholder="e.g. ${defaultRents[occName] || 8000}" required min="500" step="100" oninput="app.updateStartingRentFromOccupancies()" />
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    `;
+
+    this.updateStartingRentFromOccupancies();
+  }
+
+  updateStartingRentFromOccupancies() {
+    const rentInputs = Array.from(document.querySelectorAll(".occupancy-rent-input"));
+    const rentValues = rentInputs.map(inp => parseFloat(inp.value)).filter(v => !isNaN(v) && v > 0);
+    const rentEl = document.getElementById("prop-rent");
+    if (rentEl && rentValues.length > 0) {
+      const minRent = Math.min(...rentValues);
+      rentEl.value = minRent;
+    }
   }
 
   openOwnerPropertyModal() {
@@ -2683,6 +2760,9 @@ class HostelKhojoApp {
     document.querySelectorAll("#prop-occupancy-grid input[type='checkbox']").forEach(cb => {
       cb.checked = (cb.value === "1 Occupancy" || cb.value === "2 Occupancy");
     });
+
+    // Render rent inputs for defaults
+    this.renderOccupancyRentInputs({ "1 Occupancy": 12000, "2 Occupancy": 8500 });
 
     this.openModal("owner-property-modal");
   }
@@ -2711,14 +2791,23 @@ class HostelKhojoApp {
     const lng = parseFloat(document.getElementById("prop-lng")?.value) || 77.2100;
     const description = document.getElementById("prop-description").value.trim();
 
-    // Collect checked room occupancies (1 Occupancy, 2 Occupancy, 3 Occupancy, 4 Occupancy)
+    // Collect checked room occupancies & their individual monthly rents
     const roomSharing = [];
+    const occupancyPricing = {};
     document.querySelectorAll("#prop-occupancy-grid input[type='checkbox']:checked").forEach(cb => {
       roomSharing.push(cb.value);
     });
     if (roomSharing.length === 0) {
       roomSharing.push("1 Occupancy", "2 Occupancy");
     }
+
+    document.querySelectorAll(".occupancy-rent-input").forEach(inp => {
+      const occ = inp.getAttribute("data-occupancy");
+      const val = parseFloat(inp.value);
+      if (occ && !isNaN(val) && val > 0) {
+        occupancyPricing[occ] = val;
+      }
+    });
 
     // Collect checked amenities
     const amenities = [];
@@ -2744,6 +2833,7 @@ class HostelKhojoApp {
       amenities,
       curfew: "11:00 PM",
       roomSharing,
+      occupancyPricing,
       verified: true,
       featured: true,
       is_live: true,

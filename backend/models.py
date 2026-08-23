@@ -47,6 +47,7 @@ class HostelDB(Base):
     amenities_json = Column(Text, default='[]')
     curfew = Column(String, default="11:00 PM")
     room_sharing_json = Column(Text, default='[]')
+    occupancy_pricing_json = Column(Text, default='{}')
     description = Column(Text, nullable=False)
     mess_menu_json = Column(Text, default='{}')
 
@@ -54,6 +55,19 @@ class HostelDB(Base):
     owner_id = Column(String, ForeignKey("users.id"), nullable=True)
 
     # Helper getters/setters for JSON structures
+    @property
+    def occupancy_pricing(self):
+        if not self.occupancy_pricing_json:
+            return {}
+        try:
+            val = json.loads(self.occupancy_pricing_json)
+            return val if isinstance(val, dict) else {}
+        except Exception:
+            return {}
+
+    @occupancy_pricing.setter
+    def occupancy_pricing(self, value):
+        self.occupancy_pricing_json = json.dumps(value if value is not None else {})
     @property
     def amenities(self):
         if not self.amenities_json:

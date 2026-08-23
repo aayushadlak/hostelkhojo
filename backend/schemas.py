@@ -117,6 +117,7 @@ class HostelBase(BaseModel):
     amenities: List[str] = []
     curfew: str = "11:00 PM"
     roomSharing: List[str] = []
+    occupancyPricing: Optional[Dict[str, float]] = {}
     description: str = ""
     messMenu: Optional[Dict[str, Any]] = {}
 
@@ -150,6 +151,7 @@ class HostelResponse(BaseModel):
     amenities: Optional[List[str]] = []
     curfew: Optional[str] = "11:00 PM"
     roomSharing: Optional[List[str]] = []
+    occupancyPricing: Optional[Dict[str, float]] = {}
     description: Optional[str] = ""
     messMenu: Optional[Dict[str, Any]] = {}
     owner_id: Optional[str] = None
