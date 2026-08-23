@@ -51,6 +51,19 @@ class Token(BaseModel):
     token_type: str
     user: UserResponse
 
+class AdminNoticeResponse(BaseModel):
+    id: str
+    owner_id: str
+    property_id: Optional[str] = None
+    property_name: str
+    message: str
+    reason: Optional[str] = None
+    created_at: Optional[datetime] = None
+    is_dismissed: bool = False
+
+    class Config:
+        from_attributes = True
+
 # REVIEW SCHEMAS
 class ReviewCreate(BaseModel):
     user_name: str

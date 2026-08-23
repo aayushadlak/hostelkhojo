@@ -2,6 +2,7 @@ import os
 import time
 import uuid
 import json
+import datetime
 
 from typing import List, Optional
 from fastapi import FastAPI, Depends, HTTPException, Query
@@ -12,27 +13,29 @@ from sqlalchemy.orm import Session
 
 try:
     from .database import engine, Base, get_db
-    from .models import HostelDB, BookingDB, RoommateDB, PropertySubmissionDB, ReviewDB, UserDB
+    from .models import HostelDB, BookingDB, RoommateDB, PropertySubmissionDB, ReviewDB, UserDB, AdminNoticeDB
     from .schemas import (
         HostelResponse, HostelCreate, HostelStatusUpdate,
         BookingResponse, BookingCreate, BookingStatusUpdate,
         RoommateResponse, RoommateCreate,
         PropertySubmissionResponse, PropertySubmissionCreate,
         ReviewResponse, ReviewCreate,
-        UserRegister, UserLogin, GoogleLogin, PhoneUpdate, PasswordReset, UserResponse, UserRoleUpdate, Token
+        UserRegister, UserLogin, GoogleLogin, PhoneUpdate, PasswordReset, UserResponse, UserRoleUpdate, Token,
+        AdminNoticeResponse
     )
     from .auth import get_password_hash, verify_password, create_access_token, get_current_user
     from .seed import seed_database
 except ImportError:
     from database import engine, Base, get_db
-    from models import HostelDB, BookingDB, RoommateDB, PropertySubmissionDB, ReviewDB, UserDB
+    from models import HostelDB, BookingDB, RoommateDB, PropertySubmissionDB, ReviewDB, UserDB, AdminNoticeDB
     from schemas import (
         HostelResponse, HostelCreate, HostelStatusUpdate,
         BookingResponse, BookingCreate, BookingStatusUpdate,
         RoommateResponse, RoommateCreate,
         PropertySubmissionResponse, PropertySubmissionCreate,
         ReviewResponse, ReviewCreate,
-        UserRegister, UserLogin, GoogleLogin, PhoneUpdate, PasswordReset, UserResponse, UserRoleUpdate, Token
+        UserRegister, UserLogin, GoogleLogin, PhoneUpdate, PasswordReset, UserResponse, UserRoleUpdate, Token,
+        AdminNoticeResponse
     )
     from auth import get_password_hash, verify_password, create_access_token, get_current_user
     from seed import seed_database
@@ -1008,7 +1011,24 @@ def delete_admin_hostel_property(
     if not h and not sub:
         raise HTTPException(status_code=404, detail="Hostel property not found.")
 
+    owner_id = h.owner_id if h else (sub.owner_id if sub else None)
+    property_name = h.name if h else (sub.property_name if sub else "PG / Hostel Property")
+
     try:
+        # If the property had an owner, record an official Admin removal notification
+        if owner_id:
+            notice = AdminNoticeDB(
+                id=f"notif_{uuid.uuid4().hex[:10]}",
+                owner_id=owner_id,
+                property_id=hostel_id,
+                property_name=property_name,
+                message=f"Admin has removed this property: '{property_name}'",
+                reason="Removed by Super Admin",
+                created_at=datetime.datetime.utcnow(),
+                is_dismissed=False
+            )
+            db.add(notice)
+
         # Cascade delete associated bookings, reviews, and property submissions
         db.query(BookingDB).filter(BookingDB.hostel_id == hostel_id).delete(synchronize_session=False)
         db.query(ReviewDB).filter(ReviewDB.hostel_id == hostel_id).delete(synchronize_session=False)
@@ -1021,7 +1041,53 @@ def delete_admin_hostel_property(
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Failed to delete hostel property globally: {del_err}")
 
-    return {"status": "success", "message": "Hostel property deleted globally by Super Admin."}
+    return {
+        "status": "success",
+        "message": "Hostel property deleted globally by Super Admin.",
+        "owner_notified": bool(owner_id),
+        "property_name": property_name
+    }
+
+
+# OWNER NOTIFICATIONS ENDPOINTS (Admin removal notices & alerts)
+@app.get("/api/owner/notifications", response_model=List[AdminNoticeResponse])
+def get_owner_notifications(
+    current_user: UserDB = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if current_user.role not in ["owner", "admin"]:
+        raise HTTPException(status_code=403, detail="Owner authorization required.")
+
+    filters = [AdminNoticeDB.owner_id == current_user.id]
+    if current_user.email:
+        filters.append(AdminNoticeDB.owner_id == current_user.email)
+    if current_user.phone:
+        filters.append(AdminNoticeDB.owner_id == current_user.phone)
+
+    notices = db.query(AdminNoticeDB).filter(
+        or_(*filters),
+        AdminNoticeDB.is_dismissed == False
+    ).order_by(AdminNoticeDB.created_at.desc()).all()
+
+    return notices
+
+
+@app.delete("/api/owner/notifications/{notice_id}")
+def dismiss_owner_notification(
+    notice_id: str,
+    current_user: UserDB = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if current_user.role not in ["owner", "admin"]:
+        raise HTTPException(status_code=403, detail="Owner authorization required.")
+
+    notice = db.query(AdminNoticeDB).filter(AdminNoticeDB.id == notice_id).first()
+    if not notice:
+        raise HTTPException(status_code=404, detail="Notification not found.")
+
+    notice.is_dismissed = True
+    db.commit()
+    return {"status": "success", "message": "Notification dismissed successfully."}
 
 
 

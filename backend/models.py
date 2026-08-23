@@ -162,3 +162,15 @@ class ReviewDB(Base):
     rating = Column(Float, nullable=False)
     comment = Column(Text, nullable=False)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+class AdminNoticeDB(Base):
+    __tablename__ = "admin_notices"
+
+    id = Column(String, primary_key=True, index=True)
+    owner_id = Column(String, index=True, nullable=False)
+    property_id = Column(String, nullable=True)
+    property_name = Column(String, nullable=False)
+    message = Column(String, default="Admin has removed this property")
+    reason = Column(String, nullable=True, default="Removed by Super Admin")
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    is_dismissed = Column(Boolean, default=False)
