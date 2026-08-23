@@ -130,12 +130,13 @@
             </div>
 
             <div class="search-field">
-              <label for="room-type-filter"><i class="fa-solid fa-bed"></i> Room Sharing</label>
+              <label for="room-type-filter"><i class="fa-solid fa-bed"></i> Room Occupancy</label>
               <select id="room-type-filter" onchange="app.applyFilters()">
-                <option value="all">Any Room Sharing</option>
-                <option value="Single">Single Private Room</option>
-                <option value="Double">2-Bed Sharing</option>
-                <option value="Triple">3+ Bed Sharing</option>
+                <option value="all">Any Occupancy</option>
+                <option value="1 Occupancy">1 Occupancy (Single)</option>
+                <option value="2 Occupancy">2 Occupancy (Double)</option>
+                <option value="3 Occupancy">3 Occupancy (Triple)</option>
+                <option value="4 Occupancy">4 Occupancy (Quad)</option>
               </select>
             </div>
 
@@ -1047,7 +1048,7 @@
 
         <div class="form-row">
           <div class="form-group">
-            <label>Occupancy Type</label>
+            <label>Gender / Resident Type</label>
             <select id="prop-gender" class="form-control">
               <option value="Boys">Boys Hostel / PG</option>
               <option value="Girls">Girls Hostel / PG</option>
@@ -1061,6 +1062,16 @@
               <option value="PG">PG</option>
               <option value="Both">Both (Hostel & PG)</option>
             </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label><i class="fa-solid fa-bed" style="color: var(--primary);"></i> Room Occupancy Tag / Options</label>
+          <div class="checkbox-grid" id="prop-occupancy-grid">
+            <label><input type="checkbox" value="1 Occupancy" checked /> 1 Occupancy (Single)</label>
+            <label><input type="checkbox" value="2 Occupancy" checked /> 2 Occupancy (Double)</label>
+            <label><input type="checkbox" value="3 Occupancy" /> 3 Occupancy (Triple)</label>
+            <label><input type="checkbox" value="4 Occupancy" /> 4 Occupancy (Quad)</label>
           </div>
         </div>
 

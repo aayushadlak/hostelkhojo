@@ -260,8 +260,23 @@ class HostelKhojoApp {
       // Gender filter
       const matchesGender = gender === "all" || (h.gender && h.gender.toLowerCase() === gender.toLowerCase());
 
-      // Room type filter
-      const matchesRoom = roomType === "all" || (h.roomSharing && (Array.isArray(h.roomSharing) ? h.roomSharing.includes(roomType) : String(h.roomSharing).includes(roomType)));
+      // Room occupancy filter (1 Occupancy, 2 Occupancy, 3 Occupancy, 4 Occupancy)
+      let matchesRoom = true;
+      if (roomType !== "all") {
+        const rsList = Array.isArray(h.roomSharing) ? h.roomSharing.map(s => String(s).toLowerCase()) : [String(h.roomSharing || '').toLowerCase()];
+        const target = roomType.toLowerCase();
+        if (target.includes("1") || target.includes("single")) {
+          matchesRoom = rsList.some(r => r.includes("1") || r.includes("single"));
+        } else if (target.includes("2") || target.includes("double")) {
+          matchesRoom = rsList.some(r => r.includes("2") || r.includes("double"));
+        } else if (target.includes("3") || target.includes("triple")) {
+          matchesRoom = rsList.some(r => r.includes("3") || r.includes("triple"));
+        } else if (target.includes("4") || target.includes("quad") || target.includes("four")) {
+          matchesRoom = rsList.some(r => r.includes("4") || r.includes("quad") || r.includes("four"));
+        } else {
+          matchesRoom = rsList.some(r => r.includes(target));
+        }
+      }
 
       // Budget filter
       const matchesBudget = !h.rent || h.rent <= maxBudget;
@@ -407,6 +422,14 @@ class HostelKhojoApp {
             <div class="card-amenities">
               ${h.amenities.slice(0, 4).map(a => `<span class="amenity-chip"><i class="fa-solid fa-check"></i> ${a}</span>`).join('')}
               ${h.amenities.length > 4 ? `<span class="amenity-chip">+${h.amenities.length - 4} more</span>` : ''}
+            </div>
+
+            <div class="card-occupancies" style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px;">
+              ${(Array.isArray(h.roomSharing) && h.roomSharing.length > 0 ? h.roomSharing : ['1 Occupancy', '2 Occupancy']).map(occ => `
+                <span style="font-size: 0.72rem; font-weight: 600; background: rgba(99, 102, 241, 0.08); color: var(--primary); padding: 2px 7px; border-radius: 4px; border: 1px solid rgba(99, 102, 241, 0.2);">
+                  <i class="fa-solid fa-bed font-xs"></i> ${occ}
+                </span>
+              `).join('')}
             </div>
 
             <div class="card-footer-row">
@@ -864,19 +887,27 @@ class HostelKhojoApp {
             </div>
           </div>
 
-          <!-- Room Sharing Options -->
+          <!-- Room Occupancy Options -->
           <div style="margin-bottom: 24px;">
-            <h3 style="font-size: 1.15rem; margin-bottom: 12px;"><i class="fa-solid fa-bed" style="color: var(--primary);"></i> Room Sharing & Pricing</h3>
+            <h3 style="font-size: 1.15rem; margin-bottom: 12px;"><i class="fa-solid fa-bed" style="color: var(--primary);"></i> Room Occupancy & Pricing</h3>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
-              ${(h.roomSharing || ['Single', 'Double']).map(type => `
+              ${(h.roomSharing || ['1 Occupancy', '2 Occupancy']).map(type => {
+                let multiplier = 1.0;
+                const tLower = String(type).toLowerCase();
+                if (tLower.includes('1') || tLower.includes('single')) multiplier = 1.35;
+                else if (tLower.includes('2') || tLower.includes('double')) multiplier = 1.0;
+                else if (tLower.includes('3') || tLower.includes('triple')) multiplier = 0.8;
+                else if (tLower.includes('4') || tLower.includes('quad')) multiplier = 0.65;
+                return `
                 <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; text-align: center;">
-                  <div style="font-weight: 700; font-size: 0.95rem; margin-bottom: 4px;">${type} Room</div>
+                  <div style="font-weight: 700; font-size: 0.95rem; margin-bottom: 4px;">${type}</div>
                   <div style="font-size: 1.25rem; font-weight: 800; color: var(--primary); margin-bottom: 8px;">
-                    ₹${(h.rent * (type === 'Single' ? 1.3 : type === 'Double' ? 1.0 : 0.8)).toFixed(0)}/mo
+                    ₹${(h.rent * multiplier).toFixed(0)}/mo
                   </div>
                   <span class="badge badge-accent" style="font-size: 0.72rem;">Available</span>
                 </div>
-              `).join('')}
+              `;
+              }).join('')}
             </div>
           </div>
 
@@ -930,9 +961,9 @@ class HostelKhojoApp {
 
           <form onsubmit="app.handleBookingSubmit(event, '${h.id}')">
             <div class="form-group">
-              <label>Room Sharing Choice</label>
+              <label>Room Occupancy Choice</label>
               <select class="form-control" required>
-                ${(h.roomSharing || ['Single', 'Double']).map(s => `<option value="${s}">${s} Sharing Room</option>`).join('')}
+                ${(h.roomSharing || ['1 Occupancy', '2 Occupancy']).map(s => `<option value="${s}">${s}</option>`).join('')}
               </select>
             </div>
 
@@ -2609,6 +2640,22 @@ class HostelKhojoApp {
         typeEl.value = "Both";
       }
     }
+
+    // Set Room Occupancy Checkboxes (1 Occupancy, 2 Occupancy, 3 Occupancy, 4 Occupancy)
+    const currentSharing = Array.isArray(hostel.roomSharing) ? hostel.roomSharing : [hostel.roomSharing || "1 Occupancy", "2 Occupancy"];
+    document.querySelectorAll("#prop-occupancy-grid input[type='checkbox']").forEach(cb => {
+      const val = cb.value;
+      cb.checked = currentSharing.some(cs => {
+        if (!cs) return false;
+        const s = String(cs).toLowerCase();
+        if (val === "1 Occupancy" && (s.includes("1") || s.includes("single"))) return true;
+        if (val === "2 Occupancy" && (s.includes("2") || s.includes("double"))) return true;
+        if (val === "3 Occupancy" && (s.includes("3") || s.includes("triple"))) return true;
+        if (val === "4 Occupancy" && (s.includes("4") || s.includes("quad") || s.includes("four"))) return true;
+        return s === val.toLowerCase();
+      });
+    });
+
     document.getElementById("prop-rent").value = hostel.rent || "";
     document.getElementById("prop-deposit").value = hostel.deposit || "";
     document.getElementById("prop-distance").value = hostel.distance || "";
@@ -2631,6 +2678,12 @@ class HostelKhojoApp {
     if (typeEl) typeEl.value = "Hostel";
     const genderEl = document.getElementById("prop-gender");
     if (genderEl) genderEl.value = "Boys";
+
+    // Default Occupancy selection (1 & 2 Occupancy checked)
+    document.querySelectorAll("#prop-occupancy-grid input[type='checkbox']").forEach(cb => {
+      cb.checked = (cb.value === "1 Occupancy" || cb.value === "2 Occupancy");
+    });
+
     this.openModal("owner-property-modal");
   }
 
@@ -2658,6 +2711,15 @@ class HostelKhojoApp {
     const lng = parseFloat(document.getElementById("prop-lng")?.value) || 77.2100;
     const description = document.getElementById("prop-description").value.trim();
 
+    // Collect checked room occupancies (1 Occupancy, 2 Occupancy, 3 Occupancy, 4 Occupancy)
+    const roomSharing = [];
+    document.querySelectorAll("#prop-occupancy-grid input[type='checkbox']:checked").forEach(cb => {
+      roomSharing.push(cb.value);
+    });
+    if (roomSharing.length === 0) {
+      roomSharing.push("1 Occupancy", "2 Occupancy");
+    }
+
     // Collect checked amenities
     const amenities = [];
     document.querySelectorAll("#prop-amenities-grid input[type='checkbox']:checked").forEach(cb => {
@@ -2681,7 +2743,7 @@ class HostelKhojoApp {
       description,
       amenities,
       curfew: "11:00 PM",
-      roomSharing: ["Single", "Double", "Triple"],
+      roomSharing,
       verified: true,
       featured: true,
       is_live: true,
