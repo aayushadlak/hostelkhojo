@@ -39,15 +39,6 @@
   
   <!-- Main Stylesheet -->
   <link rel="stylesheet" href="styles.css?v=15.0" />
-
-  <!-- Security Initialization: Ensure Admin is Always Locked by Default -->
-  <script>
-    try {
-      localStorage.removeItem("hostelkhojo_admin_token");
-      localStorage.removeItem("hostelkhojo_admin_user");
-      sessionStorage.removeItem("hostelkhojo_admin_unlocked");
-    } catch (e) { }
-  </script>
 </head>
 
 <body>

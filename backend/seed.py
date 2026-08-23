@@ -1,4 +1,7 @@
-from .database import engine, Base
+try:
+    from .database import engine, Base
+except ImportError:
+    from database import engine, Base
 from sqlalchemy import text
 
 def seed_database() -> None:
