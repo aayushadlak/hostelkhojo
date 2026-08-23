@@ -1,0 +1,22 @@
+name: Keep Render Backend Awake 24/7
+
+on:
+  schedule:
+    # Run every 10 minutes (Render sleeps after 15 mins of inactivity)
+    - cron: '*/10 * * * *'
+  workflow_dispatch: # Allows manual trigger anytime from GitHub Actions tab
+
+jobs:
+  ping-render:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Hostel Khojo Render API Health Endpoint
+        run: |
+          echo "Sending keep-alive heartbeat to Render backend..."
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://hostelkhojo.onrender.com/api/health)
+          echo "Render Backend Health HTTP Status: $HTTP_STATUS"
+          if [ "$HTTP_STATUS" -eq 200 ]; then
+            echo "✅ Server is awake and operational!"
+          else
+            echo "⚡ Server responded with $HTTP_STATUS (warming up or spinning up)."
+          fi

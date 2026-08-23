@@ -31,5 +31,14 @@ export default {
     }
 
     return response;
+  },
+
+  // 4. Cloudflare Scheduled Cron Handler (Keeps Render backend awake 24/7)
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(
+      fetch("https://hostelkhojo.onrender.com/api/health", {
+        headers: { "User-Agent": "HostelKhojo-Cloudflare-Pinger/1.0" }
+      }).catch(err => console.log("Render keep-alive ping:", err))
+    );
   }
 };

@@ -15,20 +15,46 @@ let API_BASE_URL = (
 
 
 let hasShownConnectingToast = false;
+let coldStartTimer = null;
+
+// Pre-warm backend immediately on script execution
+(function prewarmRenderBackend() {
+  try {
+    fetch("https://hostelkhojo.onrender.com/api/health", { mode: "cors" }).catch(() => {});
+    // Periodic in-tab heartbeat every 4 minutes to prevent Render from going to sleep while tab is open
+    setInterval(() => {
+      fetch("https://hostelkhojo.onrender.com/api/health", { mode: "cors" }).catch(() => {});
+    }, 4 * 60 * 1000);
+  } catch (e) {}
+})();
 
 /**
  * Smart fetch wrapper that handles API requests.
  * Automatically handles localhost vs Render cloud backend, cold-start delays, and proxy fallbacks.
  */
-async function apiFetch(endpoint, options = {}, retries = 3) {
+async function apiFetch(endpoint, options = {}, retries = 4) {
   let url = `${API_BASE_URL}${endpoint}`;
+
+  // If a mutation or auth request takes > 3s, show non-intrusive wake-up feedback
+  const isStateChanging = options.method && ["POST", "PUT", "DELETE"].includes(options.method.toUpperCase());
+  let timeoutNotice = null;
+  if (isStateChanging && !hasShownConnectingToast && window.app && window.app.showToast) {
+    timeoutNotice = setTimeout(() => {
+      if (!hasShownConnectingToast) {
+        hasShownConnectingToast = true;
+        window.app.showToast("⚡ Cloud server is waking up from idle, please wait a few seconds...", "info");
+      }
+    }, 3000);
+  }
+
   try {
     let res = await fetch(url, options);
+    if (timeoutNotice) clearTimeout(timeoutNotice);
+
     const contentType = res.headers.get("content-type") || "";
 
     // If local proxy/static server returned 404 HTML, switch to direct Render cloud URL
     if ((contentType.includes("text/html") && res.status !== 200) && API_BASE_URL !== RENDER_BACKEND_URL) {
-      console.warn(`Local endpoint returned HTML at ${url}. Switching to direct Render backend: ${RENDER_BACKEND_URL}`);
       API_BASE_URL = RENDER_BACKEND_URL;
       url = `${API_BASE_URL}${endpoint}`;
       res = await fetch(url, options);
@@ -36,19 +62,19 @@ async function apiFetch(endpoint, options = {}, retries = 3) {
 
     // Handle Render free tier cold-start status (502, 503, 504) with quiet retries
     if ((res.status === 502 || res.status === 503 || res.status === 504) && retries > 0) {
-      await new Promise(r => setTimeout(r, 3000));
+      await new Promise(r => setTimeout(r, 2500));
       return await apiFetch(endpoint, options, retries - 1);
     }
 
     return res;
   } catch (err) {
+    if (timeoutNotice) clearTimeout(timeoutNotice);
     if (API_BASE_URL !== RENDER_BACKEND_URL) {
-      console.warn(`Local request failed at ${url}. Retrying with direct Render backend: ${RENDER_BACKEND_URL}`);
       API_BASE_URL = RENDER_BACKEND_URL;
       return await apiFetch(endpoint, options, retries);
     }
     if (retries > 0) {
-      await new Promise(r => setTimeout(r, 2500));
+      await new Promise(r => setTimeout(r, 2000));
       return await apiFetch(endpoint, options, retries - 1);
     }
     throw err;
