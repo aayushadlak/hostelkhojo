@@ -157,15 +157,9 @@ class HostelKhojoApp {
       console.log("FastAPI Backend offline or pending listings.");
     }
 
-    // Load locally saved real user property submissions
-    let localRealProps = [];
-    try {
-      const stored = localStorage.getItem("hostelkhojo_real_properties") || localStorage.getItem("hostelkhojo_custom_properties");
-      if (stored) {
-        localRealProps = JSON.parse(stored);
-        if (!Array.isArray(localRealProps)) localRealProps = [];
-      }
-    } catch (e) {}
+    // Known globally deleted hostel IDs / names to purge from old browser caches
+    const knownDeletedIds = ["h_430a257b", "h_960de4f1"];
+    const knownDeletedNames = ["hh", "kallu hostle"];
 
     // Persistent list of globally deleted hostel IDs
     let deletedIds = [];
@@ -173,18 +167,46 @@ class HostelKhojoApp {
       deletedIds = JSON.parse(localStorage.getItem("hostelkhojo_deleted_hostel_ids") || "[]");
       if (!Array.isArray(deletedIds)) deletedIds = [];
     } catch (e) {}
+    deletedIds = [...new Set([...deletedIds, ...knownDeletedIds])];
+    try { localStorage.setItem("hostelkhojo_deleted_hostel_ids", JSON.stringify(deletedIds)); } catch (e) {}
 
-    // Merge cloud database hostels and real user submissions
-    const combinedHostels = [...cloudHostels];
-    localRealProps.forEach(lp => {
-      if (lp && (lp.id || lp.name)) {
-        const exists = combinedHostels.some(h => (h.id && lp.id && String(h.id) === String(lp.id)) || (h.name && lp.name && h.name.toLowerCase() === lp.name.toLowerCase()));
-        if (!exists) combinedHostels.push(lp);
-      }
-    });
+    // Clean up local storage caches
+    try {
+      ["hostelkhojo_real_properties", "hostelkhojo_custom_properties", "hostelkhojo_owner_properties"].forEach(key => {
+        const stored = localStorage.getItem(key);
+        if (stored) {
+          let list = JSON.parse(stored);
+          if (Array.isArray(list)) {
+            list = list.filter(p => p && p.id && !deletedIds.includes(String(p.id)) && (!p.name || !knownDeletedNames.includes(p.name.trim().toLowerCase())));
+            localStorage.setItem(key, JSON.stringify(list));
+          }
+        }
+      });
+    } catch (e) {}
+
+    // If cloud returned data, it is the primary authoritative source
+    let combinedHostels = [];
+    if (Array.isArray(cloudHostels) && cloudHostels.length > 0) {
+      combinedHostels = [...cloudHostels];
+    } else {
+      // Fallback only if offline
+      try {
+        const stored = localStorage.getItem("hostelkhojo_real_properties");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) combinedHostels = parsed;
+        }
+      } catch (e) {}
+    }
 
     // Globally filter out any deleted hostels
-    this.hostels = combinedHostels.filter(h => h && h.id && !deletedIds.includes(String(h.id)));
+    this.hostels = combinedHostels.filter(h => {
+      if (!h || !h.id) return false;
+      if (deletedIds.includes(String(h.id))) return false;
+      if (h.name && knownDeletedNames.includes(h.name.trim().toLowerCase())) return false;
+      return true;
+    });
+
     this.applyFilters();
     this.renderHostels();
     this.renderMapPins();
