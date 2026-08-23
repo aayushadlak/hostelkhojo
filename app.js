@@ -1371,7 +1371,62 @@ class HostelKhojoApp {
     const token = localStorage.getItem("hostelkhojo_admin_token") || localStorage.getItem("hostelkhojo_token") || localStorage.getItem("hostelkhojo_owner_token") || "admin_master_jwt_token_2026";
     const headers = { "Authorization": `Bearer ${token}` };
 
-    // 1. Fetch Stats from backend API
+    // 1. Fetch fresh Hostels from backend API
+    try {
+      const hostelsRes = await apiFetch("/hostels");
+      if (hostelsRes.ok) {
+        const cloudData = await hostelsRes.json();
+        if (Array.isArray(cloudData)) {
+          let localRealProps = [];
+          try {
+            const stored = localStorage.getItem("hostelkhojo_real_properties") || localStorage.getItem("hostelkhojo_custom_properties");
+            if (stored) localRealProps = JSON.parse(stored);
+          } catch (e) {}
+
+          let deletedIds = [];
+          try {
+            deletedIds = JSON.parse(localStorage.getItem("hostelkhojo_deleted_hostel_ids") || "[]");
+          } catch (e) {}
+
+          const combinedHostels = [...cloudData];
+          if (Array.isArray(localRealProps)) {
+            localRealProps.forEach(lp => {
+              if (lp && (lp.id || lp.name)) {
+                const exists = combinedHostels.some(h => (h.id && lp.id && String(h.id) === String(lp.id)) || (h.name && lp.name && h.name.toLowerCase() === lp.name.toLowerCase()));
+                if (!exists) combinedHostels.push(lp);
+              }
+            });
+          }
+          this.hostels = combinedHostels.filter(h => h && h.id && !deletedIds.includes(String(h.id)));
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to fetch fresh hostels for admin dashboard:", e);
+    }
+
+    // 2. Fetch fresh Bookings for Admin
+    try {
+      const bkRes = await apiFetch("/owner/bookings", { headers });
+      if (bkRes.ok) {
+        const bkData = await bkRes.json();
+        if (Array.isArray(bkData)) {
+          this.ownerBookings = bkData;
+        }
+      }
+    } catch (e) {}
+
+    // 3. Fetch fresh Roommates for Admin
+    try {
+      const rmRes = await apiFetch("/roommates");
+      if (rmRes.ok) {
+        const rmData = await rmRes.json();
+        if (Array.isArray(rmData)) {
+          this.roommates = rmData;
+        }
+      }
+    } catch (e) {}
+
+    // 4. Fetch Stats from backend API
     try {
       const statsRes = await apiFetch("/admin/stats", { headers });
       if (statsRes.ok) {
@@ -1382,9 +1437,10 @@ class HostelKhojoApp {
         const totalUsersEl = document.getElementById("admin-stat-total-users");
         const breakdownEl = document.getElementById("admin-stat-user-breakdown");
 
-        if (hostelsEl) hostelsEl.innerText = stats.total_hostels;
-        if (bookingsEl) bookingsEl.innerText = stats.total_bookings;
-        if (roommatesEl) roommatesEl.innerText = stats.total_roommates;
+        const actualHostelCount = (this.hostels && this.hostels.length) || stats.total_hostels || 0;
+        if (hostelsEl) hostelsEl.innerText = actualHostelCount;
+        if (bookingsEl) bookingsEl.innerText = (this.ownerBookings && this.ownerBookings.length) || stats.total_bookings || 0;
+        if (roommatesEl) roommatesEl.innerText = (this.roommates && this.roommates.length) || stats.total_roommates || 0;
         if (totalUsersEl) totalUsersEl.innerText = stats.total_users;
         if (breakdownEl) breakdownEl.innerText = `${stats.students_count || 0} Students • ${stats.owners_count || 0} Owners • ${stats.admins_count || 0} Admins`;
       } else {
@@ -1394,14 +1450,13 @@ class HostelKhojoApp {
       this.renderFallbackAdminStats();
     }
 
-    // 2. Fetch Users from backend API
+    // 5. Fetch Users from backend API
     let fetchedUsers = [];
     try {
       const usersRes = await apiFetch("/admin/users", { headers });
       if (usersRes.ok) {
         fetchedUsers = await usersRes.json();
         if (Array.isArray(fetchedUsers) && fetchedUsers.length > 0) {
-          // Sync with local users cache
           fetchedUsers.forEach(u => this.saveUserToLocalAllUsers(u));
         }
       }
@@ -1420,8 +1475,8 @@ class HostelKhojoApp {
     const bookingsEl = document.getElementById("admin-stat-bookings");
     const roommatesEl = document.getElementById("admin-stat-roommates");
 
-    if (hostelsEl) hostelsEl.innerText = (this.hostels || []).length || 1;
-    if (bookingsEl) bookingsEl.innerText = (this.ownerBookings || []).length || 1;
+    if (hostelsEl) hostelsEl.innerText = (this.hostels || []).length || 0;
+    if (bookingsEl) bookingsEl.innerText = (this.ownerBookings || []).length || 0;
     if (roommatesEl) roommatesEl.innerText = (this.roommates || []).length || 0;
   }
 
