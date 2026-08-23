@@ -83,13 +83,24 @@ class HostelKhojoApp {
   }
 
   init() {
+    // Enforce strict single-role session: either PG Owner or Student
+    if (this.currentOwnerUser && localStorage.getItem("hostelkhojo_owner_token")) {
+      this.currentUser = null;
+      localStorage.removeItem("hostelkhojo_token");
+      localStorage.removeItem("hostelkhojo_user");
+    } else if (this.currentUser && localStorage.getItem("hostelkhojo_token")) {
+      this.currentOwnerUser = null;
+      localStorage.removeItem("hostelkhojo_owner_token");
+      localStorage.removeItem("hostelkhojo_owner_user");
+    }
+
     this.updateSavedCount();
     this.renderHostels();
     this.renderRoommates();
     this.setMapProvider(this.mapProvider);
     this.loadBackendData();
-    this.checkUserSession();
     this.checkOwnerSession();
+    this.checkUserSession();
     this.checkAdminSession();
     this.renderAuthNavUI();
 
@@ -1911,6 +1922,10 @@ class HostelKhojoApp {
         if (userData.role === "owner" || userData.role === "admin") {
           this.currentOwnerUser = userData;
           localStorage.setItem("hostelkhojo_owner_user", JSON.stringify(userData));
+          // Clear any student session so owner session is exclusively active
+          this.currentUser = null;
+          localStorage.removeItem("hostelkhojo_token");
+          localStorage.removeItem("hostelkhojo_user");
           this.renderAuthNavUI();
         }
       } else if (res.status === 401) {
@@ -1968,13 +1983,23 @@ class HostelKhojoApp {
           this.showToast("This account is registered as a student. Please log in using Student Login or register an Owner account.", "warning");
           return;
         }
+        const hadStudentSession = !!this.currentUser;
+        // Clear any student session so owner session is exclusively active
+        this.currentUser = null;
+        localStorage.removeItem("hostelkhojo_token");
+        localStorage.removeItem("hostelkhojo_user");
+
         localStorage.setItem("hostelkhojo_owner_token", data.access_token);
         localStorage.setItem("hostelkhojo_owner_user", JSON.stringify(data.user));
         this.currentOwnerUser = data.user;
         this.saveUserToLocalAllUsers(data.user);
         this.renderAuthNavUI();
         this.closeModal("owner-auth-modal");
-        this.showToast(`Welcome to Owner Portal, ${data.user.full_name}!`, "success");
+        if (hadStudentSession) {
+          this.showToast(`Switched from Student to Owner Account! Welcome, ${data.user.full_name}! 🚀`, "success");
+        } else {
+          this.showToast(`Welcome to Owner Portal, ${data.user.full_name}! 🚀`, "success");
+        }
         this.openOwnerPortal();
       } else {
         const err = await res.json().catch(() => ({}));
@@ -2010,13 +2035,23 @@ class HostelKhojoApp {
 
       if (res.ok) {
         const data = await res.json();
+        const hadStudentSession = !!this.currentUser;
+        // Clear any student session so owner session is exclusively active
+        this.currentUser = null;
+        localStorage.removeItem("hostelkhojo_token");
+        localStorage.removeItem("hostelkhojo_user");
+
         localStorage.setItem("hostelkhojo_owner_token", data.access_token);
         localStorage.setItem("hostelkhojo_owner_user", JSON.stringify(data.user));
         this.currentOwnerUser = data.user;
         this.saveUserToLocalAllUsers(data.user);
         this.renderAuthNavUI();
         this.closeModal("owner-auth-modal");
-        this.showToast(`Owner Account Created! Welcome, ${data.user.full_name}!`, "success");
+        if (hadStudentSession) {
+          this.showToast(`Owner Account Created! Switched from student to Owner: ${data.user.full_name}! 🚀`, "success");
+        } else {
+          this.showToast(`Owner Account Created! Welcome, ${data.user.full_name}! 🚀`, "success");
+        }
         this.openOwnerPortal();
       } else {
         const err = await res.json().catch(() => ({}));
@@ -2833,6 +2868,11 @@ class HostelKhojoApp {
       });
       if (res.ok) {
         const data = await res.json();
+        // Clear any owner session so student session is exclusively active
+        this.currentOwnerUser = null;
+        localStorage.removeItem("hostelkhojo_owner_token");
+        localStorage.removeItem("hostelkhojo_owner_user");
+
         localStorage.setItem("hostelkhojo_token", data.access_token);
         localStorage.setItem("hostelkhojo_user", JSON.stringify(data.user));
         this.currentUser = data.user;
@@ -2870,6 +2910,11 @@ class HostelKhojoApp {
 
       if (res.ok) {
         const data = await res.json();
+        // Clear any owner session so student session is exclusively active
+        this.currentOwnerUser = null;
+        localStorage.removeItem("hostelkhojo_owner_token");
+        localStorage.removeItem("hostelkhojo_owner_user");
+
         localStorage.setItem("hostelkhojo_token", data.access_token);
         localStorage.setItem("hostelkhojo_user", JSON.stringify(data.user));
         this.currentUser = data.user;
@@ -2981,16 +3026,34 @@ class HostelKhojoApp {
       if (res.ok) {
         const data = await res.json();
         if (targetRole === "owner" || data.user.role === "owner" || data.user.role === "admin") {
+          const hadStudentSession = !!this.currentUser;
+          // Clear any student session so owner session is exclusively active
+          this.currentUser = null;
+          localStorage.removeItem("hostelkhojo_token");
+          localStorage.removeItem("hostelkhojo_user");
+
           localStorage.setItem("hostelkhojo_owner_token", data.access_token);
           localStorage.setItem("hostelkhojo_owner_user", JSON.stringify(data.user));
           this.currentOwnerUser = data.user;
+          this.saveUserToLocalAllUsers(data.user);
+          this.renderAuthNavUI();
           this.closeModal("owner-auth-modal");
-          this.showToast(`Welcome to Owner Portal, ${data.user.full_name}! 🚀`, "success");
+          if (hadStudentSession) {
+            this.showToast(`Switched from Student to Owner Account! Welcome, ${data.user.full_name}! 🚀`, "success");
+          } else {
+            this.showToast(`Welcome to Owner Portal, ${data.user.full_name}! 🚀`, "success");
+          }
           this.openOwnerPortal();
         } else {
+          // Clear any owner session so student session is exclusively active
+          this.currentOwnerUser = null;
+          localStorage.removeItem("hostelkhojo_owner_token");
+          localStorage.removeItem("hostelkhojo_owner_user");
+
           localStorage.setItem("hostelkhojo_token", data.access_token);
           localStorage.setItem("hostelkhojo_user", JSON.stringify(data.user));
           this.currentUser = data.user;
+          this.saveUserToLocalAllUsers(data.user);
           this.renderAuthNavUI();
           this.closeModal("auth-modal");
           this.showToast(`Signed in as ${data.user.full_name}! 🚀`, "success");
@@ -3039,7 +3102,14 @@ class HostelKhojoApp {
 
   async checkUserSession() {
     const token = localStorage.getItem("hostelkhojo_token");
-    if (!token) return;
+    if (!token || this.currentOwnerUser || localStorage.getItem("hostelkhojo_owner_token")) {
+      if (this.currentOwnerUser || localStorage.getItem("hostelkhojo_owner_token")) {
+        this.currentUser = null;
+        localStorage.removeItem("hostelkhojo_token");
+        localStorage.removeItem("hostelkhojo_user");
+      }
+      return;
+    }
 
     try {
       const res = await apiFetch("/auth/me", {
@@ -3064,6 +3134,7 @@ class HostelKhojoApp {
 
   renderAuthNavUI() {
     const container = document.getElementById("nav-auth-container");
+    const listBtn = document.getElementById("nav-list-btn") || document.querySelector(".nav-list-btn");
     if (!container) return;
 
     if (this.currentAdminUser && this.currentAdminUser.role === "admin") {
@@ -3073,6 +3144,11 @@ class HostelKhojoApp {
         .join("")
         .toUpperCase()
         .slice(0, 2);
+
+      if (listBtn) {
+        listBtn.innerHTML = `<i class="fa-solid fa-shield-halved"></i> <span class="btn-text-full">Admin Panel</span><span class="btn-text-short">Admin</span>`;
+        listBtn.onclick = () => app.openAdminPortal();
+      }
 
       container.innerHTML = `
         <div class="user-badge-container">
@@ -3091,6 +3167,11 @@ class HostelKhojoApp {
         .toUpperCase()
         .slice(0, 2);
 
+      if (listBtn) {
+        listBtn.innerHTML = `<i class="fa-solid fa-plus-circle"></i> <span class="btn-text-full">+ Add Property</span><span class="btn-text-short">Add PG</span>`;
+        listBtn.onclick = () => app.openOwnerPropertyModal();
+      }
+
       container.innerHTML = `
         <div class="user-badge-container">
           <button class="user-badge-btn owner-badge-btn" onclick="app.openOwnerPortal()" title="View Owner Dashboard (/owner)" style="border-color: #059669; background: rgba(5, 150, 105, 0.08);">
@@ -3108,6 +3189,11 @@ class HostelKhojoApp {
         .toUpperCase()
         .slice(0, 2);
 
+      if (listBtn) {
+        listBtn.innerHTML = `<i class="fa-solid fa-building-user"></i> <span class="btn-text-full">List Your PG / Hostel</span><span class="btn-text-short">List PG</span>`;
+        listBtn.onclick = () => app.openOwnerPortal();
+      }
+
       container.innerHTML = `
         <div class="user-badge-container">
           <button class="user-badge-btn" onclick="app.switchTab('user')" title="View Student Profile (/user)">
@@ -3118,6 +3204,11 @@ class HostelKhojoApp {
         </div>
       `;
     } else {
+      if (listBtn) {
+        listBtn.innerHTML = `<i class="fa-solid fa-plus-circle"></i> <span class="btn-text-full">List Your PG / Hostel</span><span class="btn-text-short">List PG</span>`;
+        listBtn.onclick = () => app.openOwnerPortal();
+      }
+
       container.innerHTML = `
         <button class="btn btn-primary nav-login-btn" onclick="app.openModal('auth-modal')" id="nav-login-btn">
           <i class="fa-solid fa-circle-user"></i>
@@ -3206,6 +3297,11 @@ class HostelKhojoApp {
     }
 
     if (tabName === "user" || tabName === "profile") {
+      if (this.currentOwnerUser) {
+        this.openOwnerPortal();
+        return;
+      }
+
       if (!this.currentUser) {
         this.showToast("Please log in or register to view your profile page.", "warning");
         this.openModal("auth-modal");
@@ -3330,6 +3426,32 @@ class HostelKhojoApp {
 
   /* MODAL HELPERS */
   openModal(id) {
+    if (id === "auth-modal" && this.currentOwnerUser) {
+      this.showToast("You are logged in as PG/Hostel Owner. Please log out first if you wish to sign in as a student.", "info");
+      this.openOwnerPortal();
+      return;
+    }
+
+    if (id === "owner-auth-modal") {
+      if (this.currentOwnerUser) {
+        this.openOwnerPortal();
+        return;
+      }
+
+      const noticeBox = document.getElementById("owner-auth-student-notice");
+      const noticeText = document.getElementById("owner-auth-student-notice-text");
+      if (noticeBox) {
+        if (this.currentUser) {
+          noticeBox.style.display = "block";
+          if (noticeText) {
+            noticeText.innerHTML = `You are currently signed in as student (<strong>${this.currentUser.full_name || "Student"}</strong>). Logging in as Owner will automatically log out your student session and switch you to Owner mode to list hostels.`;
+          }
+        } else {
+          noticeBox.style.display = "none";
+        }
+      }
+    }
+
     if (id === "admin-auth-modal") {
       const pwd = document.getElementById("admin-login-password");
       if (pwd) {
@@ -3339,6 +3461,10 @@ class HostelKhojoApp {
     }
 
     if (id === "post-roommate-modal" && !this.currentUser) {
+      if (this.currentOwnerUser) {
+        this.showToast("Roommate matching is for student accounts. You are currently signed in as PG Owner.", "warning");
+        return;
+      }
       this.showToast("Please log in or register first to post your roommate requirement profile.", "warning");
       const authModal = document.getElementById("auth-modal");
       if (authModal) authModal.classList.add("active");

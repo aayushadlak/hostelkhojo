@@ -13,15 +13,16 @@
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 
   <!-- Favicon & Tab Logo -->
-  <link rel="icon" type="image/png" sizes="32x32" href="favicon.png" />
-  <link rel="icon" type="image/x-icon" href="favicon.ico" />
-  <link rel="apple-touch-icon" href="favicon.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon.png?v=2" />
+  <link rel="icon" type="image/x-icon" href="favicon.ico?v=2" />
+  <link rel="apple-touch-icon" href="favicon.png?v=2" />
 
   <!-- Open Graph / Social Media Preview -->
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Hostel Khojo | Verified Student Hostels & PGs in India 🇮🇳" />
   <meta property="og:description"
     content="Search, compare, and book verified student hostels, luxury PGs, and co-living dorms across Delhi, Bengaluru, Pune, Mumbai, Kota & Hyderabad with zero brokerage." />
+  <meta property="og:image" content="logo.png" />
 
   <!-- Google Fonts: Plus Jakarta Sans (Stitch Design System) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -55,7 +56,7 @@
   <nav class="navbar" id="main-nav">
     <div class="nav-container">
       <a href="#" class="brand-logo" id="brand-logo" onclick="app.switchTab('hostels')">
-        <div class="logo-icon"><i class="fa-solid fa-building-user"></i></div>
+        <img src="logo-icon.png" alt="Hostel Khojo Logo" class="logo-icon-img" />
         <span class="logo-text">Hostel<span class="logo-highlight">Khojo</span></span>
         <span class="logo-badge">India Stay 🇮🇳</span>
       </a>
@@ -85,7 +86,7 @@
           <i class="fa-solid fa-moon" id="theme-icon"></i>
         </button>
 
-        <button class="btn btn-outline nav-list-btn" onclick="app.openOwnerPortal()" title="List Your PG / Hostel">
+        <button class="btn btn-outline nav-list-btn" id="nav-list-btn" onclick="app.openOwnerPortal()" title="List Your PG / Hostel">
           <i class="fa-solid fa-plus-circle"></i>
           <span class="btn-text-full">List Your PG / Hostel</span>
           <span class="btn-text-short">List PG</span>
@@ -901,12 +902,15 @@
     <div class="modal-box modal-md">
       <button class="modal-close" onclick="app.closeModal('owner-auth-modal')">&times;</button>
       <div class="text-center" style="margin-bottom: 20px;">
-        <div
-          style="width: 56px; height: 56px; border-radius: 50%; background: var(--success-green-bg); color: var(--success-green); font-size: 1.6rem; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px auto;">
-          <i class="fa-solid fa-building-circle-check"></i>
-        </div>
+        <img src="logo-icon.png" alt="Hostel Khojo" style="width: 52px; height: 52px; margin: 0 auto 10px auto; display: block; border-radius: var(--radius-md); box-shadow: 0 4px 14px rgba(5,150,105,0.25);" />
         <h2 class="modal-title" style="margin-bottom: 4px;">Hostel Owner & Partner Portal</h2>
         <p class="text-muted" style="font-size: 0.85rem;">Dedicated portal for PG & Hostel owners to manage properties & bookings</p>
+      </div>
+
+      <!-- Dynamic student-to-owner switch notice -->
+      <div id="owner-auth-student-notice" style="display: none; margin-bottom: 16px; background: rgba(79, 70, 229, 0.08); border: 1.5px solid rgba(79, 70, 229, 0.25); border-radius: var(--radius-md); padding: 10px 14px; font-size: 0.85rem; color: var(--text-primary); text-align: left;">
+        <i class="fa-solid fa-arrows-rotate" style="color: var(--primary); margin-right: 6px;"></i>
+        <span id="owner-auth-student-notice-text">You are currently signed in as student. Logging in as Owner will automatically log out your student session and switch you to Owner mode to list hostels.</span>
       </div>
 
       <!-- Owner Auth Tab Navigation -->
@@ -1189,8 +1193,7 @@
   <div class="modal-backdrop" id="auth-modal">
     <div class="modal-box modal-sm text-center">
       <button class="modal-close" onclick="app.closeModal('auth-modal')">&times;</button>
-      <div style="font-size: 2.2rem; color: var(--primary); margin-bottom: 8px;"><i
-          class="fa-solid fa-graduation-cap"></i></div>
+      <img src="logo-icon.png" alt="Hostel Khojo" style="width: 52px; height: 52px; margin: 0 auto 10px auto; display: block; border-radius: var(--radius-md); box-shadow: 0 4px 14px rgba(245,130,32,0.25);" />
       <h2 class="modal-title">Student Portal</h2>
       <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 20px;">Verified student access for instant bookings & roommate matching.</p>
 
@@ -1421,8 +1424,8 @@
   <footer class="footer">
     <div class="main-container footer-content">
       <div class="footer-col brand-col">
-        <div class="brand-logo" style="margin-bottom: 12px;">
-          <div class="logo-icon"><i class="fa-solid fa-building-user"></i></div>
+        <div class="brand-logo" style="margin-bottom: 12px; cursor: pointer;" onclick="app.switchTab('hostels')">
+          <img src="logo-icon.png" alt="Hostel Khojo" class="logo-icon-img" />
           <span class="logo-text">Hostel<span class="logo-highlight">Khojo</span></span>
         </div>
         <p class="footer-desc">
