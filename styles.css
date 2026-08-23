@@ -2158,6 +2158,26 @@ button, input, select, textarea {
   height: 15px;
 }
 
+/* Listing Modal Responsive Containers */
+.listing-modal-box {
+  max-width: 960px;
+  padding: 28px 32px 0 32px;
+  width: 100%;
+}
+
+.occupancy-grid-stitch {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.photo-showcase-grid-stitch {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+}
+
 /* Modal Bottom Sticky Bar */
 .modal-sticky-footer {
   position: sticky;
@@ -2674,4 +2694,248 @@ button, input, select, textarea {
   .comp-info span {
     display: none;
   }
+
+  /* ==========================================================================
+     DEDICATED IPHONE & MOBILE COMPATIBILITY ENGINE (OWNER LISTING MODAL)
+     ========================================================================== */
+  .modal-backdrop {
+    padding: 8px 6px;
+    align-items: flex-end; /* Bottom sheet modal for native mobile/iOS experience */
+  }
+
+  .modal-backdrop.active .modal-box {
+    transform: translateY(0);
+  }
+
+  .modal-box {
+    padding: 20px 16px;
+    max-height: 92vh;
+    max-height: 92dvh;
+    border-radius: 20px 20px 14px 14px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .listing-modal-box {
+    padding: 18px 14px 0 14px !important;
+    max-height: 94vh !important;
+    max-height: 94dvh !important;
+    border-radius: 20px 20px 12px 12px !important;
+    width: 100% !important;
+  }
+
+  .modal-close {
+    top: 12px;
+    right: 12px;
+    width: 32px;
+    height: 32px;
+    font-size: 1.1rem;
+  }
+
+  /* Compact Listing Stepper on Mobile */
+  .listing-stepper {
+    padding: 2px 0 10px 0;
+    margin-bottom: 12px;
+    gap: 6px;
+    scrollbar-width: none;
+  }
+
+  .listing-stepper::-webkit-scrollbar {
+    display: none;
+  }
+
+  .listing-step-pill {
+    padding: 5px 10px;
+    font-size: 0.74rem;
+    gap: 5px;
+  }
+
+  .listing-step-num {
+    width: 18px;
+    height: 18px;
+    font-size: 0.68rem;
+  }
+
+  /* Listing Section Cards on Phone */
+  .listing-section-card {
+    padding: 14px 12px;
+    margin-bottom: 12px;
+    border-radius: var(--radius-md);
+  }
+
+  .listing-section-header {
+    margin-bottom: 10px;
+  }
+
+  .listing-section-title {
+    font-size: 0.92rem;
+    gap: 8px;
+  }
+
+  .listing-section-badge {
+    font-size: 0.68rem;
+    padding: 2px 8px;
+  }
+
+  /* Visual Selectable Cards (Property Type & Gender) - 3 Equal Touch Columns on iPhone */
+  .selectable-cards-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 6px !important;
+  }
+
+  .selectable-card {
+    padding: 10px 4px !important;
+    text-align: center;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    gap: 3px;
+  }
+
+  .selectable-card .card-icon-box {
+    width: 32px;
+    height: 32px;
+    font-size: 1rem;
+    margin-bottom: 2px;
+    border-radius: 8px;
+  }
+
+  .selectable-card .card-title {
+    font-size: 0.74rem !important;
+    font-weight: 700;
+    line-height: 1.15;
+  }
+
+  .selectable-card .card-desc {
+    display: none !important;
+  }
+
+  .selectable-card .check-indicator {
+    top: 4px;
+    right: 4px;
+    width: 15px;
+    height: 15px;
+    font-size: 0.55rem;
+  }
+
+  /* Occupancy Pricing Grid on Phone */
+  .occupancy-grid-stitch {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+    margin-bottom: 14px !important;
+  }
+
+  .occ-item-card {
+    padding: 12px 10px;
+  }
+
+  .occ-label {
+    font-size: 0.86rem;
+  }
+
+  /* Prevent iOS Safari 16px Auto-Zoom */
+  .form-control,
+  .occupancy-rent-input,
+  input[type="text"],
+  input[type="number"],
+  textarea,
+  select {
+    font-size: 16px !important;
+    padding: 9px 12px;
+    border-radius: 8px;
+    -webkit-appearance: none;
+  }
+
+  /* Photo Upload Grid: 2x2 Clean Layout on Mobile / iPhone */
+  .photo-showcase-grid-stitch {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  .photo-card-stitch {
+    padding: 8px 6px !important;
+  }
+
+  .photo-card-stitch > div:first-child {
+    font-size: 0.76rem !important;
+    margin-bottom: 4px !important;
+  }
+
+  .photo-card-preview {
+    height: 85px !important;
+    margin-bottom: 6px !important;
+  }
+
+  .photo-card-stitch .btn {
+    padding: 6px 4px !important;
+    font-size: 0.7rem !important;
+    border-radius: 6px !important;
+  }
+
+  /* Amenities Interactive Badges on Phone */
+  .amenities-pills-grid {
+    gap: 6px;
+  }
+
+  .amenity-toggle-pill {
+    padding: 6px 10px;
+    font-size: 0.75rem;
+  }
+
+  /* Modal Sticky Action Footer on Phone / iPhone */
+  .modal-sticky-footer {
+    margin-left: -14px !important;
+    margin-right: -14px !important;
+    margin-bottom: 0 !important;
+    padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 8px)) 14px !important;
+    flex-direction: column;
+    gap: 8px;
+    align-items: stretch;
+  }
+
+  .modal-sticky-footer > div:first-child {
+    justify-content: center;
+    font-size: 0.76rem;
+    text-align: center;
+  }
+
+  .modal-sticky-footer > div:last-child {
+    width: 100%;
+    display: flex;
+    gap: 8px;
+  }
+
+  .modal-sticky-footer .btn-outline {
+    flex: 1;
+    padding: 10px 12px;
+    font-size: 0.85rem;
+  }
+
+  .modal-sticky-footer .btn-primary {
+    flex: 2.5;
+    padding: 10px 14px;
+    font-size: 0.9rem;
+    font-weight: 800;
+  }
 }
+
+/* Extra Compact Phones (iPhone SE / screens <= 380px) */
+@media (max-width: 380px) {
+  .listing-modal-box {
+    padding: 14px 10px 0 10px !important;
+  }
+
+  .selectable-card .card-title {
+    font-size: 0.68rem !important;
+  }
+
+  .photo-card-preview {
+    height: 75px !important;
+  }
+
+  .modal-sticky-footer {
+    margin-left: -10px !important;
+    margin-right: -10px !important;
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 8px)) 10px !important;
+  }
+}
+

@@ -38,7 +38,7 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   
   <!-- Main Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=16.0&t=20260824_stitch_owner_form" />
+  <link rel="stylesheet" href="styles.css?v=17.0&t=20260824_iphone_ready" />
 </head>
 
 <body>
@@ -1019,36 +1019,36 @@
 
   <!-- MODAL FOR ADDING / EDITING OWNER PROPERTY LISTING (STITCH "STUDENT SANCTUARY" DESIGN) -->
   <div class="modal-backdrop" id="owner-property-modal">
-    <div class="modal-box modal-xl" style="padding: 28px 32px 0 32px; max-width: 960px;">
+    <div class="modal-box modal-xl listing-modal-box">
       <button class="modal-close" onclick="app.closeModal('owner-property-modal')" title="Close">&times;</button>
       
       <!-- Modal Header with Trust Badge -->
-      <div style="margin-bottom: 20px;">
-        <div style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; background: rgba(79, 70, 229, 0.08); border-radius: var(--radius-full); color: var(--primary); font-size: 0.78rem; font-weight: 700; margin-bottom: 8px;">
+      <div style="margin-bottom: 16px;">
+        <div style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; background: rgba(79, 70, 229, 0.08); border-radius: var(--radius-full); color: var(--primary); font-size: 0.78rem; font-weight: 700; margin-bottom: 6px;">
           <i class="fa-solid fa-bolt" style="color: var(--warning-amber);"></i> Quick Verified Listing • Zero Brokerage
         </div>
-        <h2 class="modal-title" id="owner-prop-modal-title" style="font-size: 1.65rem; font-weight: 800; display: flex; align-items: center; gap: 10px;">
+        <h2 class="modal-title" id="owner-prop-modal-title" style="font-size: 1.55rem; font-weight: 800; display: flex; align-items: center; gap: 10px;">
           <i class="fa-solid fa-building-circle-check" style="color: var(--success-green);"></i> List New PG / Hostel Property
         </h2>
-        <p class="text-muted" style="font-size: 0.88rem; margin: 0;">Fill in your property details below to reach thousands of verified students near your campus.</p>
+        <p class="text-muted" style="font-size: 0.86rem; margin: 0;">Fill in your property details below to reach thousands of verified students near your campus.</p>
       </div>
 
       <!-- Quick Step Navigation Pills -->
       <div class="listing-stepper">
         <a href="#section-identity" class="listing-step-pill active" onclick="document.querySelectorAll('.listing-step-pill').forEach(p=>p.classList.remove('active')); this.classList.add('active');">
-          <span class="listing-step-num">1</span> 🏢 Identity & Category
+          <span class="listing-step-num">1</span> 🏢 Identity
         </a>
         <a href="#section-pricing" class="listing-step-pill" onclick="document.querySelectorAll('.listing-step-pill').forEach(p=>p.classList.remove('active')); this.classList.add('active');">
-          <span class="listing-step-num">2</span> 🛏️ Occupancy & Rents
+          <span class="listing-step-num">2</span> 🛏️ Pricing
         </a>
         <a href="#section-location" class="listing-step-pill" onclick="document.querySelectorAll('.listing-step-pill').forEach(p=>p.classList.remove('active')); this.classList.add('active');">
-          <span class="listing-step-num">3</span> 📍 Location & Campus
+          <span class="listing-step-num">3</span> 📍 Location
         </a>
         <a href="#section-photos" class="listing-step-pill" onclick="document.querySelectorAll('.listing-step-pill').forEach(p=>p.classList.remove('active')); this.classList.add('active');">
-          <span class="listing-step-num">4</span> 📸 Photos Showcase
+          <span class="listing-step-num">4</span> 📸 Photos
         </a>
         <a href="#section-amenities" class="listing-step-pill" onclick="document.querySelectorAll('.listing-step-pill').forEach(p=>p.classList.remove('active')); this.classList.add('active');">
-          <span class="listing-step-num">5</span> ✨ Amenities & Rules
+          <span class="listing-step-num">5</span> ✨ Amenities
         </a>
       </div>
 
@@ -1065,16 +1065,16 @@
             <span class="listing-section-badge">Required Info</span>
           </div>
 
-          <div class="form-group" style="margin-bottom: 18px;">
-            <label style="font-weight: 700; color: var(--text-primary); font-size: 0.9rem; margin-bottom: 6px; display: block;">
+          <div class="form-group" style="margin-bottom: 16px;">
+            <label style="font-weight: 700; color: var(--text-primary); font-size: 0.88rem; margin-bottom: 6px; display: block;">
               Hostel / PG Property Name <span style="color: var(--danger-red);">*</span>
             </label>
-            <input type="text" id="prop-name" required placeholder="e.g. Royal Heights Luxury Student Residency" class="form-control" style="font-size: 0.95rem; font-weight: 600;" />
+            <input type="text" id="prop-name" required placeholder="e.g. Royal Heights Luxury Student Residency" class="form-control" style="font-weight: 600;" />
           </div>
 
           <!-- Interactive Category Selectors (Hostel / PG / Both) -->
-          <div class="form-group" style="margin-bottom: 18px;">
-            <label style="font-weight: 700; color: var(--text-primary); font-size: 0.9rem; margin-bottom: 8px; display: block;">
+          <div class="form-group" style="margin-bottom: 16px;">
+            <label style="font-weight: 700; color: var(--text-primary); font-size: 0.88rem; margin-bottom: 6px; display: block;">
               Property Category / Tag <span style="color: var(--danger-red);">*</span>
             </label>
             <input type="hidden" id="prop-type" value="Hostel" />
@@ -1082,19 +1082,19 @@
               <div class="selectable-card active" data-type="Hostel" onclick="if(window.app) app.selectPropertyType('Hostel');">
                 <div class="card-icon-box"><i class="fa-solid fa-hotel"></i></div>
                 <div class="card-title">Hostel</div>
-                <div class="card-desc">Dedicated student building with organized rooms & warden</div>
+                <div class="card-desc">Dedicated student building</div>
                 <div class="check-indicator"><i class="fa-solid fa-check"></i></div>
               </div>
               <div class="selectable-card" data-type="PG" onclick="if(window.app) app.selectPropertyType('PG');">
                 <div class="card-icon-box"><i class="fa-solid fa-house-chimney-user"></i></div>
-                <div class="card-title">PG (Paying Guest)</div>
-                <div class="card-desc">Comfortable residential rooms with home-cooked meals</div>
+                <div class="card-title">PG</div>
+                <div class="card-desc">Paying guest rooms</div>
                 <div class="check-indicator"><i class="fa-solid fa-check"></i></div>
               </div>
               <div class="selectable-card" data-type="Both" onclick="if(window.app) app.selectPropertyType('Both');">
                 <div class="card-icon-box"><i class="fa-solid fa-building-columns"></i></div>
-                <div class="card-title">Both (Hostel & PG)</div>
-                <div class="card-desc">Hybrid accommodation with multiple wings / options</div>
+                <div class="card-title">Both</div>
+                <div class="card-desc">Hostel & PG hybrid</div>
                 <div class="check-indicator"><i class="fa-solid fa-check"></i></div>
               </div>
             </div>
@@ -1102,7 +1102,7 @@
 
           <!-- Interactive Resident Gender Selectors (Boys / Girls / Co-ed) -->
           <div class="form-group" style="margin-bottom: 0;">
-            <label style="font-weight: 700; color: var(--text-primary); font-size: 0.9rem; margin-bottom: 8px; display: block;">
+            <label style="font-weight: 700; color: var(--text-primary); font-size: 0.88rem; margin-bottom: 6px; display: block;">
               Allowed Resident Type <span style="color: var(--danger-red);">*</span>
             </label>
             <input type="hidden" id="prop-gender" value="Boys" />
@@ -1110,19 +1110,19 @@
               <div class="selectable-card gender-boys active" data-gender="Boys" onclick="if(window.app) app.selectPropertyGender('Boys');">
                 <div class="card-icon-box" style="color: var(--boys-blue); background: var(--boys-blue-bg);"><i class="fa-solid fa-mars"></i></div>
                 <div class="card-title">Boys Only</div>
-                <div class="card-desc">Male student accommodation</div>
+                <div class="card-desc">Male students</div>
                 <div class="check-indicator"><i class="fa-solid fa-check"></i></div>
               </div>
               <div class="selectable-card gender-girls" data-gender="Girls" onclick="if(window.app) app.selectPropertyGender('Girls');">
                 <div class="card-icon-box" style="color: var(--girls-pink); background: var(--girls-pink-bg);"><i class="fa-solid fa-venus"></i></div>
                 <div class="card-title">Girls Only</div>
-                <div class="card-desc">Female student accommodation</div>
+                <div class="card-desc">Female students</div>
                 <div class="check-indicator"><i class="fa-solid fa-check"></i></div>
               </div>
               <div class="selectable-card gender-coed" data-gender="Co-ed" onclick="if(window.app) app.selectPropertyGender('Co-ed');">
                 <div class="card-icon-box" style="color: var(--coed-purple); background: var(--coed-purple-bg);"><i class="fa-solid fa-venus-mars"></i></div>
-                <div class="card-title">Co-ed Co-Living</div>
-                <div class="card-desc">Inclusive student stay / separate wings</div>
+                <div class="card-title">Co-ed</div>
+                <div class="card-desc">All welcome</div>
                 <div class="check-indicator"><i class="fa-solid fa-check"></i></div>
               </div>
             </div>
@@ -1138,11 +1138,11 @@
             </div>
             <span class="listing-section-badge" style="color: var(--success-green);"><i class="fa-solid fa-indian-rupee-sign"></i> Transparent Rents</span>
           </div>
-          <p class="text-muted" style="font-size: 0.84rem; margin-bottom: 16px;">
-            Select which room sharing options you offer and enter the exact monthly rent for each selected sharing.
+          <p class="text-muted" style="font-size: 0.84rem; margin-bottom: 14px;">
+            Select which room sharing options you offer and enter monthly rent for each selected sharing.
           </p>
 
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin-bottom: 20px;">
+          <div class="occupancy-grid-stitch">
             <!-- 1 Occupancy (Single) -->
             <div id="occ-card-1" class="occ-item-card active">
               <div class="occ-header-row">
@@ -1304,7 +1304,7 @@
             Verified real photos build student confidence and increase visit requests by over 300%.
           </p>
 
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px;">
+          <div class="photo-showcase-grid-stitch">
             <!-- 1. Photo of Hostel / Exterior -->
             <div class="photo-card-stitch">
               <div style="font-weight: 700; font-size: 0.85rem; margin-bottom: 8px; color: var(--text-primary);">
@@ -1831,7 +1831,7 @@
   </nav>
 
   <!-- Main JavaScript App Logic -->
-  <script src="app.js?v=19.0&t=20260824_stitch_owner_form"></script>
+  <script src="app.js?v=20.0&t=20260824_iphone_ready"></script>
 </body>
 
 </html>
