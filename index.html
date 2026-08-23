@@ -1068,21 +1068,50 @@
         <div class="form-group">
           <label><i class="fa-solid fa-bed" style="color: var(--primary);"></i> Room Occupancy Tag / Options</label>
           <div class="checkbox-grid" id="prop-occupancy-grid">
-            <label><input type="checkbox" value="1 Occupancy" checked onchange="app.renderOccupancyRentInputs()" /> 1 Occupancy (Single)</label>
-            <label><input type="checkbox" value="2 Occupancy" checked onchange="app.renderOccupancyRentInputs()" /> 2 Occupancy (Double)</label>
-            <label><input type="checkbox" value="3 Occupancy" onchange="app.renderOccupancyRentInputs()" /> 3 Occupancy (Triple)</label>
-            <label><input type="checkbox" value="4 Occupancy" onchange="app.renderOccupancyRentInputs()" /> 4 Occupancy (Quad)</label>
+            <label><input type="checkbox" id="occ-check-1" value="1 Occupancy" checked onchange="document.getElementById('occ-rent-wrap-1').style.display = this.checked ? 'block' : 'none'; if(window.app) app.toggleOccupancyInputs();" /> 1 Occupancy (Single)</label>
+            <label><input type="checkbox" id="occ-check-2" value="2 Occupancy" checked onchange="document.getElementById('occ-rent-wrap-2').style.display = this.checked ? 'block' : 'none'; if(window.app) app.toggleOccupancyInputs();" /> 2 Occupancy (Double)</label>
+            <label><input type="checkbox" id="occ-check-3" value="3 Occupancy" onchange="document.getElementById('occ-rent-wrap-3').style.display = this.checked ? 'block' : 'none'; if(window.app) app.toggleOccupancyInputs();" /> 3 Occupancy (Triple)</label>
+            <label><input type="checkbox" id="occ-check-4" value="4 Occupancy" onchange="document.getElementById('occ-rent-wrap-4').style.display = this.checked ? 'block' : 'none'; if(window.app) app.toggleOccupancyInputs();" /> 4 Occupancy (Quad)</label>
           </div>
         </div>
 
-        <!-- DYNAMIC OCCUPANCY RENT INPUTS (Asked per selected occupancy) -->
-        <div id="prop-occupancy-pricing-container" style="margin-bottom: 20px;"></div>
+        <!-- MONTHLY RENT FIELDS PER SELECTED OCCUPANCY (1 Monthly Rent input for each selected occupancy) -->
+        <div id="prop-occupancy-pricing-section" style="background: var(--bg-card-hover); border: 1.5px solid var(--border-color); border-radius: var(--radius-md); padding: 18px 20px; margin-bottom: 20px;">
+          <label style="font-weight: 700; color: var(--text-primary); font-size: 0.95rem; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+            <span><i class="fa-solid fa-indian-rupee-sign" style="color: var(--success-green);"></i> Monthly Rent per Occupancy Type</span>
+            <span class="font-xs text-muted">Enter monthly rent for each selected room occupancy</span>
+          </label>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px;">
+            <!-- 1 Occupancy Rent -->
+            <div id="occ-rent-wrap-1" class="form-group" style="margin-bottom: 0;">
+              <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; display: block;"><i class="fa-solid fa-bed font-xs" style="color: var(--primary);"></i> 1 Occupancy (Single) Rent (₹/mo) <span style="color: var(--danger-red);">*</span></label>
+              <input type="number" id="prop-rent-1" class="form-control occupancy-rent-input" data-occupancy="1 Occupancy" placeholder="12000" value="12000" oninput="if(window.app) app.updateStartingRentFromOccupancies();" />
+            </div>
+
+            <!-- 2 Occupancy Rent -->
+            <div id="occ-rent-wrap-2" class="form-group" style="margin-bottom: 0;">
+              <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; display: block;"><i class="fa-solid fa-bed font-xs" style="color: var(--primary);"></i> 2 Occupancy (Double) Rent (₹/mo) <span style="color: var(--danger-red);">*</span></label>
+              <input type="number" id="prop-rent-2" class="form-control occupancy-rent-input" data-occupancy="2 Occupancy" placeholder="8500" value="8500" oninput="if(window.app) app.updateStartingRentFromOccupancies();" />
+            </div>
+
+            <!-- 3 Occupancy Rent -->
+            <div id="occ-rent-wrap-3" class="form-group" style="margin-bottom: 0; display: none;">
+              <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; display: block;"><i class="fa-solid fa-bed font-xs" style="color: var(--primary);"></i> 3 Occupancy (Triple) Rent (₹/mo) <span style="color: var(--danger-red);">*</span></label>
+              <input type="number" id="prop-rent-3" class="form-control occupancy-rent-input" data-occupancy="3 Occupancy" placeholder="6500" value="6500" oninput="if(window.app) app.updateStartingRentFromOccupancies();" />
+            </div>
+
+            <!-- 4 Occupancy Rent -->
+            <div id="occ-rent-wrap-4" class="form-group" style="margin-bottom: 0; display: none;">
+              <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; display: block;"><i class="fa-solid fa-bed font-xs" style="color: var(--primary);"></i> 4 Occupancy (Quad) Rent (₹/mo) <span style="color: var(--danger-red);">*</span></label>
+              <input type="number" id="prop-rent-4" class="form-control occupancy-rent-input" data-occupancy="4 Occupancy" placeholder="5000" value="5000" oninput="if(window.app) app.updateStartingRentFromOccupancies();" />
+            </div>
+          </div>
+        </div>
+
+        <input type="hidden" id="prop-rent" value="8500" />
 
         <div class="form-row">
-          <div class="form-group">
-            <label>Starting Monthly Rent (₹)</label>
-            <input type="number" id="prop-rent" required placeholder="8500" class="form-control" />
-          </div>
           <div class="form-group">
             <label>Security Deposit (₹)</label>
             <input type="number" id="prop-deposit" required placeholder="5000" class="form-control" />
@@ -1512,7 +1541,7 @@
   </nav>
 
   <!-- Main JavaScript App Logic -->
-  <script src="app.js?v=14.0&t=20260823_occupancy_pricing"></script>
+  <script src="app.js?v=15.0&t=20260823_occupancy_fields"></script>
 </body>
 
 </html>

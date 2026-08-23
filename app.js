@@ -2003,7 +2003,7 @@ class HostelKhojoApp {
     }
 
     document.getElementById("owner-prop-id").value = "";
-    document.getElementById("owner-prop-modal-title").innerHTML = `<i class="fa-solid fa-building-circle-check" style="color: #059669;"></i> List New PG / Hostel Property`;
+    document.getElementById("owner-prop-modal-title").innerHTML = `<i class="fa-solid fa-building-circle-check" style="color: var(--success-green);"></i> List New PG / Hostel Property`;
     const form = document.getElementById("owner-property-form");
     if (form) form.reset();
     const typeEl = document.getElementById("prop-type");
@@ -2011,13 +2011,17 @@ class HostelKhojoApp {
     const genderEl = document.getElementById("prop-gender");
     if (genderEl) genderEl.value = "Boys";
 
-    // Default Occupancy selection (1 & 2 Occupancy checked)
-    document.querySelectorAll("#prop-occupancy-grid input[type='checkbox']").forEach(cb => {
-      cb.checked = (cb.value === "1 Occupancy" || cb.value === "2 Occupancy");
-    });
+    // Set 1 & 2 Occupancy checked, 3 & 4 unchecked by default
+    const c1 = document.getElementById("occ-check-1");
+    const c2 = document.getElementById("occ-check-2");
+    const c3 = document.getElementById("occ-check-3");
+    const c4 = document.getElementById("occ-check-4");
+    if (c1) c1.checked = true;
+    if (c2) c2.checked = true;
+    if (c3) c3.checked = false;
+    if (c4) c4.checked = false;
 
-    // Render rent inputs for defaults
-    this.renderOccupancyRentInputs({ "1 Occupancy": 12000, "2 Occupancy": 8500 });
+    this.toggleOccupancyInputs({ "1 Occupancy": 12000, "2 Occupancy": 8500, "3 Occupancy": 6500, "4 Occupancy": 5000 });
 
     this.openModal("owner-property-modal");
   }
@@ -2663,21 +2667,29 @@ class HostelKhojoApp {
 
     // Set Room Occupancy Checkboxes (1 Occupancy, 2 Occupancy, 3 Occupancy, 4 Occupancy)
     const currentSharing = Array.isArray(hostel.roomSharing) ? hostel.roomSharing : [hostel.roomSharing || "1 Occupancy", "2 Occupancy"];
-    document.querySelectorAll("#prop-occupancy-grid input[type='checkbox']").forEach(cb => {
-      const val = cb.value;
-      cb.checked = currentSharing.some(cs => {
-        if (!cs) return false;
-        const s = String(cs).toLowerCase();
-        if (val === "1 Occupancy" && (s.includes("1") || s.includes("single"))) return true;
-        if (val === "2 Occupancy" && (s.includes("2") || s.includes("double"))) return true;
-        if (val === "3 Occupancy" && (s.includes("3") || s.includes("triple"))) return true;
-        if (val === "4 Occupancy" && (s.includes("4") || s.includes("quad") || s.includes("four"))) return true;
-        return s === val.toLowerCase();
-      });
+    const occList = [
+      { id: "1", val: "1 Occupancy" },
+      { id: "2", val: "2 Occupancy" },
+      { id: "3", val: "3 Occupancy" },
+      { id: "4", val: "4 Occupancy" }
+    ];
+
+    occList.forEach(item => {
+      const cb = document.getElementById(`occ-check-${item.id}`);
+      if (cb) {
+        cb.checked = currentSharing.some(cs => {
+          if (!cs) return false;
+          const s = String(cs).toLowerCase();
+          if (item.id === "1" && (s.includes("1") || s.includes("single"))) return true;
+          if (item.id === "2" && (s.includes("2") || s.includes("double"))) return true;
+          if (item.id === "3" && (s.includes("3") || s.includes("triple"))) return true;
+          if (item.id === "4" && (s.includes("4") || s.includes("quad") || s.includes("four"))) return true;
+          return s === item.val.toLowerCase();
+        });
+      }
     });
 
-    // Render individual monthly rent inputs for each checked occupancy
-    this.renderOccupancyRentInputs(hostel.occupancyPricing || {});
+    this.toggleOccupancyInputs(hostel.occupancyPricing || {});
 
     document.getElementById("prop-rent").value = hostel.rent || "";
     document.getElementById("prop-deposit").value = hostel.deposit || "";
@@ -2690,70 +2702,60 @@ class HostelKhojoApp {
     this.openModal("owner-property-modal");
   }
 
-  renderOccupancyRentInputs(existingPricing = {}) {
-    const container = document.getElementById("prop-occupancy-pricing-container");
-    if (!container) return;
+  toggleOccupancyInputs(existingPricing = null) {
+    const occList = [
+      { id: "1", val: "1 Occupancy", defaultRent: 12000 },
+      { id: "2", val: "2 Occupancy", defaultRent: 8500 },
+      { id: "3", val: "3 Occupancy", defaultRent: 6500 },
+      { id: "4", val: "4 Occupancy", defaultRent: 5000 }
+    ];
 
-    const checkedBoxes = Array.from(document.querySelectorAll("#prop-occupancy-grid input[type='checkbox']:checked"));
-    if (checkedBoxes.length === 0) {
-      container.innerHTML = `
-        <div style="background: rgba(245, 158, 11, 0.08); border: 1px dashed rgba(245, 158, 11, 0.4); border-radius: var(--radius-md); padding: 12px 16px; color: var(--warning-amber); font-size: 0.85rem;">
-          <i class="fa-solid fa-triangle-exclamation"></i> Please select at least one room occupancy option above.
-        </div>
-      `;
-      return;
-    }
+    let rents = [];
 
-    // Preserve any currently typed values
-    const currentInputValues = { ...existingPricing };
-    document.querySelectorAll(".occupancy-rent-input").forEach(inp => {
-      const occ = inp.getAttribute("data-occupancy");
-      if (occ && inp.value) {
-        currentInputValues[occ] = parseFloat(inp.value);
+    occList.forEach(item => {
+      const cb = document.getElementById(`occ-check-${item.id}`);
+      const wrap = document.getElementById(`occ-rent-wrap-${item.id}`);
+      const input = document.getElementById(`prop-rent-${item.id}`);
+
+      if (cb && wrap && input) {
+        if (existingPricing && existingPricing[item.val]) {
+          input.value = existingPricing[item.val];
+        } else if (!input.value) {
+          input.value = item.defaultRent;
+        }
+
+        if (cb.checked) {
+          wrap.style.display = "block";
+          input.required = true;
+          const val = parseFloat(input.value);
+          if (!isNaN(val) && val > 0) rents.push(val);
+        } else {
+          wrap.style.display = "none";
+          input.required = false;
+        }
       }
     });
 
-    const defaultRents = {
-      "1 Occupancy": 12000,
-      "2 Occupancy": 8500,
-      "3 Occupancy": 6500,
-      "4 Occupancy": 5000
-    };
-
-    container.innerHTML = `
-      <div style="background: var(--bg-card-hover); border: 1.5px solid var(--border-color); border-radius: var(--radius-md); padding: 18px 20px; animation: fadeIn 0.2s ease;">
-        <label style="font-weight: 700; color: var(--text-primary); font-size: 0.95rem; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
-          <span><i class="fa-solid fa-indian-rupee-sign" style="color: var(--success-green);"></i> Set Monthly Rent for Selected Occupancy Types (${checkedBoxes.length} Selected)</span>
-          <span class="font-xs text-muted font-weight-normal">1 Monthly rent field per selected occupancy</span>
-        </label>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px;">
-          ${checkedBoxes.map(cb => {
-            const occName = cb.value;
-            const currentVal = currentInputValues[occName] || defaultRents[occName] || "";
-            const safeOcc = occName.replace(/[^a-zA-Z0-9]/g, '_');
-            return `
-              <div class="form-group" style="margin-bottom: 0;">
-                <label style="font-size: 0.84rem; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-                  <i class="fa-solid fa-bed font-xs" style="color: var(--primary);"></i> ${occName} Rent (₹/mo) <span style="color: var(--danger-red);">*</span>
-                </label>
-                <input type="number" id="rent-${safeOcc}" class="form-control occupancy-rent-input" data-occupancy="${occName}" value="${currentVal}" placeholder="e.g. ${defaultRents[occName] || 8000}" required min="500" step="100" oninput="app.updateStartingRentFromOccupancies()" />
-              </div>
-            `;
-          }).join('')}
-        </div>
-      </div>
-    `;
-
-    this.updateStartingRentFromOccupancies();
+    const rentEl = document.getElementById("prop-rent");
+    if (rentEl) {
+      rentEl.value = rents.length > 0 ? Math.min(...rents) : 8500;
+    }
   }
 
   updateStartingRentFromOccupancies() {
-    const rentInputs = Array.from(document.querySelectorAll(".occupancy-rent-input"));
-    const rentValues = rentInputs.map(inp => parseFloat(inp.value)).filter(v => !isNaN(v) && v > 0);
+    const occList = ["1", "2", "3", "4"];
+    let rents = [];
+    occList.forEach(id => {
+      const cb = document.getElementById(`occ-check-${id}`);
+      const input = document.getElementById(`prop-rent-${id}`);
+      if (cb && cb.checked && input) {
+        const val = parseFloat(input.value);
+        if (!isNaN(val) && val > 0) rents.push(val);
+      }
+    });
     const rentEl = document.getElementById("prop-rent");
-    if (rentEl && rentValues.length > 0) {
-      const minRent = Math.min(...rentValues);
-      rentEl.value = minRent;
+    if (rentEl && rents.length > 0) {
+      rentEl.value = Math.min(...rents);
     }
   }
 
@@ -2773,7 +2775,6 @@ class HostelKhojoApp {
     const city = document.getElementById("prop-city").value.trim();
     const gender = document.getElementById("prop-gender").value;
     const type = document.getElementById("prop-type").value.trim();
-    const rent = parseFloat(document.getElementById("prop-rent").value);
     const deposit = parseFloat(document.getElementById("prop-deposit").value);
     const distance = parseFloat(document.getElementById("prop-distance").value);
     const address = document.getElementById("prop-address").value.trim();
@@ -2784,20 +2785,30 @@ class HostelKhojoApp {
     // Collect checked room occupancies & their individual monthly rents
     const roomSharing = [];
     const occupancyPricing = {};
-    document.querySelectorAll("#prop-occupancy-grid input[type='checkbox']:checked").forEach(cb => {
-      roomSharing.push(cb.value);
-    });
-    if (roomSharing.length === 0) {
-      roomSharing.push("1 Occupancy", "2 Occupancy");
-    }
 
-    document.querySelectorAll(".occupancy-rent-input").forEach(inp => {
-      const occ = inp.getAttribute("data-occupancy");
-      const val = parseFloat(inp.value);
-      if (occ && !isNaN(val) && val > 0) {
-        occupancyPricing[occ] = val;
+    [
+      { id: "1", name: "1 Occupancy", defaultRent: 12000 },
+      { id: "2", name: "2 Occupancy", defaultRent: 8500 },
+      { id: "3", name: "3 Occupancy", defaultRent: 6500 },
+      { id: "4", name: "4 Occupancy", defaultRent: 5000 }
+    ].forEach(item => {
+      const cb = document.getElementById(`occ-check-${item.id}`);
+      const input = document.getElementById(`prop-rent-${item.id}`);
+      if (cb && cb.checked) {
+        roomSharing.push(item.name);
+        const val = input ? parseFloat(input.value) : NaN;
+        occupancyPricing[item.name] = !isNaN(val) && val > 0 ? val : item.defaultRent;
       }
     });
+
+    if (roomSharing.length === 0) {
+      roomSharing.push("1 Occupancy", "2 Occupancy");
+      occupancyPricing["1 Occupancy"] = 12000;
+      occupancyPricing["2 Occupancy"] = 8500;
+    }
+
+    const rentPrices = Object.values(occupancyPricing);
+    const rent = rentPrices.length > 0 ? Math.min(...rentPrices) : (parseFloat(document.getElementById("prop-rent")?.value) || 8500);
 
     // Collect checked amenities
     const amenities = [];
