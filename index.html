@@ -1113,11 +1113,15 @@
 
         <div class="form-row">
           <div class="form-group">
-            <label>Security Deposit (₹)</label>
+            <label><i class="fa-solid fa-shield-halved" style="color: var(--success-green);"></i> Security Deposit (₹)</label>
             <input type="number" id="prop-deposit" required placeholder="5000" class="form-control" />
           </div>
           <div class="form-group">
-            <label>Distance to Campus (km)</label>
+            <label><i class="fa-solid fa-file-invoice-dollar" style="color: var(--primary);"></i> Registration Fees (₹)</label>
+            <input type="number" id="prop-reg-fee" placeholder="0 (Free) or 1000" value="0" class="form-control" />
+          </div>
+          <div class="form-group">
+            <label><i class="fa-solid fa-route" style="color: var(--secondary);"></i> Distance to Campus (km)</label>
             <input type="number" step="0.1" id="prop-distance" required placeholder="0.3" class="form-control" />
           </div>
         </div>

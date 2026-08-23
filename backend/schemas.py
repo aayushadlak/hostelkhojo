@@ -102,6 +102,7 @@ class HostelBase(BaseModel):
     type: str
     rent: float
     deposit: float
+    registrationFee: Optional[float] = 0.0
     distance: float
     rating: float = 4.8
     reviewsCount: int = 0
@@ -136,6 +137,7 @@ class HostelResponse(BaseModel):
     type: str
     rent: float
     deposit: Optional[float] = 0.0
+    registrationFee: Optional[float] = 0.0
     distance: Optional[float] = 0.0
     rating: Optional[float] = 4.8
     reviewsCount: Optional[int] = 0

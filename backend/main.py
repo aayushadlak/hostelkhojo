@@ -317,6 +317,7 @@ def get_hostels(
                     "type": str(h.type or "Student Stay"),
                     "rent": float(h.rent) if h.rent is not None else 8000.0,
                     "deposit": float(h.deposit) if h.deposit is not None else 5000.0,
+                    "registrationFee": float(getattr(h, "registration_fee", 0.0) or 0.0),
                     "distance": float(h.distance) if h.distance is not None else 0.5,
                     "rating": float(h.rating) if h.rating is not None else 4.8,
                     "reviewsCount": int(h.reviews_count) if h.reviews_count is not None else 0,
@@ -379,6 +380,7 @@ def get_hostel_detail(hostel_id: str, db: Session = Depends(get_db)):
         "type": str(h.type or "Student Stay"),
         "rent": float(h.rent) if h.rent is not None else 8000.0,
         "deposit": float(h.deposit) if h.deposit is not None else 5000.0,
+        "registrationFee": float(getattr(h, "registration_fee", 0.0) or 0.0),
         "distance": float(h.distance) if h.distance is not None else 0.5,
         "rating": float(h.rating) if h.rating is not None else 4.8,
         "reviewsCount": int(h.reviews_count) if h.reviews_count is not None else 0,
@@ -623,6 +625,7 @@ def get_owner_properties(
             "type": h.type,
             "rent": h.rent,
             "deposit": h.deposit,
+            "registrationFee": float(getattr(h, "registration_fee", 0.0) or 0.0),
             "distance": h.distance,
             "rating": h.rating,
             "reviewsCount": h.reviews_count,
@@ -668,6 +671,7 @@ def create_owner_property(
             type=hostel_in.type,
             rent=hostel_in.rent,
             deposit=hostel_in.deposit,
+            registration_fee=float(hostel_in.registrationFee or 0.0),
             distance=hostel_in.distance,
             rating=hostel_in.rating,
             reviews_count=hostel_in.reviewsCount,
@@ -701,6 +705,7 @@ def create_owner_property(
             "type": new_hostel.type,
             "rent": new_hostel.rent,
             "deposit": new_hostel.deposit,
+            "registrationFee": float(getattr(new_hostel, "registration_fee", 0.0) or 0.0),
             "distance": new_hostel.distance,
             "rating": new_hostel.rating,
             "reviewsCount": new_hostel.reviews_count,
@@ -752,6 +757,8 @@ def update_owner_property(
     h.type = hostel_in.type
     h.rent = hostel_in.rent
     h.deposit = hostel_in.deposit
+    if hostel_in.registrationFee is not None:
+        h.registration_fee = float(hostel_in.registrationFee)
     h.distance = hostel_in.distance
     h.address = hostel_in.address
     h.description = hostel_in.description
@@ -779,6 +786,7 @@ def update_owner_property(
         "type": h.type,
         "rent": h.rent,
         "deposit": h.deposit,
+        "registrationFee": float(getattr(h, "registration_fee", 0.0) or 0.0),
         "distance": h.distance,
         "rating": h.rating,
         "reviewsCount": h.reviews_count,

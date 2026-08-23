@@ -430,6 +430,12 @@ class HostelKhojoApp {
                   <i class="fa-solid fa-bed font-xs"></i> ${occ}
                 </span>
               `).join('')}
+              <span style="font-size: 0.72rem; font-weight: 600; background: rgba(16, 185, 129, 0.08); color: var(--success-green); padding: 2px 7px; border-radius: 4px; border: 1px solid rgba(16, 185, 129, 0.2);" title="Security Deposit">
+                <i class="fa-solid fa-shield-halved font-xs"></i> Dep: ₹${Number(h.deposit || 5000).toLocaleString('en-IN')}
+              </span>
+              <span style="font-size: 0.72rem; font-weight: 600; background: rgba(245, 158, 11, 0.08); color: var(--warning-amber); padding: 2px 7px; border-radius: 4px; border: 1px solid rgba(245, 158, 11, 0.2);" title="Registration Fee">
+                <i class="fa-solid fa-file-invoice-dollar font-xs"></i> Reg: ${h.registrationFee && h.registrationFee > 0 ? '₹' + Number(h.registrationFee).toLocaleString('en-IN') : 'Free'}
+              </span>
             </div>
 
             <div class="card-footer-row">
@@ -769,6 +775,10 @@ class HostelKhojoApp {
           ${selectedHostels.map(h => `<td>₹${h.deposit.toLocaleString('en-IN')}</td>`).join('')}
         </tr>
         <tr>
+          <td><strong>Registration Fee</strong></td>
+          ${selectedHostels.map(h => `<td>${h.registrationFee && h.registrationFee > 0 ? '₹' + Number(h.registrationFee).toLocaleString('en-IN') : 'Free (₹0)'}</td>`).join('')}
+        </tr>
+        <tr>
           <td><strong>Room Sharing Options</strong></td>
           ${selectedHostels.map(h => `<td>${h.roomSharing.join(', ')}</td>`).join('')}
         </tr>
@@ -839,29 +849,32 @@ class HostelKhojoApp {
                 ${h.verified ? `<span class="badge-verified"><i class="fa-solid fa-circle-check"></i> Verified Stay</span>` : ''}
                 <span class="badge" style="background: var(--surface-container); color: var(--text-secondary);"><i class="fa-solid fa-shield-halved"></i> 100% Deposit Safe</span>
               </div>
-              <h2 style="font-size: 1.6rem; font-weight: 800; color: var(--text-primary);">${h.name}</h2>
-              <p class="card-location" style="margin-top: 4px; font-size: 0.92rem;"><i class="fa-solid fa-location-dot"></i> ${h.address} (${h.distance} km to ${h.university})</p>
+              <h2 style="font-size: 1.6rem; font-weight: 800; color: var(--text-primary); margin-bottom: 4px;">${h.name}</h2>
+              <p class="text-muted" style="font-size: 0.9rem;">
+                <i class="fa-solid fa-location-dot" style="color: var(--danger-red);"></i> ${h.address} • <strong>${h.distance} km</strong> to ${h.university}
+              </p>
             </div>
-            
             <div style="text-align: right;">
-              <div class="price-num" style="font-size: 1.8rem; font-weight: 800; color: var(--success-green);">
-                ₹${Number(h.rent).toLocaleString('en-IN')}<span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">/month</span>
-              </div>
-              <div class="card-rating" style="margin-top: 4px; display: inline-flex;">
-                <i class="fa-solid fa-star"></i> ${h.rating} (${h.reviewsCount || 12} reviews)
+              <div style="font-size: 1.8rem; font-weight: 800; color: var(--primary);">₹${h.rent.toLocaleString('en-IN')}<span style="font-size: 0.9rem; color: var(--text-muted); font-weight: 500;">/mo</span></div>
+              <div class="card-rating" style="justify-content: flex-end; margin-top: 4px;">
+                <i class="fa-solid fa-star"></i> <strong>${h.rating}</strong> (${h.reviewsCount} reviews)
               </div>
             </div>
           </div>
 
           <!-- Key Highlights & Warden Rules Banner -->
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 24px; background: var(--surface-low); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 24px; background: var(--surface-low); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
             <div>
               <span style="font-size: 0.76rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; display: block;">Gate Curfew</span>
               <strong style="font-size: 0.92rem; color: var(--text-primary);"><i class="fa-solid fa-clock" style="color: var(--warning-amber);"></i> ${h.curfew || '10:30 PM'}</strong>
             </div>
             <div>
               <span style="font-size: 0.76rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; display: block;">Security Deposit</span>
-              <strong style="font-size: 0.92rem; color: var(--text-primary);"><i class="fa-solid fa-indian-rupee-sign" style="color: var(--success-green);"></i> ₹${Number(h.deposit || 5000).toLocaleString('en-IN')} (Refundable)</strong>
+              <strong style="font-size: 0.92rem; color: var(--text-primary);"><i class="fa-solid fa-shield-halved" style="color: var(--success-green);"></i> ₹${Number(h.deposit || 5000).toLocaleString('en-IN')} (Refundable)</strong>
+            </div>
+            <div>
+              <span style="font-size: 0.76rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; display: block;">Registration Fee</span>
+              <strong style="font-size: 0.92rem; color: var(--text-primary);"><i class="fa-solid fa-file-invoice-dollar" style="color: var(--primary);"></i> ${h.registrationFee && h.registrationFee > 0 ? '₹' + Number(h.registrationFee).toLocaleString('en-IN') : '₹0 (Free)'}</strong>
             </div>
             <div>
               <span style="font-size: 0.76rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; display: block;">Notice Period</span>
@@ -2010,6 +2023,8 @@ class HostelKhojoApp {
     if (typeEl) typeEl.value = "Hostel";
     const genderEl = document.getElementById("prop-gender");
     if (genderEl) genderEl.value = "Boys";
+    const regEl = document.getElementById("prop-reg-fee");
+    if (regEl) regEl.value = "0";
 
     // Set 1 & 2 Occupancy checked, 3 & 4 unchecked by default
     const c1 = document.getElementById("occ-check-1");
@@ -2693,6 +2708,7 @@ class HostelKhojoApp {
 
     document.getElementById("prop-rent").value = hostel.rent || "";
     document.getElementById("prop-deposit").value = hostel.deposit || "";
+    if (document.getElementById("prop-reg-fee")) document.getElementById("prop-reg-fee").value = hostel.registrationFee !== undefined ? hostel.registrationFee : 0;
     document.getElementById("prop-distance").value = hostel.distance || "";
     document.getElementById("prop-address").value = hostel.address || "";
     document.getElementById("prop-description").value = hostel.description || "";
@@ -2775,7 +2791,8 @@ class HostelKhojoApp {
     const city = document.getElementById("prop-city").value.trim();
     const gender = document.getElementById("prop-gender").value;
     const type = document.getElementById("prop-type").value.trim();
-    const deposit = parseFloat(document.getElementById("prop-deposit").value);
+    const deposit = parseFloat(document.getElementById("prop-deposit").value) || 0;
+    const registrationFee = parseFloat(document.getElementById("prop-reg-fee")?.value) || 0;
     const distance = parseFloat(document.getElementById("prop-distance").value);
     const address = document.getElementById("prop-address").value.trim();
     const lat = parseFloat(document.getElementById("prop-lat")?.value) || 28.6922;
@@ -2826,6 +2843,7 @@ class HostelKhojoApp {
       type,
       rent,
       deposit,
+      registrationFee,
       distance,
       address,
       lat,

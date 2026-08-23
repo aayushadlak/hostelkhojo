@@ -29,6 +29,7 @@ class HostelDB(Base):
     type = Column(String, nullable=False)
     rent = Column(Float, nullable=False)
     deposit = Column(Float, nullable=False)
+    registration_fee = Column(Float, default=0.0)
     distance = Column(Float, nullable=False)
     rating = Column(Float, default=4.8)
     reviews_count = Column(Integer, default=0)
