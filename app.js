@@ -2595,7 +2595,20 @@ class HostelKhojoApp {
     document.getElementById("prop-university").value = hostel.university || "";
     document.getElementById("prop-city").value = hostel.city || "";
     document.getElementById("prop-gender").value = hostel.gender || "Boys";
-    document.getElementById("prop-type").value = hostel.type || "Verified Student PG & Hostel";
+    // Set property type category (Hostel / PG / Both)
+    const typeEl = document.getElementById("prop-type");
+    if (typeEl) {
+      const rawType = (hostel.type || "").toLowerCase();
+      if (rawType.includes("both") || (rawType.includes("hostel") && rawType.includes("pg"))) {
+        typeEl.value = "Both";
+      } else if (rawType.includes("hostel")) {
+        typeEl.value = "Hostel";
+      } else if (rawType.includes("pg")) {
+        typeEl.value = "PG";
+      } else {
+        typeEl.value = "Both";
+      }
+    }
     document.getElementById("prop-rent").value = hostel.rent || "";
     document.getElementById("prop-deposit").value = hostel.deposit || "";
     document.getElementById("prop-distance").value = hostel.distance || "";
@@ -2604,6 +2617,20 @@ class HostelKhojoApp {
     if (document.getElementById("prop-lat")) document.getElementById("prop-lat").value = hostel.lat || "";
     if (document.getElementById("prop-lng")) document.getElementById("prop-lng").value = hostel.lng || "";
 
+    this.openModal("owner-property-modal");
+  }
+
+  openOwnerPropertyModal() {
+    const form = document.getElementById("owner-property-form");
+    if (form) form.reset();
+    const idEl = document.getElementById("owner-prop-id");
+    if (idEl) idEl.value = "";
+    const titleEl = document.getElementById("owner-prop-modal-title");
+    if (titleEl) titleEl.innerHTML = `<i class="fa-solid fa-building-circle-check" style="color: var(--success-green);"></i> List New PG / Hostel Property`;
+    const typeEl = document.getElementById("prop-type");
+    if (typeEl) typeEl.value = "Hostel";
+    const genderEl = document.getElementById("prop-gender");
+    if (genderEl) genderEl.value = "Boys";
     this.openModal("owner-property-modal");
   }
 
