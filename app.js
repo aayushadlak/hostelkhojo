@@ -2086,6 +2086,18 @@ class HostelKhojoApp {
     if (c3) c3.checked = false;
     if (c4) c4.checked = false;
 
+    // Clear any previous rent/deposit input values
+    ["1", "2", "3", "4"].forEach(id => {
+      const inp = document.getElementById(`prop-rent-${id}`);
+      if (inp) inp.value = "";
+    });
+    const depInp = document.getElementById("prop-deposit");
+    if (depInp) depInp.value = "";
+    const regInp = document.getElementById("prop-reg-fee");
+    if (regInp) regInp.value = "";
+    const distInp = document.getElementById("prop-distance");
+    if (distInp) distInp.value = "";
+
     // Reset photo inputs and previews
     const defaultPhotos = {
       main: "assets/images/exterior1.png",
@@ -2104,7 +2116,7 @@ class HostelKhojoApp {
       if (fileIn) fileIn.value = "";
     });
 
-    this.toggleOccupancyInputs({ "1 Occupancy": 12000, "2 Occupancy": 8500, "3 Occupancy": 6500, "4 Occupancy": 5000 });
+    this.toggleOccupancyInputs({});
 
     this.openModal("owner-property-modal");
   }
@@ -2805,10 +2817,10 @@ class HostelKhojoApp {
 
   toggleOccupancyInputs(existingPricing = null) {
     const occList = [
-      { id: "1", val: "1 Occupancy", defaultRent: 12000 },
-      { id: "2", val: "2 Occupancy", defaultRent: 8500 },
-      { id: "3", val: "3 Occupancy", defaultRent: 6500 },
-      { id: "4", val: "4 Occupancy", defaultRent: 5000 }
+      { id: "1", val: "1 Occupancy" },
+      { id: "2", val: "2 Occupancy" },
+      { id: "3", val: "3 Occupancy" },
+      { id: "4", val: "4 Occupancy" }
     ];
 
     let rents = [];
@@ -2821,8 +2833,8 @@ class HostelKhojoApp {
       if (cb && wrap && input) {
         if (existingPricing && existingPricing[item.val]) {
           input.value = existingPricing[item.val];
-        } else if (!input.value) {
-          input.value = item.defaultRent;
+        } else if (existingPricing && Object.keys(existingPricing).length === 0) {
+          input.value = "";
         }
 
         if (cb.checked) {
@@ -2839,7 +2851,7 @@ class HostelKhojoApp {
 
     const rentEl = document.getElementById("prop-rent");
     if (rentEl) {
-      rentEl.value = rents.length > 0 ? Math.min(...rents) : 8500;
+      rentEl.value = rents.length > 0 ? Math.min(...rents) : "";
     }
   }
 
@@ -2855,8 +2867,8 @@ class HostelKhojoApp {
       }
     });
     const rentEl = document.getElementById("prop-rent");
-    if (rentEl && rents.length > 0) {
-      rentEl.value = Math.min(...rents);
+    if (rentEl) {
+      rentEl.value = rents.length > 0 ? Math.min(...rents) : "";
     }
   }
 
@@ -2888,30 +2900,40 @@ class HostelKhojoApp {
     // Collect checked room occupancies & their individual monthly rents
     const roomSharing = [];
     const occupancyPricing = {};
+    let missingRentType = null;
 
     [
-      { id: "1", name: "1 Occupancy", defaultRent: 12000 },
-      { id: "2", name: "2 Occupancy", defaultRent: 8500 },
-      { id: "3", name: "3 Occupancy", defaultRent: 6500 },
-      { id: "4", name: "4 Occupancy", defaultRent: 5000 }
+      { id: "1", name: "1 Occupancy" },
+      { id: "2", name: "2 Occupancy" },
+      { id: "3", name: "3 Occupancy" },
+      { id: "4", name: "4 Occupancy" }
     ].forEach(item => {
       const cb = document.getElementById(`occ-check-${item.id}`);
       const input = document.getElementById(`prop-rent-${item.id}`);
       if (cb && cb.checked) {
         roomSharing.push(item.name);
         const val = input ? parseFloat(input.value) : NaN;
-        occupancyPricing[item.name] = !isNaN(val) && val > 0 ? val : item.defaultRent;
+        if (!isNaN(val) && val > 0) {
+          occupancyPricing[item.name] = val;
+        } else if (!missingRentType) {
+          missingRentType = item.name;
+          if (input) input.focus();
+        }
       }
     });
 
     if (roomSharing.length === 0) {
-      roomSharing.push("1 Occupancy", "2 Occupancy");
-      occupancyPricing["1 Occupancy"] = 12000;
-      occupancyPricing["2 Occupancy"] = 8500;
+      this.showToast("Please select at least one Room Occupancy option.", "warning");
+      return;
+    }
+
+    if (missingRentType) {
+      this.showToast(`Please enter the monthly rent for ${missingRentType}.`, "warning");
+      return;
     }
 
     const rentPrices = Object.values(occupancyPricing);
-    const rent = rentPrices.length > 0 ? Math.min(...rentPrices) : (parseFloat(document.getElementById("prop-rent")?.value) || 8500);
+    const rent = rentPrices.length > 0 ? Math.min(...rentPrices) : 0;
 
     // Collect checked amenities
     const amenities = [];

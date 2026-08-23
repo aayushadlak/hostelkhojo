@@ -1086,35 +1086,35 @@
             <!-- 1 Occupancy Rent -->
             <div id="occ-rent-wrap-1" class="form-group" style="margin-bottom: 0;">
               <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; display: block;"><i class="fa-solid fa-bed font-xs" style="color: var(--primary);"></i> 1 Occupancy (Single) Rent (₹/mo) <span style="color: var(--danger-red);">*</span></label>
-              <input type="number" id="prop-rent-1" class="form-control occupancy-rent-input" data-occupancy="1 Occupancy" placeholder="12000" value="12000" oninput="if(window.app) app.updateStartingRentFromOccupancies();" />
+              <input type="number" id="prop-rent-1" class="form-control occupancy-rent-input" data-occupancy="1 Occupancy" placeholder="e.g. 12000" oninput="if(window.app) app.updateStartingRentFromOccupancies();" />
             </div>
 
             <!-- 2 Occupancy Rent -->
             <div id="occ-rent-wrap-2" class="form-group" style="margin-bottom: 0;">
               <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; display: block;"><i class="fa-solid fa-bed font-xs" style="color: var(--primary);"></i> 2 Occupancy (Double) Rent (₹/mo) <span style="color: var(--danger-red);">*</span></label>
-              <input type="number" id="prop-rent-2" class="form-control occupancy-rent-input" data-occupancy="2 Occupancy" placeholder="8500" value="8500" oninput="if(window.app) app.updateStartingRentFromOccupancies();" />
+              <input type="number" id="prop-rent-2" class="form-control occupancy-rent-input" data-occupancy="2 Occupancy" placeholder="e.g. 8500" oninput="if(window.app) app.updateStartingRentFromOccupancies();" />
             </div>
 
             <!-- 3 Occupancy Rent -->
             <div id="occ-rent-wrap-3" class="form-group" style="margin-bottom: 0; display: none;">
               <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; display: block;"><i class="fa-solid fa-bed font-xs" style="color: var(--primary);"></i> 3 Occupancy (Triple) Rent (₹/mo) <span style="color: var(--danger-red);">*</span></label>
-              <input type="number" id="prop-rent-3" class="form-control occupancy-rent-input" data-occupancy="3 Occupancy" placeholder="6500" value="6500" oninput="if(window.app) app.updateStartingRentFromOccupancies();" />
+              <input type="number" id="prop-rent-3" class="form-control occupancy-rent-input" data-occupancy="3 Occupancy" placeholder="e.g. 6500" oninput="if(window.app) app.updateStartingRentFromOccupancies();" />
             </div>
 
             <!-- 4 Occupancy Rent -->
             <div id="occ-rent-wrap-4" class="form-group" style="margin-bottom: 0; display: none;">
               <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; display: block;"><i class="fa-solid fa-bed font-xs" style="color: var(--primary);"></i> 4 Occupancy (Quad) Rent (₹/mo) <span style="color: var(--danger-red);">*</span></label>
-              <input type="number" id="prop-rent-4" class="form-control occupancy-rent-input" data-occupancy="4 Occupancy" placeholder="5000" value="5000" oninput="if(window.app) app.updateStartingRentFromOccupancies();" />
+              <input type="number" id="prop-rent-4" class="form-control occupancy-rent-input" data-occupancy="4 Occupancy" placeholder="e.g. 5000" oninput="if(window.app) app.updateStartingRentFromOccupancies();" />
             </div>
           </div>
         </div>
 
-        <input type="hidden" id="prop-rent" value="8500" />
+        <input type="hidden" id="prop-rent" value="" />
 
         <div class="form-row">
           <div class="form-group">
             <label><i class="fa-solid fa-shield-halved" style="color: var(--success-green);"></i> Security Deposit (₹)</label>
-            <input type="number" id="prop-deposit" required placeholder="5000" class="form-control" />
+            <input type="number" id="prop-deposit" required placeholder="e.g. 5000" class="form-control" />
           </div>
           <div class="form-group">
             <label><i class="fa-solid fa-file-invoice-dollar" style="color: var(--primary);"></i> Registration Fees (₹) <span class="text-muted" style="font-size: 0.75rem; font-weight: 500;">(Optional)</span></label>
@@ -1622,7 +1622,7 @@
   </nav>
 
   <!-- Main JavaScript App Logic -->
-  <script src="app.js?v=17.0&t=20260824_photos_upload"></script>
+  <script src="app.js?v=18.0&t=20260824_empty_rent_fields"></script>
 </body>
 
 </html>
