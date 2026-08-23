@@ -326,6 +326,7 @@ def get_hostels(
                     "imageMain": h.image_main or "assets/images/exterior1.png",
                     "imageSingle": h.image_single or "assets/images/room_single.png",
                     "imageShared": h.image_shared or "assets/images/room_shared.png",
+                    "imageWashroom": getattr(h, "image_washroom", None) or "assets/images/room_shared.png",
                     "imageMess": h.image_mess or "assets/images/mess.png",
                     "address": str(h.address or ""),
                     "mapCoords": h.map_coords if isinstance(h.map_coords, dict) else {"top": 40, "left": 50},
@@ -389,6 +390,7 @@ def get_hostel_detail(hostel_id: str, db: Session = Depends(get_db)):
         "imageMain": h.image_main or "assets/images/exterior1.png",
         "imageSingle": h.image_single or "assets/images/room_single.png",
         "imageShared": h.image_shared or "assets/images/room_shared.png",
+        "imageWashroom": getattr(h, "image_washroom", None) or "assets/images/room_shared.png",
         "imageMess": h.image_mess or "assets/images/mess.png",
         "address": str(h.address or ""),
         "mapCoords": h.map_coords if isinstance(h.map_coords, dict) else {"top": 40, "left": 50},
@@ -634,6 +636,7 @@ def get_owner_properties(
             "imageMain": h.image_main,
             "imageSingle": h.image_single,
             "imageShared": h.image_shared,
+            "imageWashroom": getattr(h, "image_washroom", None) or "assets/images/room_shared.png",
             "imageMess": h.image_mess,
             "address": h.address,
             "mapCoords": h.map_coords,
@@ -681,6 +684,7 @@ def create_owner_property(
             image_main=hostel_in.imageMain or "assets/images/exterior1.png",
             image_single=hostel_in.imageSingle or "assets/images/room_single.png",
             image_shared=hostel_in.imageShared or "assets/images/room_shared.png",
+            image_washroom=hostel_in.imageWashroom or "assets/images/room_shared.png",
             image_mess=hostel_in.imageMess or "assets/images/mess.png",
             address=hostel_in.address,
             map_coords_json=json.dumps(hostel_in.mapCoords if isinstance(hostel_in.mapCoords, dict) else {"top": 40, "left": 50}),
@@ -715,6 +719,7 @@ def create_owner_property(
             "imageMain": new_hostel.image_main,
             "imageSingle": new_hostel.image_single,
             "imageShared": new_hostel.image_shared,
+            "imageWashroom": new_hostel.image_washroom,
             "imageMess": new_hostel.image_mess,
             "address": new_hostel.address,
             "mapCoords": new_hostel.map_coords,
@@ -762,6 +767,16 @@ def update_owner_property(
     h.distance = hostel_in.distance
     h.address = hostel_in.address
     h.description = hostel_in.description
+    if hostel_in.imageMain is not None:
+        h.image_main = hostel_in.imageMain
+    if hostel_in.imageSingle is not None:
+        h.image_single = hostel_in.imageSingle
+    if hostel_in.imageShared is not None:
+        h.image_shared = hostel_in.imageShared
+    if hostel_in.imageWashroom is not None:
+        h.image_washroom = hostel_in.imageWashroom
+    if hostel_in.imageMess is not None:
+        h.image_mess = hostel_in.imageMess
     if hostel_in.amenities is not None:
         h.amenities = hostel_in.amenities
     if hostel_in.roomSharing is not None:
@@ -796,6 +811,7 @@ def update_owner_property(
         "imageMain": h.image_main,
         "imageSingle": h.image_single,
         "imageShared": h.image_shared,
+        "imageWashroom": h.image_washroom,
         "imageMess": h.image_mess,
         "address": h.address,
         "mapCoords": h.map_coords,

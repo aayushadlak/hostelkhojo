@@ -1155,6 +1155,83 @@
           </div>
         </div>
 
+        <!-- PROPERTY PHOTOS UPLOAD SECTION (Hostel, Rooms, Washroom, Mess) -->
+        <div class="form-group" style="margin-bottom: 24px;">
+          <label style="font-weight: 700; color: var(--text-primary); font-size: 0.95rem; margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+            <span><i class="fa-solid fa-camera-retro" style="color: var(--primary);"></i> Upload Property Photos</span>
+            <span class="font-xs text-muted">Upload real photos of hostel, rooms, washroom & mess</span>
+          </label>
+          <p class="text-muted" style="font-size: 0.8rem; margin-bottom: 14px;">
+            High quality photos build student trust and get more booking inquiries. Select photo from your device.
+          </p>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px;">
+            <!-- 1. Photo of Hostel / Exterior -->
+            <div class="user-page-card" style="padding: 14px; background: var(--bg-surface); border: 1.5px dashed var(--border-color); text-align: center; border-radius: var(--radius-md); position: relative;">
+              <div style="font-weight: 700; font-size: 0.86rem; margin-bottom: 8px; color: var(--text-primary);">
+                <i class="fa-solid fa-building" style="color: var(--primary);"></i> 1. Photo of Hostel
+              </div>
+              <div id="preview-wrap-main" style="width: 100%; height: 110px; border-radius: 6px; background: var(--surface-low); overflow: hidden; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; position: relative;">
+                <img id="preview-img-main" src="assets/images/exterior1.png" style="width: 100%; height: 100%; object-fit: cover;" alt="Hostel Photo" />
+                <span id="badge-img-main" class="badge badge-accent" style="position: absolute; bottom: 6px; right: 6px; font-size: 0.68rem; display: none;">Uploaded</span>
+              </div>
+              <input type="file" id="file-input-main" accept="image/*" style="display: none;" onchange="app.handlePhotoUpload(this, 'main')" />
+              <input type="hidden" id="prop-img-main" value="assets/images/exterior1.png" />
+              <button type="button" class="btn btn-outline btn-sm btn-block" onclick="document.getElementById('file-input-main').click()">
+                <i class="fa-solid fa-cloud-arrow-up"></i> Upload Hostel Photo
+              </button>
+            </div>
+
+            <!-- 2. Photo of Rooms -->
+            <div class="user-page-card" style="padding: 14px; background: var(--bg-surface); border: 1.5px dashed var(--border-color); text-align: center; border-radius: var(--radius-md); position: relative;">
+              <div style="font-weight: 700; font-size: 0.86rem; margin-bottom: 8px; color: var(--text-primary);">
+                <i class="fa-solid fa-bed" style="color: var(--secondary);"></i> 2. Photos of Rooms
+              </div>
+              <div id="preview-wrap-room" style="width: 100%; height: 110px; border-radius: 6px; background: var(--surface-low); overflow: hidden; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; position: relative;">
+                <img id="preview-img-room" src="assets/images/room_single.png" style="width: 100%; height: 100%; object-fit: cover;" alt="Rooms Photo" />
+                <span id="badge-img-room" class="badge badge-accent" style="position: absolute; bottom: 6px; right: 6px; font-size: 0.68rem; display: none;">Uploaded</span>
+              </div>
+              <input type="file" id="file-input-room" accept="image/*" style="display: none;" onchange="app.handlePhotoUpload(this, 'room')" />
+              <input type="hidden" id="prop-img-room" value="assets/images/room_single.png" />
+              <button type="button" class="btn btn-outline btn-sm btn-block" onclick="document.getElementById('file-input-room').click()">
+                <i class="fa-solid fa-cloud-arrow-up"></i> Upload Room Photo
+              </button>
+            </div>
+
+            <!-- 3. Photo of Washroom -->
+            <div class="user-page-card" style="padding: 14px; background: var(--bg-surface); border: 1.5px dashed var(--border-color); text-align: center; border-radius: var(--radius-md); position: relative;">
+              <div style="font-weight: 700; font-size: 0.86rem; margin-bottom: 8px; color: var(--text-primary);">
+                <i class="fa-solid fa-shower" style="color: #0284c7;"></i> 3. Photo of Washroom
+              </div>
+              <div id="preview-wrap-washroom" style="width: 100%; height: 110px; border-radius: 6px; background: var(--surface-low); overflow: hidden; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; position: relative;">
+                <img id="preview-img-washroom" src="assets/images/room_shared.png" style="width: 100%; height: 100%; object-fit: cover;" alt="Washroom Photo" />
+                <span id="badge-img-washroom" class="badge badge-accent" style="position: absolute; bottom: 6px; right: 6px; font-size: 0.68rem; display: none;">Uploaded</span>
+              </div>
+              <input type="file" id="file-input-washroom" accept="image/*" style="display: none;" onchange="app.handlePhotoUpload(this, 'washroom')" />
+              <input type="hidden" id="prop-img-washroom" value="assets/images/room_shared.png" />
+              <button type="button" class="btn btn-outline btn-sm btn-block" onclick="document.getElementById('file-input-washroom').click()">
+                <i class="fa-solid fa-cloud-arrow-up"></i> Upload Washroom Photo
+              </button>
+            </div>
+
+            <!-- 4. Photo of Mess -->
+            <div class="user-page-card" style="padding: 14px; background: var(--bg-surface); border: 1.5px dashed var(--border-color); text-align: center; border-radius: var(--radius-md); position: relative;">
+              <div style="font-weight: 700; font-size: 0.86rem; margin-bottom: 8px; color: var(--text-primary);">
+                <i class="fa-solid fa-utensils" style="color: var(--warning-amber);"></i> 4. Photo of Mess
+              </div>
+              <div id="preview-wrap-mess" style="width: 100%; height: 110px; border-radius: 6px; background: var(--surface-low); overflow: hidden; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; position: relative;">
+                <img id="preview-img-mess" src="assets/images/mess.png" style="width: 100%; height: 100%; object-fit: cover;" alt="Mess Photo" />
+                <span id="badge-img-mess" class="badge badge-accent" style="position: absolute; bottom: 6px; right: 6px; font-size: 0.68rem; display: none;">Uploaded</span>
+              </div>
+              <input type="file" id="file-input-mess" accept="image/*" style="display: none;" onchange="app.handlePhotoUpload(this, 'mess')" />
+              <input type="hidden" id="prop-img-mess" value="assets/images/mess.png" />
+              <button type="button" class="btn btn-outline btn-sm btn-block" onclick="document.getElementById('file-input-mess').click()">
+                <i class="fa-solid fa-cloud-arrow-up"></i> Upload Mess Photo
+              </button>
+            </div>
+          </div>
+        </div>
+
         <div class="form-group">
           <label>Property Description & Warden Rules</label>
           <textarea id="prop-description" required rows="3"
@@ -1545,7 +1622,7 @@
   </nav>
 
   <!-- Main JavaScript App Logic -->
-  <script src="app.js?v=16.0&t=20260824_opt_reg"></script>
+  <script src="app.js?v=17.0&t=20260824_photos_upload"></script>
 </body>
 
 </html>

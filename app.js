@@ -818,25 +818,31 @@ class HostelKhojoApp {
     const modalContent = document.getElementById("modal-detail-content");
     const genderClass = (h.gender || 'Boys').toLowerCase().replace(/[^a-z]/g, '');
 
-    const galleryImages = [
-      h.imageMain || 'assets/images/exterior1.png',
-      h.imageSingle || 'assets/images/room1.png',
-      h.imageMess || 'assets/images/mess1.png',
-      'assets/images/exterior1.png'
+    const galleryItems = [
+      { label: "Hostel Exterior", icon: "fa-building", img: h.imageMain || 'assets/images/exterior1.png' },
+      { label: "Rooms & Study", icon: "fa-bed", img: h.imageSingle || 'assets/images/room_single.png' },
+      { label: "Washroom & Bath", icon: "fa-shower", img: h.imageWashroom || h.imageShared || 'assets/images/room_shared.png' },
+      { label: "Mess & Dining", icon: "fa-utensils", img: h.imageMess || 'assets/images/mess.png' }
     ];
 
     modalContent.innerHTML = `
       <div class="modal-detail-layout">
         <div class="detail-content-col">
           
-          <!-- Photo Gallery with Stitch Thumbnail Selector -->
-          <div class="detail-gallery-main">
-            <img id="detail-active-img" src="${galleryImages[0]}" alt="${h.name}" />
+          <!-- Photo Gallery with Area Badges (Hostel, Rooms, Washroom, Mess) -->
+          <div class="detail-gallery-main" style="position: relative;">
+            <img id="detail-active-img" src="${galleryItems[0].img}" alt="${h.name}" />
+            <span id="detail-active-label" class="badge" style="position: absolute; bottom: 12px; left: 12px; background: rgba(15, 23, 42, 0.8); color: #fff; backdrop-filter: blur(8px); padding: 5px 12px; font-size: 0.82rem; border-radius: 6px;">
+              <i class="fa-solid ${galleryItems[0].icon}"></i> ${galleryItems[0].label}
+            </span>
           </div>
-          <div class="detail-thumbs-grid">
-            ${galleryImages.map((img, idx) => `
-              <div class="detail-thumb ${idx === 0 ? 'active' : ''}" onclick="app.switchDetailImage(this, '${img}')">
-                <img src="${img}" alt="${h.name} thumbnail ${idx + 1}" />
+          <div class="detail-thumbs-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+            ${galleryItems.map((item, idx) => `
+              <div class="detail-thumb ${idx === 0 ? 'active' : ''}" onclick="app.switchDetailImage(this, '${item.img}', '${item.label}', '${item.icon}')" style="cursor: pointer; position: relative;">
+                <img src="${item.img}" alt="${item.label}" style="height: 65px; width: 100%; object-fit: cover; border-radius: 6px;" />
+                <div style="font-size: 0.68rem; font-weight: 600; text-align: center; margin-top: 2px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                  <i class="fa-solid ${item.icon}" style="font-size: 0.65rem;"></i> ${item.label}
+                </div>
               </div>
             `).join('')}
           </div>
@@ -1013,11 +1019,55 @@ class HostelKhojoApp {
     this.openModal("hostel-detail-modal");
   }
 
-  switchDetailImage(thumbEl, src) {
+  switchDetailImage(thumbEl, src, label = null, icon = null) {
     const activeImg = document.getElementById("detail-active-img");
     if (activeImg) activeImg.src = src;
+    const activeLabel = document.getElementById("detail-active-label");
+    if (activeLabel && label) {
+      activeLabel.innerHTML = `<i class="fa-solid ${icon || 'fa-camera'}"></i> ${label}`;
+    }
     document.querySelectorAll(".detail-thumb").forEach(t => t.classList.remove("active"));
     if (thumbEl) thumbEl.classList.add("active");
+  }
+
+  handlePhotoUpload(input, type) {
+    if (!input || !input.files || input.files.length === 0) return;
+    const file = input.files[0];
+    
+    if (!file.type.startsWith("image/")) {
+      this.showToast("Please select a valid image file (JPG, PNG, WEBP).", "error");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      this.showToast("Image file size should be less than 5MB.", "warning");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target.result;
+      const prevImg = document.getElementById(`preview-img-${type}`);
+      const hiddenInput = document.getElementById(`prop-img-${type}`);
+      const badge = document.getElementById(`badge-img-${type}`);
+
+      if (prevImg) prevImg.src = dataUrl;
+      if (hiddenInput) hiddenInput.value = dataUrl;
+      if (badge) badge.style.display = "inline-block";
+
+      const typeTitles = {
+        main: "Hostel Exterior Photo",
+        room: "Room Photo",
+        washroom: "Washroom Photo",
+        mess: "Mess Photo"
+      };
+
+      this.showToast(`${typeTitles[type] || 'Photo'} uploaded successfully!`, "success");
+    };
+    reader.onerror = () => {
+      this.showToast("Failed to read image file. Please try again.", "error");
+    };
+    reader.readAsDataURL(file);
   }
 
   switchMessTab(btn, paneId) {
@@ -2036,6 +2086,24 @@ class HostelKhojoApp {
     if (c3) c3.checked = false;
     if (c4) c4.checked = false;
 
+    // Reset photo inputs and previews
+    const defaultPhotos = {
+      main: "assets/images/exterior1.png",
+      room: "assets/images/room_single.png",
+      washroom: "assets/images/room_shared.png",
+      mess: "assets/images/mess.png"
+    };
+    Object.keys(defaultPhotos).forEach(type => {
+      const prev = document.getElementById(`preview-img-${type}`);
+      const hid = document.getElementById(`prop-img-${type}`);
+      const badge = document.getElementById(`badge-img-${type}`);
+      const fileIn = document.getElementById(`file-input-${type}`);
+      if (prev) prev.src = defaultPhotos[type];
+      if (hid) hid.value = defaultPhotos[type];
+      if (badge) badge.style.display = "none";
+      if (fileIn) fileIn.value = "";
+    });
+
     this.toggleOccupancyInputs({ "1 Occupancy": 12000, "2 Occupancy": 8500, "3 Occupancy": 6500, "4 Occupancy": 5000 });
 
     this.openModal("owner-property-modal");
@@ -2714,6 +2782,24 @@ class HostelKhojoApp {
     if (document.getElementById("prop-lat")) document.getElementById("prop-lat").value = hostel.lat || "";
     if (document.getElementById("prop-lng")) document.getElementById("prop-lng").value = hostel.lng || "";
 
+    // Populate property photos (Hostel, Rooms, Washroom, Mess)
+    const photos = {
+      main: hostel.imageMain || "assets/images/exterior1.png",
+      room: hostel.imageSingle || hostel.imageRoom || "assets/images/room_single.png",
+      washroom: hostel.imageWashroom || hostel.imageShared || "assets/images/room_shared.png",
+      mess: hostel.imageMess || "assets/images/mess.png"
+    };
+    Object.keys(photos).forEach(type => {
+      const prev = document.getElementById(`preview-img-${type}`);
+      const hid = document.getElementById(`prop-img-${type}`);
+      const badge = document.getElementById(`badge-img-${type}`);
+      const fileIn = document.getElementById(`file-input-${type}`);
+      if (prev) prev.src = photos[type];
+      if (hid) hid.value = photos[type];
+      if (badge) badge.style.display = (photos[type] && !photos[type].startsWith("assets/images/")) ? "inline-block" : "none";
+      if (fileIn) fileIn.value = "";
+    });
+
     this.openModal("owner-property-modal");
   }
 
@@ -2833,6 +2919,12 @@ class HostelKhojoApp {
       amenities.push(cb.value);
     });
 
+    // Collect uploaded property photos (Hostel, Rooms, Washroom, Mess)
+    const imageMain = document.getElementById("prop-img-main")?.value || "assets/images/exterior1.png";
+    const imageSingle = document.getElementById("prop-img-room")?.value || "assets/images/room_single.png";
+    const imageWashroom = document.getElementById("prop-img-washroom")?.value || "assets/images/room_shared.png";
+    const imageMess = document.getElementById("prop-img-mess")?.value || "assets/images/mess.png";
+
     const ownerId = activeUser.id;
 
     const payload = {
@@ -2848,6 +2940,11 @@ class HostelKhojoApp {
       address,
       lat,
       lng,
+      imageMain,
+      imageSingle,
+      imageShared: imageWashroom,
+      imageWashroom,
+      imageMess,
       description,
       amenities,
       curfew: "11:00 PM",

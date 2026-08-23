@@ -41,6 +41,7 @@ class HostelDB(Base):
     image_main = Column(String, nullable=True)
     image_single = Column(String, nullable=True)
     image_shared = Column(String, nullable=True)
+    image_washroom = Column(String, nullable=True)
     image_mess = Column(String, nullable=True)
 
     address = Column(Text, nullable=False)

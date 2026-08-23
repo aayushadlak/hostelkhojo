@@ -25,6 +25,8 @@ def seed_database() -> None:
                     conn.execute(text("ALTER TABLE hostels ADD COLUMN occupancy_pricing_json TEXT DEFAULT '{}'"))
                 if "registration_fee" not in cols:
                     conn.execute(text("ALTER TABLE hostels ADD COLUMN registration_fee FLOAT DEFAULT 0.0"))
+                if "image_washroom" not in cols:
+                    conn.execute(text("ALTER TABLE hostels ADD COLUMN image_washroom VARCHAR"))
                 
                 # check property_submissions table
                 res = conn.execute(text("PRAGMA table_info(property_submissions)"))
@@ -44,6 +46,7 @@ def seed_database() -> None:
                 conn.execute(text("ALTER TABLE hostels ADD COLUMN IF NOT EXISTS is_live BOOLEAN DEFAULT TRUE;"))
                 conn.execute(text("ALTER TABLE hostels ADD COLUMN IF NOT EXISTS occupancy_pricing_json TEXT DEFAULT '{}';"))
                 conn.execute(text("ALTER TABLE hostels ADD COLUMN IF NOT EXISTS registration_fee FLOAT DEFAULT 0.0;"))
+                conn.execute(text("ALTER TABLE hostels ADD COLUMN IF NOT EXISTS image_washroom VARCHAR;"))
                 conn.execute(text("ALTER TABLE property_submissions ADD COLUMN IF NOT EXISTS owner_id VARCHAR;"))
                 conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR DEFAULT 'student';"))
                 conn.commit()

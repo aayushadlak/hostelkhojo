@@ -112,6 +112,7 @@ class HostelBase(BaseModel):
     imageMain: Optional[str] = None
     imageSingle: Optional[str] = None
     imageShared: Optional[str] = None
+    imageWashroom: Optional[str] = None
     imageMess: Optional[str] = None
     address: str
     mapCoords: Optional[Dict[str, Any]] = {"top": 40, "left": 50}
@@ -147,6 +148,7 @@ class HostelResponse(BaseModel):
     imageMain: Optional[str] = None
     imageSingle: Optional[str] = None
     imageShared: Optional[str] = None
+    imageWashroom: Optional[str] = None
     imageMess: Optional[str] = None
     address: str
     mapCoords: Optional[Dict[str, Any]] = {"top": 40, "left": 50}
