@@ -2024,7 +2024,7 @@ class HostelKhojoApp {
     const genderEl = document.getElementById("prop-gender");
     if (genderEl) genderEl.value = "Boys";
     const regEl = document.getElementById("prop-reg-fee");
-    if (regEl) regEl.value = "0";
+    if (regEl) regEl.value = "";
 
     // Set 1 & 2 Occupancy checked, 3 & 4 unchecked by default
     const c1 = document.getElementById("occ-check-1");
@@ -2706,9 +2706,8 @@ class HostelKhojoApp {
 
     this.toggleOccupancyInputs(hostel.occupancyPricing || {});
 
-    document.getElementById("prop-rent").value = hostel.rent || "";
     document.getElementById("prop-deposit").value = hostel.deposit || "";
-    if (document.getElementById("prop-reg-fee")) document.getElementById("prop-reg-fee").value = hostel.registrationFee !== undefined ? hostel.registrationFee : 0;
+    if (document.getElementById("prop-reg-fee")) document.getElementById("prop-reg-fee").value = (hostel.registrationFee && hostel.registrationFee > 0) ? hostel.registrationFee : "";
     document.getElementById("prop-distance").value = hostel.distance || "";
     document.getElementById("prop-address").value = hostel.address || "";
     document.getElementById("prop-description").value = hostel.description || "";
@@ -2792,7 +2791,8 @@ class HostelKhojoApp {
     const gender = document.getElementById("prop-gender").value;
     const type = document.getElementById("prop-type").value.trim();
     const deposit = parseFloat(document.getElementById("prop-deposit").value) || 0;
-    const registrationFee = parseFloat(document.getElementById("prop-reg-fee")?.value) || 0;
+    const regFeeRaw = document.getElementById("prop-reg-fee")?.value;
+    const registrationFee = (regFeeRaw && !isNaN(parseFloat(regFeeRaw)) && parseFloat(regFeeRaw) > 0) ? parseFloat(regFeeRaw) : 0.0;
     const distance = parseFloat(document.getElementById("prop-distance").value);
     const address = document.getElementById("prop-address").value.trim();
     const lat = parseFloat(document.getElementById("prop-lat")?.value) || 28.6922;
