@@ -1825,6 +1825,362 @@ button, input, select, textarea {
 }
 
 /* ==========================================================================
+   11B. STITCH "STUDENT SANCTUARY" OWNER LISTING FORM STYLES
+   ========================================================================== */
+.listing-stepper {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 0 16px 0;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--border-color);
+  -webkit-overflow-scrolling: touch;
+}
+
+.listing-step-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: var(--radius-full);
+  background: var(--surface-low);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: var(--transition);
+  text-decoration: none;
+}
+
+.listing-step-pill:hover {
+  background: var(--surface-container);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.listing-step-pill.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #ffffff;
+  box-shadow: 0 4px 12px var(--primary-glow);
+}
+
+.listing-step-num {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.08);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.74rem;
+}
+
+.listing-step-pill.active .listing-step-num {
+  background: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+}
+
+.listing-section-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 22px 24px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition);
+}
+
+.listing-section-card:hover {
+  border-color: var(--border-highlight);
+}
+
+.listing-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.listing-section-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.listing-section-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  background: var(--surface-low);
+  color: var(--primary);
+  border: 1px solid var(--border-color);
+}
+
+/* Visual Selectable Cards (Property Type & Gender) */
+.selectable-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.selectable-card {
+  padding: 16px;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--border-color);
+  background: var(--surface-low);
+  cursor: pointer;
+  transition: var(--transition);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  user-select: none;
+}
+
+.selectable-card:hover {
+  border-color: var(--primary);
+  background: var(--surface-container);
+  transform: translateY(-2px);
+}
+
+.selectable-card.active {
+  border-color: var(--primary) !important;
+  background: var(--primary-light) !important;
+  box-shadow: 0 4px 14px var(--primary-glow);
+}
+
+.selectable-card .card-icon-box {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(79, 70, 229, 0.12);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  margin-bottom: 4px;
+}
+
+.selectable-card.active .card-icon-box {
+  background: var(--primary);
+  color: #ffffff;
+}
+
+.selectable-card .card-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.selectable-card .card-desc {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.selectable-card .check-indicator {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  color: transparent;
+  transition: var(--transition);
+}
+
+.selectable-card.active .check-indicator {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #ffffff;
+}
+
+/* Gender Variants */
+.selectable-card.gender-boys.active {
+  border-color: var(--boys-blue) !important;
+  background: var(--boys-blue-bg) !important;
+}
+.selectable-card.gender-boys.active .card-icon-box,
+.selectable-card.gender-boys.active .check-indicator {
+  background: var(--boys-blue);
+  border-color: var(--boys-blue);
+  color: #ffffff;
+}
+
+.selectable-card.gender-girls.active {
+  border-color: var(--girls-pink) !important;
+  background: var(--girls-pink-bg) !important;
+}
+.selectable-card.gender-girls.active .card-icon-box,
+.selectable-card.gender-girls.active .check-indicator {
+  background: var(--girls-pink);
+  border-color: var(--girls-pink);
+  color: #ffffff;
+}
+
+.selectable-card.gender-coed.active {
+  border-color: var(--coed-purple) !important;
+  background: var(--coed-purple-bg) !important;
+}
+.selectable-card.gender-coed.active .card-icon-box,
+.selectable-card.gender-coed.active .check-indicator {
+  background: var(--coed-purple);
+  border-color: var(--coed-purple);
+  color: #ffffff;
+}
+
+/* Occupancy Smart Row Card */
+.occ-item-card {
+  padding: 16px 18px;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--border-color);
+  background: var(--surface-low);
+  transition: var(--transition);
+}
+
+.occ-item-card.active {
+  border-color: var(--primary);
+  background: var(--bg-card);
+  box-shadow: 0 4px 16px rgba(79, 70, 229, 0.08);
+}
+
+.occ-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.occ-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--text-primary);
+}
+
+.occ-input-wrap {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border-color);
+}
+
+/* Photo Showcase Cards */
+.photo-card-stitch {
+  background: var(--bg-card);
+  border: 1.5px dashed var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  text-align: center;
+  transition: var(--transition);
+  position: relative;
+}
+
+.photo-card-stitch:hover {
+  border-color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.photo-card-preview {
+  width: 100%;
+  height: 115px;
+  border-radius: 8px;
+  background: var(--surface-low);
+  overflow: hidden;
+  position: relative;
+  margin-bottom: 10px;
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.photo-card-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.photo-card-stitch:hover .photo-card-preview img {
+  transform: scale(1.05);
+}
+
+/* Amenities Interactive Badges */
+.amenities-pills-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.amenity-toggle-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: var(--surface-low);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-full);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+  transition: var(--transition);
+}
+
+.amenity-toggle-pill:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.amenity-toggle-pill input[type="checkbox"] {
+  accent-color: var(--primary);
+  width: 15px;
+  height: 15px;
+}
+
+/* Modal Bottom Sticky Bar */
+.modal-sticky-footer {
+  position: sticky;
+  bottom: -32px;
+  margin-left: -32px;
+  margin-right: -32px;
+  margin-bottom: -32px;
+  padding: 16px 32px;
+  background: var(--glass-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  z-index: 20;
+  border-bottom-left-radius: var(--radius-xl);
+  border-bottom-right-radius: var(--radius-xl);
+}
+
+/* ==========================================================================
    12. USER PROFILE, OWNER PORTAL & ADMIN CONTROL CENTER
    ========================================================================== */
 .user-page-card {

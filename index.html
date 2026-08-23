@@ -38,7 +38,7 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   
   <!-- Main Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=15.0" />
+  <link rel="stylesheet" href="styles.css?v=16.0&t=20260824_stitch_owner_form" />
 </head>
 
 <body>
@@ -1017,231 +1017,440 @@
     </div>
   </div>
 
-  <!-- MODAL FOR ADDING / EDITING OWNER PROPERTY LISTING -->
+  <!-- MODAL FOR ADDING / EDITING OWNER PROPERTY LISTING (STITCH "STUDENT SANCTUARY" DESIGN) -->
   <div class="modal-backdrop" id="owner-property-modal">
-    <div class="modal-box modal-lg">
-      <button class="modal-close" onclick="app.closeModal('owner-property-modal')">&times;</button>
-      <h2 class="modal-title" id="owner-prop-modal-title"><i class="fa-solid fa-building-circle-check"
-          style="color: var(--success-green);"></i> List New PG / Hostel Property</h2>
-      <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 20px;">Fill property details below to publish instantly on Hostel Khojo India.</p>
+    <div class="modal-box modal-xl" style="padding: 28px 32px 0 32px; max-width: 960px;">
+      <button class="modal-close" onclick="app.closeModal('owner-property-modal')" title="Close">&times;</button>
+      
+      <!-- Modal Header with Trust Badge -->
+      <div style="margin-bottom: 20px;">
+        <div style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; background: rgba(79, 70, 229, 0.08); border-radius: var(--radius-full); color: var(--primary); font-size: 0.78rem; font-weight: 700; margin-bottom: 8px;">
+          <i class="fa-solid fa-bolt" style="color: var(--warning-amber);"></i> Quick Verified Listing • Zero Brokerage
+        </div>
+        <h2 class="modal-title" id="owner-prop-modal-title" style="font-size: 1.65rem; font-weight: 800; display: flex; align-items: center; gap: 10px;">
+          <i class="fa-solid fa-building-circle-check" style="color: var(--success-green);"></i> List New PG / Hostel Property
+        </h2>
+        <p class="text-muted" style="font-size: 0.88rem; margin: 0;">Fill in your property details below to reach thousands of verified students near your campus.</p>
+      </div>
+
+      <!-- Quick Step Navigation Pills -->
+      <div class="listing-stepper">
+        <a href="#section-identity" class="listing-step-pill active" onclick="document.querySelectorAll('.listing-step-pill').forEach(p=>p.classList.remove('active')); this.classList.add('active');">
+          <span class="listing-step-num">1</span> 🏢 Identity & Category
+        </a>
+        <a href="#section-pricing" class="listing-step-pill" onclick="document.querySelectorAll('.listing-step-pill').forEach(p=>p.classList.remove('active')); this.classList.add('active');">
+          <span class="listing-step-num">2</span> 🛏️ Occupancy & Rents
+        </a>
+        <a href="#section-location" class="listing-step-pill" onclick="document.querySelectorAll('.listing-step-pill').forEach(p=>p.classList.remove('active')); this.classList.add('active');">
+          <span class="listing-step-num">3</span> 📍 Location & Campus
+        </a>
+        <a href="#section-photos" class="listing-step-pill" onclick="document.querySelectorAll('.listing-step-pill').forEach(p=>p.classList.remove('active')); this.classList.add('active');">
+          <span class="listing-step-num">4</span> 📸 Photos Showcase
+        </a>
+        <a href="#section-amenities" class="listing-step-pill" onclick="document.querySelectorAll('.listing-step-pill').forEach(p=>p.classList.remove('active')); this.classList.add('active');">
+          <span class="listing-step-num">5</span> ✨ Amenities & Rules
+        </a>
+      </div>
 
       <form id="owner-property-form" onsubmit="app.handleOwnerPropertySave(event)">
         <input type="hidden" id="owner-prop-id" value="" />
 
-        <div class="form-group">
-          <label>Hostel / PG Property Name</label>
-          <input type="text" id="prop-name" required placeholder="e.g. Royal Heights Student PG & Hostel"
-            class="form-control" />
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label>Nearby University / Area</label>
-            <input type="text" id="prop-university" required placeholder="e.g. DU North Campus, Kamla Nagar"
-              class="form-control" />
-          </div>
-          <div class="form-group">
-            <label>City</label>
-            <input type="text" id="prop-city" required placeholder="e.g. New Delhi, Pune, Kota" class="form-control" />
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label>Gender / Resident Type</label>
-            <select id="prop-gender" class="form-control">
-              <option value="Boys">Boys Hostel / PG</option>
-              <option value="Girls">Girls Hostel / PG</option>
-              <option value="Co-ed">Co-ed Co-Living</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Property Category / Tag</label>
-            <select id="prop-type" class="form-control" required>
-              <option value="Hostel">Hostel</option>
-              <option value="PG">PG</option>
-              <option value="Both">Both (Hostel & PG)</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label><i class="fa-solid fa-bed" style="color: var(--primary);"></i> Room Occupancy Tag / Options</label>
-          <div class="checkbox-grid" id="prop-occupancy-grid">
-            <label><input type="checkbox" id="occ-check-1" value="1 Occupancy" checked onchange="document.getElementById('occ-rent-wrap-1').style.display = this.checked ? 'block' : 'none'; if(window.app) app.toggleOccupancyInputs();" /> 1 Occupancy (Single)</label>
-            <label><input type="checkbox" id="occ-check-2" value="2 Occupancy" checked onchange="document.getElementById('occ-rent-wrap-2').style.display = this.checked ? 'block' : 'none'; if(window.app) app.toggleOccupancyInputs();" /> 2 Occupancy (Double)</label>
-            <label><input type="checkbox" id="occ-check-3" value="3 Occupancy" onchange="document.getElementById('occ-rent-wrap-3').style.display = this.checked ? 'block' : 'none'; if(window.app) app.toggleOccupancyInputs();" /> 3 Occupancy (Triple)</label>
-            <label><input type="checkbox" id="occ-check-4" value="4 Occupancy" onchange="document.getElementById('occ-rent-wrap-4').style.display = this.checked ? 'block' : 'none'; if(window.app) app.toggleOccupancyInputs();" /> 4 Occupancy (Quad)</label>
-          </div>
-        </div>
-
-        <!-- MONTHLY RENT FIELDS PER SELECTED OCCUPANCY (1 Monthly Rent input for each selected occupancy) -->
-        <div id="prop-occupancy-pricing-section" style="background: var(--bg-card-hover); border: 1.5px solid var(--border-color); border-radius: var(--radius-md); padding: 18px 20px; margin-bottom: 20px;">
-          <label style="font-weight: 700; color: var(--text-primary); font-size: 0.95rem; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
-            <span><i class="fa-solid fa-indian-rupee-sign" style="color: var(--success-green);"></i> Monthly Rent per Occupancy Type</span>
-            <span class="font-xs text-muted">Enter monthly rent for each selected room occupancy</span>
-          </label>
-
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px;">
-            <!-- 1 Occupancy Rent -->
-            <div id="occ-rent-wrap-1" class="form-group" style="margin-bottom: 0;">
-              <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; display: block;"><i class="fa-solid fa-bed font-xs" style="color: var(--primary);"></i> 1 Occupancy (Single) Rent (₹/mo) <span style="color: var(--danger-red);">*</span></label>
-              <input type="number" id="prop-rent-1" class="form-control occupancy-rent-input" data-occupancy="1 Occupancy" placeholder="e.g. 12000" oninput="if(window.app) app.updateStartingRentFromOccupancies();" />
+        <!-- STEP 1: PROPERTY IDENTITY & CATEGORIES -->
+        <div id="section-identity" class="listing-section-card">
+          <div class="listing-section-header">
+            <div class="listing-section-title">
+              <span style="width: 28px; height: 28px; border-radius: 50%; background: var(--primary); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 0.8rem;">1</span>
+              Property Identity & Category
             </div>
+            <span class="listing-section-badge">Required Info</span>
+          </div>
 
-            <!-- 2 Occupancy Rent -->
-            <div id="occ-rent-wrap-2" class="form-group" style="margin-bottom: 0;">
-              <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; display: block;"><i class="fa-solid fa-bed font-xs" style="color: var(--primary);"></i> 2 Occupancy (Double) Rent (₹/mo) <span style="color: var(--danger-red);">*</span></label>
-              <input type="number" id="prop-rent-2" class="form-control occupancy-rent-input" data-occupancy="2 Occupancy" placeholder="e.g. 8500" oninput="if(window.app) app.updateStartingRentFromOccupancies();" />
+          <div class="form-group" style="margin-bottom: 18px;">
+            <label style="font-weight: 700; color: var(--text-primary); font-size: 0.9rem; margin-bottom: 6px; display: block;">
+              Hostel / PG Property Name <span style="color: var(--danger-red);">*</span>
+            </label>
+            <input type="text" id="prop-name" required placeholder="e.g. Royal Heights Luxury Student Residency" class="form-control" style="font-size: 0.95rem; font-weight: 600;" />
+          </div>
+
+          <!-- Interactive Category Selectors (Hostel / PG / Both) -->
+          <div class="form-group" style="margin-bottom: 18px;">
+            <label style="font-weight: 700; color: var(--text-primary); font-size: 0.9rem; margin-bottom: 8px; display: block;">
+              Property Category / Tag <span style="color: var(--danger-red);">*</span>
+            </label>
+            <input type="hidden" id="prop-type" value="Hostel" />
+            <div class="selectable-cards-grid" id="type-selector-grid">
+              <div class="selectable-card active" data-type="Hostel" onclick="if(window.app) app.selectPropertyType('Hostel');">
+                <div class="card-icon-box"><i class="fa-solid fa-hotel"></i></div>
+                <div class="card-title">Hostel</div>
+                <div class="card-desc">Dedicated student building with organized rooms & warden</div>
+                <div class="check-indicator"><i class="fa-solid fa-check"></i></div>
+              </div>
+              <div class="selectable-card" data-type="PG" onclick="if(window.app) app.selectPropertyType('PG');">
+                <div class="card-icon-box"><i class="fa-solid fa-house-chimney-user"></i></div>
+                <div class="card-title">PG (Paying Guest)</div>
+                <div class="card-desc">Comfortable residential rooms with home-cooked meals</div>
+                <div class="check-indicator"><i class="fa-solid fa-check"></i></div>
+              </div>
+              <div class="selectable-card" data-type="Both" onclick="if(window.app) app.selectPropertyType('Both');">
+                <div class="card-icon-box"><i class="fa-solid fa-building-columns"></i></div>
+                <div class="card-title">Both (Hostel & PG)</div>
+                <div class="card-desc">Hybrid accommodation with multiple wings / options</div>
+                <div class="check-indicator"><i class="fa-solid fa-check"></i></div>
+              </div>
             </div>
+          </div>
 
-            <!-- 3 Occupancy Rent -->
-            <div id="occ-rent-wrap-3" class="form-group" style="margin-bottom: 0; display: none;">
-              <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; display: block;"><i class="fa-solid fa-bed font-xs" style="color: var(--primary);"></i> 3 Occupancy (Triple) Rent (₹/mo) <span style="color: var(--danger-red);">*</span></label>
-              <input type="number" id="prop-rent-3" class="form-control occupancy-rent-input" data-occupancy="3 Occupancy" placeholder="e.g. 6500" oninput="if(window.app) app.updateStartingRentFromOccupancies();" />
-            </div>
-
-            <!-- 4 Occupancy Rent -->
-            <div id="occ-rent-wrap-4" class="form-group" style="margin-bottom: 0; display: none;">
-              <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; display: block;"><i class="fa-solid fa-bed font-xs" style="color: var(--primary);"></i> 4 Occupancy (Quad) Rent (₹/mo) <span style="color: var(--danger-red);">*</span></label>
-              <input type="number" id="prop-rent-4" class="form-control occupancy-rent-input" data-occupancy="4 Occupancy" placeholder="e.g. 5000" oninput="if(window.app) app.updateStartingRentFromOccupancies();" />
+          <!-- Interactive Resident Gender Selectors (Boys / Girls / Co-ed) -->
+          <div class="form-group" style="margin-bottom: 0;">
+            <label style="font-weight: 700; color: var(--text-primary); font-size: 0.9rem; margin-bottom: 8px; display: block;">
+              Allowed Resident Type <span style="color: var(--danger-red);">*</span>
+            </label>
+            <input type="hidden" id="prop-gender" value="Boys" />
+            <div class="selectable-cards-grid" id="gender-selector-grid">
+              <div class="selectable-card gender-boys active" data-gender="Boys" onclick="if(window.app) app.selectPropertyGender('Boys');">
+                <div class="card-icon-box" style="color: var(--boys-blue); background: var(--boys-blue-bg);"><i class="fa-solid fa-mars"></i></div>
+                <div class="card-title">Boys Only</div>
+                <div class="card-desc">Male student accommodation</div>
+                <div class="check-indicator"><i class="fa-solid fa-check"></i></div>
+              </div>
+              <div class="selectable-card gender-girls" data-gender="Girls" onclick="if(window.app) app.selectPropertyGender('Girls');">
+                <div class="card-icon-box" style="color: var(--girls-pink); background: var(--girls-pink-bg);"><i class="fa-solid fa-venus"></i></div>
+                <div class="card-title">Girls Only</div>
+                <div class="card-desc">Female student accommodation</div>
+                <div class="check-indicator"><i class="fa-solid fa-check"></i></div>
+              </div>
+              <div class="selectable-card gender-coed" data-gender="Co-ed" onclick="if(window.app) app.selectPropertyGender('Co-ed');">
+                <div class="card-icon-box" style="color: var(--coed-purple); background: var(--coed-purple-bg);"><i class="fa-solid fa-venus-mars"></i></div>
+                <div class="card-title">Co-ed Co-Living</div>
+                <div class="card-desc">Inclusive student stay / separate wings</div>
+                <div class="check-indicator"><i class="fa-solid fa-check"></i></div>
+              </div>
             </div>
           </div>
         </div>
 
-        <input type="hidden" id="prop-rent" value="" />
-
-        <div class="form-row">
-          <div class="form-group">
-            <label><i class="fa-solid fa-shield-halved" style="color: var(--success-green);"></i> Security Deposit (₹)</label>
-            <input type="number" id="prop-deposit" required placeholder="e.g. 5000" class="form-control" />
+        <!-- STEP 2: OCCUPANCY & MONTHLY RENTS -->
+        <div id="section-pricing" class="listing-section-card">
+          <div class="listing-section-header">
+            <div class="listing-section-title">
+              <span style="width: 28px; height: 28px; border-radius: 50%; background: var(--primary); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 0.8rem;">2</span>
+              Room Occupancy & Pricing Structure
+            </div>
+            <span class="listing-section-badge" style="color: var(--success-green);"><i class="fa-solid fa-indian-rupee-sign"></i> Transparent Rents</span>
           </div>
-          <div class="form-group">
-            <label><i class="fa-solid fa-file-invoice-dollar" style="color: var(--primary);"></i> Registration Fees (₹) <span class="text-muted" style="font-size: 0.75rem; font-weight: 500;">(Optional)</span></label>
-            <input type="number" id="prop-reg-fee" placeholder="0 or leave blank if Free" class="form-control" />
-          </div>
-          <div class="form-group">
-            <label><i class="fa-solid fa-route" style="color: var(--secondary);"></i> Distance to Campus (km)</label>
-            <input type="number" step="0.1" id="prop-distance" required placeholder="0.3" class="form-control" />
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label>Full Property Address</label>
-          <input type="text" id="prop-address" required placeholder="Plot 42, Block B, Near University Main Gate"
-            class="form-control" />
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label><i class="fa-solid fa-location-dot" style="color: var(--primary);"></i> Map Latitude</label>
-            <input type="number" step="0.000001" id="prop-lat" placeholder="e.g. 28.6922" class="form-control" />
-          </div>
-          <div class="form-group">
-            <label><i class="fa-solid fa-location-dot" style="color: var(--success-green);"></i> Map Longitude</label>
-            <input type="number" step="0.000001" id="prop-lng" placeholder="e.g. 77.2100" class="form-control" />
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label>Key Amenities Included</label>
-          <div class="checkbox-grid" id="prop-amenities-grid">
-            <label><input type="checkbox" value="High-Speed Wi-Fi" checked /> High-Speed Wi-Fi</label>
-            <label><input type="checkbox" value="4-Time Mess Food" checked /> 4-Time Mess Food</label>
-            <label><input type="checkbox" value="Split AC / Air Cooler" checked /> Split AC / Air Cooler</label>
-            <label><input type="checkbox" value="In-house Gym" /> In-house Gym</label>
-            <label><input type="checkbox" value="24/7 CCTV & Biometric Security" checked /> 24/7 CCTV Security</label>
-            <label><input type="checkbox" value="24x7 Power Backup" checked /> 24x7 Power Backup</label>
-          </div>
-        </div>
-
-        <!-- PROPERTY PHOTOS UPLOAD SECTION (Hostel, Rooms, Washroom, Mess) -->
-        <div class="form-group" style="margin-bottom: 24px;">
-          <label style="font-weight: 700; color: var(--text-primary); font-size: 0.95rem; margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
-            <span><i class="fa-solid fa-camera-retro" style="color: var(--primary);"></i> Upload Property Photos</span>
-            <span class="font-xs text-muted">Upload real photos of hostel, rooms, washroom & mess</span>
-          </label>
-          <p class="text-muted" style="font-size: 0.8rem; margin-bottom: 14px;">
-            High quality photos build student trust and get more booking inquiries. Select photo from your device.
+          <p class="text-muted" style="font-size: 0.84rem; margin-bottom: 16px;">
+            Select which room sharing options you offer and enter the exact monthly rent for each selected sharing.
           </p>
 
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px;">
-            <!-- 1. Photo of Hostel / Exterior -->
-            <div class="user-page-card" style="padding: 14px; background: var(--bg-surface); border: 1.5px dashed var(--border-color); text-align: center; border-radius: var(--radius-md); position: relative;">
-              <div style="font-weight: 700; font-size: 0.86rem; margin-bottom: 8px; color: var(--text-primary);">
-                <i class="fa-solid fa-building" style="color: var(--primary);"></i> 1. Photo of Hostel
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin-bottom: 20px;">
+            <!-- 1 Occupancy (Single) -->
+            <div id="occ-card-1" class="occ-item-card active">
+              <div class="occ-header-row">
+                <label class="occ-label" for="occ-check-1">
+                  <input type="checkbox" id="occ-check-1" value="1 Occupancy" checked onchange="if(window.app) app.handleOccupancyToggle('1');" />
+                  <span><i class="fa-solid fa-user font-xs" style="color: var(--primary);"></i> 1 Occupancy (Single)</span>
+                </label>
               </div>
-              <div id="preview-wrap-main" style="width: 100%; height: 110px; border-radius: 6px; background: var(--surface-low); overflow: hidden; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; position: relative;">
-                <img id="preview-img-main" src="assets/images/exterior1.png" style="width: 100%; height: 100%; object-fit: cover;" alt="Hostel Photo" />
+              <div id="occ-rent-wrap-1" class="occ-input-wrap">
+                <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 4px;">Monthly Rent (₹/mo)</label>
+                <div style="position: relative;">
+                  <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-weight: 700; color: var(--primary);">₹</span>
+                  <input type="number" id="prop-rent-1" class="form-control occupancy-rent-input" data-occupancy="1 Occupancy" placeholder="e.g. 12000" style="padding-left: 28px;" oninput="if(window.app) app.updateStartingRentFromOccupancies();" />
+                </div>
+              </div>
+            </div>
+
+            <!-- 2 Occupancy (Double) -->
+            <div id="occ-card-2" class="occ-item-card active">
+              <div class="occ-header-row">
+                <label class="occ-label" for="occ-check-2">
+                  <input type="checkbox" id="occ-check-2" value="2 Occupancy" checked onchange="if(window.app) app.handleOccupancyToggle('2');" />
+                  <span><i class="fa-solid fa-user-group font-xs" style="color: var(--primary);"></i> 2 Occupancy (Double)</span>
+                </label>
+              </div>
+              <div id="occ-rent-wrap-2" class="occ-input-wrap">
+                <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 4px;">Monthly Rent (₹/mo)</label>
+                <div style="position: relative;">
+                  <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-weight: 700; color: var(--primary);">₹</span>
+                  <input type="number" id="prop-rent-2" class="form-control occupancy-rent-input" data-occupancy="2 Occupancy" placeholder="e.g. 8500" style="padding-left: 28px;" oninput="if(window.app) app.updateStartingRentFromOccupancies();" />
+                </div>
+              </div>
+            </div>
+
+            <!-- 3 Occupancy (Triple) -->
+            <div id="occ-card-3" class="occ-item-card">
+              <div class="occ-header-row">
+                <label class="occ-label" for="occ-check-3">
+                  <input type="checkbox" id="occ-check-3" value="3 Occupancy" onchange="if(window.app) app.handleOccupancyToggle('3');" />
+                  <span><i class="fa-solid fa-users font-xs" style="color: var(--primary);"></i> 3 Occupancy (Triple)</span>
+                </label>
+              </div>
+              <div id="occ-rent-wrap-3" class="occ-input-wrap" style="display: none;">
+                <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 4px;">Monthly Rent (₹/mo)</label>
+                <div style="position: relative;">
+                  <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-weight: 700; color: var(--primary);">₹</span>
+                  <input type="number" id="prop-rent-3" class="form-control occupancy-rent-input" data-occupancy="3 Occupancy" placeholder="e.g. 6500" style="padding-left: 28px;" oninput="if(window.app) app.updateStartingRentFromOccupancies();" />
+                </div>
+              </div>
+            </div>
+
+            <!-- 4 Occupancy (Quad) -->
+            <div id="occ-card-4" class="occ-item-card">
+              <div class="occ-header-row">
+                <label class="occ-label" for="occ-check-4">
+                  <input type="checkbox" id="occ-check-4" value="4 Occupancy" onchange="if(window.app) app.handleOccupancyToggle('4');" />
+                  <span><i class="fa-solid fa-people-roof font-xs" style="color: var(--primary);"></i> 4 Occupancy (Quad)</span>
+                </label>
+              </div>
+              <div id="occ-rent-wrap-4" class="occ-input-wrap" style="display: none;">
+                <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 4px;">Monthly Rent (₹/mo)</label>
+                <div style="position: relative;">
+                  <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-weight: 700; color: var(--primary);">₹</span>
+                  <input type="number" id="prop-rent-4" class="form-control occupancy-rent-input" data-occupancy="4 Occupancy" placeholder="e.g. 5000" style="padding-left: 28px;" oninput="if(window.app) app.updateStartingRentFromOccupancies();" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <input type="hidden" id="prop-rent" value="" />
+
+          <!-- Deposit, Registration Fee & Campus Distance -->
+          <div style="background: var(--surface-low); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px 18px;">
+            <div class="form-row" style="margin-bottom: 0;">
+              <div class="form-group" style="margin-bottom: 0;">
+                <label style="font-size: 0.85rem; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; display: block;">
+                  <i class="fa-solid fa-shield-halved" style="color: var(--success-green);"></i> Security Deposit (₹) <span style="color: var(--danger-red);">*</span>
+                </label>
+                <input type="number" id="prop-deposit" required placeholder="e.g. 5000" class="form-control" />
+                <span class="font-xs text-muted" style="margin-top: 2px; display: block;">Refundable upon checkout</span>
+              </div>
+              <div class="form-group" style="margin-bottom: 0;">
+                <label style="font-size: 0.85rem; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; display: block;">
+                  <i class="fa-solid fa-file-invoice-dollar" style="color: var(--primary);"></i> Registration Fees (₹) <span class="text-muted" style="font-size: 0.75rem; font-weight: 500;">(Optional)</span>
+                </label>
+                <input type="number" id="prop-reg-fee" placeholder="0 or leave blank if Free" class="form-control" />
+                <span class="font-xs text-muted" style="margin-top: 2px; display: block;">One-time onboarding fee</span>
+              </div>
+              <div class="form-group" style="margin-bottom: 0;">
+                <label style="font-size: 0.85rem; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; display: block;">
+                  <i class="fa-solid fa-route" style="color: var(--secondary);"></i> Distance to Campus (km) <span style="color: var(--danger-red);">*</span>
+                </label>
+                <input type="number" step="0.1" id="prop-distance" required placeholder="e.g. 0.4" class="form-control" />
+                <span class="font-xs text-muted" style="margin-top: 2px; display: block;">Walking distance to main gate</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 3: LOCATION & ADDRESS -->
+        <div id="section-location" class="listing-section-card">
+          <div class="listing-section-header">
+            <div class="listing-section-title">
+              <span style="width: 28px; height: 28px; border-radius: 50%; background: var(--primary); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 0.8rem;">3</span>
+              Location & Address Details
+            </div>
+            <span class="listing-section-badge"><i class="fa-solid fa-map-pin"></i> Live Map Ready</span>
+          </div>
+
+          <div class="form-row" style="margin-bottom: 14px;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label style="font-size: 0.85rem; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; display: block;">
+                Nearby University / Landmark <span style="color: var(--danger-red);">*</span>
+              </label>
+              <input type="text" id="prop-university" required placeholder="e.g. Delhi University North Campus / Kamla Nagar" class="form-control" />
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label style="font-size: 0.85rem; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; display: block;">
+                City <span style="color: var(--danger-red);">*</span>
+              </label>
+              <input type="text" id="prop-city" required placeholder="e.g. New Delhi, Bengaluru, Kota, Pune" class="form-control" />
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label style="font-size: 0.85rem; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; display: block;">
+              Full Street Address & Landmark <span style="color: var(--danger-red);">*</span>
+            </label>
+            <input type="text" id="prop-address" required placeholder="e.g. Plot 42, Block B, Opposite Gate 4, Kamla Nagar" class="form-control" />
+          </div>
+
+          <!-- Optional Map Coordinates -->
+          <div class="form-row" style="margin-bottom: 0;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label style="font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px; display: block;">
+                <i class="fa-solid fa-location-crosshairs" style="color: var(--primary);"></i> Map Latitude <span class="text-muted" style="font-weight: 400;">(Optional)</span>
+              </label>
+              <input type="number" step="0.000001" id="prop-lat" placeholder="e.g. 28.6922" class="form-control" />
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label style="font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px; display: block;">
+                <i class="fa-solid fa-location-crosshairs" style="color: var(--success-green);"></i> Map Longitude <span class="text-muted" style="font-weight: 400;">(Optional)</span>
+              </label>
+              <input type="number" step="0.000001" id="prop-lng" placeholder="e.g. 77.2100" class="form-control" />
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 4: PHOTO SHOWCASE (Hostel, Rooms, Washroom, Mess) -->
+        <div id="section-photos" class="listing-section-card">
+          <div class="listing-section-header">
+            <div class="listing-section-title">
+              <span style="width: 28px; height: 28px; border-radius: 50%; background: var(--primary); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 0.8rem;">4</span>
+              Property Photos Showcase
+            </div>
+            <span class="listing-section-badge" style="color: var(--secondary);"><i class="fa-solid fa-camera"></i> High Resolution</span>
+          </div>
+          <p class="text-muted" style="font-size: 0.84rem; margin-bottom: 16px;">
+            Verified real photos build student confidence and increase visit requests by over 300%.
+          </p>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px;">
+            <!-- 1. Photo of Hostel / Exterior -->
+            <div class="photo-card-stitch">
+              <div style="font-weight: 700; font-size: 0.85rem; margin-bottom: 8px; color: var(--text-primary);">
+                <i class="fa-solid fa-building" style="color: var(--primary);"></i> 1. Hostel Exterior
+              </div>
+              <div class="photo-card-preview" id="preview-wrap-main">
+                <img id="preview-img-main" src="assets/images/exterior1.png" alt="Hostel Exterior" />
                 <span id="badge-img-main" class="badge badge-accent" style="position: absolute; bottom: 6px; right: 6px; font-size: 0.68rem; display: none;">Uploaded</span>
               </div>
               <input type="file" id="file-input-main" accept="image/*" style="display: none;" onchange="app.handlePhotoUpload(this, 'main')" />
               <input type="hidden" id="prop-img-main" value="assets/images/exterior1.png" />
               <button type="button" class="btn btn-outline btn-sm btn-block" onclick="document.getElementById('file-input-main').click()">
-                <i class="fa-solid fa-cloud-arrow-up"></i> Upload Hostel Photo
+                <i class="fa-solid fa-cloud-arrow-up"></i> Choose Photo
               </button>
             </div>
 
             <!-- 2. Photo of Rooms -->
-            <div class="user-page-card" style="padding: 14px; background: var(--bg-surface); border: 1.5px dashed var(--border-color); text-align: center; border-radius: var(--radius-md); position: relative;">
-              <div style="font-weight: 700; font-size: 0.86rem; margin-bottom: 8px; color: var(--text-primary);">
-                <i class="fa-solid fa-bed" style="color: var(--secondary);"></i> 2. Photos of Rooms
+            <div class="photo-card-stitch">
+              <div style="font-weight: 700; font-size: 0.85rem; margin-bottom: 8px; color: var(--text-primary);">
+                <i class="fa-solid fa-bed" style="color: var(--secondary);"></i> 2. Student Rooms
               </div>
-              <div id="preview-wrap-room" style="width: 100%; height: 110px; border-radius: 6px; background: var(--surface-low); overflow: hidden; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; position: relative;">
-                <img id="preview-img-room" src="assets/images/room_single.png" style="width: 100%; height: 100%; object-fit: cover;" alt="Rooms Photo" />
+              <div class="photo-card-preview" id="preview-wrap-room">
+                <img id="preview-img-room" src="assets/images/room_single.png" alt="Rooms Photo" />
                 <span id="badge-img-room" class="badge badge-accent" style="position: absolute; bottom: 6px; right: 6px; font-size: 0.68rem; display: none;">Uploaded</span>
               </div>
               <input type="file" id="file-input-room" accept="image/*" style="display: none;" onchange="app.handlePhotoUpload(this, 'room')" />
               <input type="hidden" id="prop-img-room" value="assets/images/room_single.png" />
               <button type="button" class="btn btn-outline btn-sm btn-block" onclick="document.getElementById('file-input-room').click()">
-                <i class="fa-solid fa-cloud-arrow-up"></i> Upload Room Photo
+                <i class="fa-solid fa-cloud-arrow-up"></i> Choose Photo
               </button>
             </div>
 
             <!-- 3. Photo of Washroom -->
-            <div class="user-page-card" style="padding: 14px; background: var(--bg-surface); border: 1.5px dashed var(--border-color); text-align: center; border-radius: var(--radius-md); position: relative;">
-              <div style="font-weight: 700; font-size: 0.86rem; margin-bottom: 8px; color: var(--text-primary);">
-                <i class="fa-solid fa-shower" style="color: #0284c7;"></i> 3. Photo of Washroom
+            <div class="photo-card-stitch">
+              <div style="font-weight: 700; font-size: 0.85rem; margin-bottom: 8px; color: var(--text-primary);">
+                <i class="fa-solid fa-shower" style="color: #0284c7;"></i> 3. Clean Washroom
               </div>
-              <div id="preview-wrap-washroom" style="width: 100%; height: 110px; border-radius: 6px; background: var(--surface-low); overflow: hidden; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; position: relative;">
-                <img id="preview-img-washroom" src="assets/images/room_shared.png" style="width: 100%; height: 100%; object-fit: cover;" alt="Washroom Photo" />
+              <div class="photo-card-preview" id="preview-wrap-washroom">
+                <img id="preview-img-washroom" src="assets/images/room_shared.png" alt="Washroom Photo" />
                 <span id="badge-img-washroom" class="badge badge-accent" style="position: absolute; bottom: 6px; right: 6px; font-size: 0.68rem; display: none;">Uploaded</span>
               </div>
               <input type="file" id="file-input-washroom" accept="image/*" style="display: none;" onchange="app.handlePhotoUpload(this, 'washroom')" />
               <input type="hidden" id="prop-img-washroom" value="assets/images/room_shared.png" />
               <button type="button" class="btn btn-outline btn-sm btn-block" onclick="document.getElementById('file-input-washroom').click()">
-                <i class="fa-solid fa-cloud-arrow-up"></i> Upload Washroom Photo
+                <i class="fa-solid fa-cloud-arrow-up"></i> Choose Photo
               </button>
             </div>
 
             <!-- 4. Photo of Mess -->
-            <div class="user-page-card" style="padding: 14px; background: var(--bg-surface); border: 1.5px dashed var(--border-color); text-align: center; border-radius: var(--radius-md); position: relative;">
-              <div style="font-weight: 700; font-size: 0.86rem; margin-bottom: 8px; color: var(--text-primary);">
-                <i class="fa-solid fa-utensils" style="color: var(--warning-amber);"></i> 4. Photo of Mess
+            <div class="photo-card-stitch">
+              <div style="font-weight: 700; font-size: 0.85rem; margin-bottom: 8px; color: var(--text-primary);">
+                <i class="fa-solid fa-utensils" style="color: var(--warning-amber);"></i> 4. Mess & Dining
               </div>
-              <div id="preview-wrap-mess" style="width: 100%; height: 110px; border-radius: 6px; background: var(--surface-low); overflow: hidden; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; position: relative;">
-                <img id="preview-img-mess" src="assets/images/mess.png" style="width: 100%; height: 100%; object-fit: cover;" alt="Mess Photo" />
+              <div class="photo-card-preview" id="preview-wrap-mess">
+                <img id="preview-img-mess" src="assets/images/mess.png" alt="Mess Photo" />
                 <span id="badge-img-mess" class="badge badge-accent" style="position: absolute; bottom: 6px; right: 6px; font-size: 0.68rem; display: none;">Uploaded</span>
               </div>
               <input type="file" id="file-input-mess" accept="image/*" style="display: none;" onchange="app.handlePhotoUpload(this, 'mess')" />
               <input type="hidden" id="prop-img-mess" value="assets/images/mess.png" />
               <button type="button" class="btn btn-outline btn-sm btn-block" onclick="document.getElementById('file-input-mess').click()">
-                <i class="fa-solid fa-cloud-arrow-up"></i> Upload Mess Photo
+                <i class="fa-solid fa-cloud-arrow-up"></i> Choose Photo
               </button>
             </div>
           </div>
         </div>
 
-        <div class="form-group">
-          <label>Property Description & Warden Rules</label>
-          <textarea id="prop-description" required rows="3"
-            placeholder="Describe room quality, mess timings, curfew rules, hygiene..." class="form-control"></textarea>
+        <!-- STEP 5: AMENITIES & RULES -->
+        <div id="section-amenities" class="listing-section-card">
+          <div class="listing-section-header">
+            <div class="listing-section-title">
+              <span style="width: 28px; height: 28px; border-radius: 50%; background: var(--primary); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 0.8rem;">5</span>
+              Included Amenities & House Rules
+            </div>
+            <span class="listing-section-badge"><i class="fa-solid fa-sparkles"></i> Facilities</span>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 18px;">
+            <label style="font-size: 0.85rem; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; display: block;">Select Provided Amenities</label>
+            <div class="amenities-pills-grid" id="prop-amenities-grid">
+              <label class="amenity-toggle-pill checked">
+                <input type="checkbox" value="High-Speed Wi-Fi" checked onchange="this.parentElement.classList.toggle('checked', this.checked);" />
+                <i class="fa-solid fa-wifi"></i> High-Speed Wi-Fi
+              </label>
+              <label class="amenity-toggle-pill checked">
+                <input type="checkbox" value="4-Time Mess Food" checked onchange="this.parentElement.classList.toggle('checked', this.checked);" />
+                <i class="fa-solid fa-utensils"></i> 4-Time Mess Food
+              </label>
+              <label class="amenity-toggle-pill checked">
+                <input type="checkbox" value="Split AC / Air Cooler" checked onchange="this.parentElement.classList.toggle('checked', this.checked);" />
+                <i class="fa-solid fa-snowflake"></i> Split AC / Air Cooler
+              </label>
+              <label class="amenity-toggle-pill">
+                <input type="checkbox" value="In-house Gym" onchange="this.parentElement.classList.toggle('checked', this.checked);" />
+                <i class="fa-solid fa-dumbbell"></i> In-house Gym
+              </label>
+              <label class="amenity-toggle-pill checked">
+                <input type="checkbox" value="24/7 CCTV & Biometric Security" checked onchange="this.parentElement.classList.toggle('checked', this.checked);" />
+                <i class="fa-solid fa-shield-halved"></i> 24/7 CCTV & Security
+              </label>
+              <label class="amenity-toggle-pill checked">
+                <input type="checkbox" value="24x7 Power Backup" checked onchange="this.parentElement.classList.toggle('checked', this.checked);" />
+                <i class="fa-solid fa-bolt"></i> 24x7 Power Backup
+              </label>
+              <label class="amenity-toggle-pill checked">
+                <input type="checkbox" value="RO Purified Water" checked onchange="this.parentElement.classList.toggle('checked', this.checked);" />
+                <i class="fa-solid fa-faucet-drip"></i> RO Purified Water
+              </label>
+              <label class="amenity-toggle-pill checked">
+                <input type="checkbox" value="Daily Room Cleaning" checked onchange="this.parentElement.classList.toggle('checked', this.checked);" />
+                <i class="fa-solid fa-broom"></i> Daily Room Cleaning
+              </label>
+              <label class="amenity-toggle-pill checked">
+                <input type="checkbox" value="Geyser & Hot Water" checked onchange="this.parentElement.classList.toggle('checked', this.checked);" />
+                <i class="fa-solid fa-hot-tub-person"></i> Geyser & Hot Water
+              </label>
+              <label class="amenity-toggle-pill">
+                <input type="checkbox" value="Washing Machine / Laundry" onchange="this.parentElement.classList.toggle('checked', this.checked);" />
+                <i class="fa-solid fa-shirt"></i> Washing Machine / Laundry
+              </label>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 0;">
+            <label style="font-size: 0.85rem; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; display: block;">
+              Property Description & Warden Guidelines <span style="color: var(--danger-red);">*</span>
+            </label>
+            <textarea id="prop-description" required rows="3" placeholder="Describe room ambiance, mess schedule (breakfast, lunch, snacks, dinner), entry/gate curfew timings, study areas, and hygiene standards..." class="form-control" style="line-height: 1.6;"></textarea>
+          </div>
         </div>
 
-        <button type="submit" class="btn btn-primary btn-block btn-lg"
-          style="background: var(--success-green); border-color: var(--success-green); margin-top: 16px;">
-          <i class="fa-solid fa-floppy-disk"></i> Save & Publish Property
-        </button>
+        <!-- STICKY ACTION FOOTER -->
+        <div class="modal-sticky-footer">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-circle-check" style="color: var(--success-green); font-size: 1.1rem;"></i>
+            <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary);">Direct Student Reach • WhatsApp Visits Enabled</span>
+          </div>
+
+          <div style="display: flex; gap: 12px; align-items: center;">
+            <button type="button" class="btn btn-outline" onclick="app.closeModal('owner-property-modal');" style="border-radius: var(--radius-md);">
+              Cancel
+            </button>
+            <button type="submit" class="btn btn-primary btn-lg" style="background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); border: none; border-radius: var(--radius-md); box-shadow: 0 4px 16px var(--primary-glow); padding: 12px 28px; font-weight: 800;">
+              <i class="fa-solid fa-cloud-arrow-up"></i> Save & Publish Property
+            </button>
+          </div>
+        </div>
       </form>
     </div>
   </div>
@@ -1622,7 +1831,7 @@
   </nav>
 
   <!-- Main JavaScript App Logic -->
-  <script src="app.js?v=18.0&t=20260824_empty_rent_fields"></script>
+  <script src="app.js?v=19.0&t=20260824_stitch_owner_form"></script>
 </body>
 
 </html>

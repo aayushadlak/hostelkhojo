@@ -2069,10 +2069,8 @@ class HostelKhojoApp {
     document.getElementById("owner-prop-modal-title").innerHTML = `<i class="fa-solid fa-building-circle-check" style="color: var(--success-green);"></i> List New PG / Hostel Property`;
     const form = document.getElementById("owner-property-form");
     if (form) form.reset();
-    const typeEl = document.getElementById("prop-type");
-    if (typeEl) typeEl.value = "Hostel";
-    const genderEl = document.getElementById("prop-gender");
-    if (genderEl) genderEl.value = "Boys";
+    this.selectPropertyType("Hostel");
+    this.selectPropertyGender("Boys");
     const regEl = document.getElementById("prop-reg-fee");
     if (regEl) regEl.value = "";
 
@@ -2117,6 +2115,13 @@ class HostelKhojoApp {
     });
 
     this.toggleOccupancyInputs({});
+
+    // Reset stepper pill to step 1
+    const pills = document.querySelectorAll(".listing-step-pill");
+    if (pills && pills.length > 0) {
+      pills.forEach(p => p.classList.remove("active"));
+      pills[0].classList.add("active");
+    }
 
     this.openModal("owner-property-modal");
   }
@@ -2744,21 +2749,21 @@ class HostelKhojoApp {
     document.getElementById("prop-name").value = hostel.name || "";
     document.getElementById("prop-university").value = hostel.university || "";
     document.getElementById("prop-city").value = hostel.city || "";
-    document.getElementById("prop-gender").value = hostel.gender || "Boys";
-    // Set property type category (Hostel / PG / Both)
-    const typeEl = document.getElementById("prop-type");
-    if (typeEl) {
-      const rawType = (hostel.type || "").toLowerCase();
-      if (rawType.includes("both") || (rawType.includes("hostel") && rawType.includes("pg"))) {
-        typeEl.value = "Both";
-      } else if (rawType.includes("hostel")) {
-        typeEl.value = "Hostel";
-      } else if (rawType.includes("pg")) {
-        typeEl.value = "PG";
-      } else {
-        typeEl.value = "Both";
-      }
+    
+    // Set resident gender using visual selector
+    this.selectPropertyGender(hostel.gender || "Boys");
+
+    // Set property type category using visual selector (Hostel / PG / Both)
+    let selectedType = "Hostel";
+    const rawType = (hostel.type || "").toLowerCase();
+    if (rawType.includes("both") || (rawType.includes("hostel") && rawType.includes("pg"))) {
+      selectedType = "Both";
+    } else if (rawType.includes("pg")) {
+      selectedType = "PG";
+    } else {
+      selectedType = "Hostel";
     }
+    this.selectPropertyType(selectedType);
 
     // Set Room Occupancy Checkboxes (1 Occupancy, 2 Occupancy, 3 Occupancy, 4 Occupancy)
     const currentSharing = Array.isArray(hostel.roomSharing) ? hostel.roomSharing : [hostel.roomSharing || "1 Occupancy", "2 Occupancy"];
@@ -2812,7 +2817,62 @@ class HostelKhojoApp {
       if (fileIn) fileIn.value = "";
     });
 
+    // Populate amenities checkmarks
+    const hostelAmenities = Array.isArray(hostel.amenities) ? hostel.amenities : [];
+    document.querySelectorAll("#prop-amenities-grid input[type='checkbox']").forEach(cb => {
+      const isIncluded = hostelAmenities.some(a => String(a).toLowerCase() === cb.value.toLowerCase());
+      cb.checked = isIncluded;
+      if (cb.parentElement) cb.parentElement.classList.toggle("checked", isIncluded);
+    });
+
+    // Reset stepper pill to step 1
+    const pills = document.querySelectorAll(".listing-step-pill");
+    if (pills && pills.length > 0) {
+      pills.forEach(p => p.classList.remove("active"));
+      pills[0].classList.add("active");
+    }
+
     this.openModal("owner-property-modal");
+  }
+
+  selectPropertyType(type) {
+    const hidden = document.getElementById("prop-type");
+    if (hidden) hidden.value = type;
+    document.querySelectorAll("#type-selector-grid .selectable-card").forEach(card => {
+      if (card.getAttribute("data-type") === type) {
+        card.classList.add("active");
+      } else {
+        card.classList.remove("active");
+      }
+    });
+  }
+
+  selectPropertyGender(gender) {
+    const hidden = document.getElementById("prop-gender");
+    if (hidden) hidden.value = gender;
+    document.querySelectorAll("#gender-selector-grid .selectable-card").forEach(card => {
+      if (card.getAttribute("data-gender") === gender) {
+        card.classList.add("active");
+      } else {
+        card.classList.remove("active");
+      }
+    });
+  }
+
+  handleOccupancyToggle(id) {
+    const cb = document.getElementById(`occ-check-${id}`);
+    const card = document.getElementById(`occ-card-${id}`);
+    const wrap = document.getElementById(`occ-rent-wrap-${id}`);
+    const input = document.getElementById(`prop-rent-${id}`);
+    if (cb) {
+      if (card) card.classList.toggle("active", cb.checked);
+      if (wrap) wrap.style.display = cb.checked ? "block" : "none";
+      if (input) {
+        input.required = cb.checked;
+        if (cb.checked) input.focus();
+      }
+    }
+    this.updateStartingRentFromOccupancies();
   }
 
   toggleOccupancyInputs(existingPricing = null) {
@@ -2827,6 +2887,7 @@ class HostelKhojoApp {
 
     occList.forEach(item => {
       const cb = document.getElementById(`occ-check-${item.id}`);
+      const card = document.getElementById(`occ-card-${item.id}`);
       const wrap = document.getElementById(`occ-rent-wrap-${item.id}`);
       const input = document.getElementById(`prop-rent-${item.id}`);
 
@@ -2836,6 +2897,8 @@ class HostelKhojoApp {
         } else if (existingPricing && Object.keys(existingPricing).length === 0) {
           input.value = "";
         }
+
+        if (card) card.classList.toggle("active", cb.checked);
 
         if (cb.checked) {
           wrap.style.display = "block";
