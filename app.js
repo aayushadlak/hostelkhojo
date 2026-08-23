@@ -2006,6 +2006,19 @@ class HostelKhojoApp {
     document.getElementById("owner-prop-modal-title").innerHTML = `<i class="fa-solid fa-building-circle-check" style="color: #059669;"></i> List New PG / Hostel Property`;
     const form = document.getElementById("owner-property-form");
     if (form) form.reset();
+    const typeEl = document.getElementById("prop-type");
+    if (typeEl) typeEl.value = "Hostel";
+    const genderEl = document.getElementById("prop-gender");
+    if (genderEl) genderEl.value = "Boys";
+
+    // Default Occupancy selection (1 & 2 Occupancy checked)
+    document.querySelectorAll("#prop-occupancy-grid input[type='checkbox']").forEach(cb => {
+      cb.checked = (cb.value === "1 Occupancy" || cb.value === "2 Occupancy");
+    });
+
+    // Render rent inputs for defaults
+    this.renderOccupancyRentInputs({ "1 Occupancy": 12000, "2 Occupancy": 8500 });
+
     this.openModal("owner-property-modal");
   }
 
@@ -2742,29 +2755,6 @@ class HostelKhojoApp {
       const minRent = Math.min(...rentValues);
       rentEl.value = minRent;
     }
-  }
-
-  openOwnerPropertyModal() {
-    const form = document.getElementById("owner-property-form");
-    if (form) form.reset();
-    const idEl = document.getElementById("owner-prop-id");
-    if (idEl) idEl.value = "";
-    const titleEl = document.getElementById("owner-prop-modal-title");
-    if (titleEl) titleEl.innerHTML = `<i class="fa-solid fa-building-circle-check" style="color: var(--success-green);"></i> List New PG / Hostel Property`;
-    const typeEl = document.getElementById("prop-type");
-    if (typeEl) typeEl.value = "Hostel";
-    const genderEl = document.getElementById("prop-gender");
-    if (genderEl) genderEl.value = "Boys";
-
-    // Default Occupancy selection (1 & 2 Occupancy checked)
-    document.querySelectorAll("#prop-occupancy-grid input[type='checkbox']").forEach(cb => {
-      cb.checked = (cb.value === "1 Occupancy" || cb.value === "2 Occupancy");
-    });
-
-    // Render rent inputs for defaults
-    this.renderOccupancyRentInputs({ "1 Occupancy": 12000, "2 Occupancy": 8500 });
-
-    this.openModal("owner-property-modal");
   }
 
   async handleOwnerPropertySave(e) {
@@ -3845,6 +3835,13 @@ class HostelKhojoApp {
       const nameInput = document.getElementById("rm-name-input");
       if (nameInput && !nameInput.value) {
         nameInput.value = this.currentUser.full_name || "";
+      }
+    }
+
+    if (id === "owner-property-modal") {
+      const container = document.getElementById("prop-occupancy-pricing-container");
+      if (container && (!container.children || container.children.length === 0)) {
+        this.renderOccupancyRentInputs({ "1 Occupancy": 12000, "2 Occupancy": 8500 });
       }
     }
 
