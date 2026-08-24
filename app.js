@@ -263,7 +263,34 @@ class HostelKhojoApp {
 
   updateBudgetLabel(val) {
     const el = document.getElementById("budget-val");
-    if (el) el.innerText = Number(val).toLocaleString('en-IN');
+    const allBtn = document.getElementById("budget-all-btn");
+    const budgetRange = document.getElementById("budget-range");
+    const maxVal = budgetRange ? (parseFloat(budgetRange.max) || 100000) : 100000;
+    const num = parseFloat(val) || 0;
+
+    if (num >= maxVal) {
+      if (el) el.innerText = `${num.toLocaleString('en-IN')} (All)`;
+      if (allBtn) allBtn.classList.add("active");
+    } else {
+      if (el) el.innerText = num.toLocaleString('en-IN');
+      if (allBtn) allBtn.classList.remove("active");
+    }
+  }
+
+  toggleBudgetAll() {
+    const budgetRange = document.getElementById("budget-range");
+    const allBtn = document.getElementById("budget-all-btn");
+    const isCurrentlyActive = allBtn && allBtn.classList.contains("active");
+
+    if (isCurrentlyActive) {
+      if (budgetRange) budgetRange.value = "15000";
+      this.updateBudgetLabel("15000");
+    } else {
+      const maxVal = budgetRange ? (budgetRange.max || "100000") : "100000";
+      if (budgetRange) budgetRange.value = maxVal;
+      this.updateBudgetLabel(maxVal);
+    }
+    this.applyFilters();
   }
 
   togglePillFilter(btn, filterKey) {
@@ -287,7 +314,10 @@ class HostelKhojoApp {
     const roomType = roomTypeEl ? roomTypeEl.value : "all";
 
     const budgetEl = document.getElementById("budget-range");
-    const maxBudget = budgetEl ? (parseFloat(budgetEl.value) || 999999) : 999999;
+    const budgetVal = budgetEl ? (parseFloat(budgetEl.value) || 100000) : 100000;
+    const budgetMax = budgetEl ? (parseFloat(budgetEl.max) || 100000) : 100000;
+    const isAllBudget = budgetVal >= budgetMax;
+    const maxBudget = budgetVal;
 
     if (!Array.isArray(this.hostels)) {
       this.hostels = [];
@@ -327,7 +357,7 @@ class HostelKhojoApp {
       }
 
       // Budget filter
-      const matchesBudget = !h.rent || h.rent <= maxBudget;
+      const matchesBudget = isAllBudget || !h.rent || h.rent <= maxBudget;
 
       // Pill tags filter
       let matchesPills = true;

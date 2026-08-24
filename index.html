@@ -141,8 +141,13 @@
             </div>
 
             <div class="search-field">
-              <label for="budget-range"><i class="fa-solid fa-indian-rupee-sign"></i> Max Monthly Rent: ₹<span
-                  id="budget-val">15,000</span></label>
+              <div class="budget-header-wrap">
+                <label for="budget-range"><i class="fa-solid fa-indian-rupee-sign"></i> Max Monthly Rent: ₹<span
+                    id="budget-val">15,000</span></label>
+                <button type="button" id="budget-all-btn" class="budget-all-pill" onclick="app.toggleBudgetAll()" title="Show hostels across all budget ranges">
+                  All
+                </button>
+              </div>
               <input type="range" id="budget-range" min="3000" max="100000" step="500" value="15000"
                 oninput="app.updateBudgetLabel(this.value)" onchange="app.applyFilters()" />
             </div>
