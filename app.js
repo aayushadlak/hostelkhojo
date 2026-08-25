@@ -743,11 +743,20 @@ class HostelKhojoApp {
 
         googleRoadLayer.addTo(this.propertyMiniMap);
 
+        const pinHtml = `
+          <div style="position: relative; width: 34px; height: 42px; display: flex; align-items: center; justify-content: center; cursor: grab; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.55));">
+            <svg viewBox="0 0 24 24" width="34" height="42" style="display: block;">
+              <path fill="#EF4444" stroke="#FFFFFF" stroke-width="1.8" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
+              <circle cx="12" cy="9" r="3.4" fill="#FFFFFF"/>
+            </svg>
+          </div>
+        `;
+
         const pinIcon = L.divIcon({
           className: 'property-picker-pin',
-          html: `<div style="font-size: 28px; line-height: 1; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.4)); cursor: grab; transform: translate(-2px, -4px);">📍</div>`,
-          iconSize: [30, 30],
-          iconAnchor: [15, 28]
+          html: pinHtml,
+          iconSize: [34, 42],
+          iconAnchor: [17, 42]
         });
 
         this.propertyMiniMarker = L.marker([lat, lng], {
@@ -790,7 +799,7 @@ class HostelKhojoApp {
           if (this.propertyMiniMap) this.propertyMiniMap.invalidateSize();
         });
       } else {
-        this.propertyMiniMap.setView([lat, lng], 14);
+        this.propertyMiniMap.setView([lat, lng], 15);
         if (this.propertyMiniMarker) {
           this.propertyMiniMarker.setLatLng([lat, lng]);
         }
@@ -805,6 +814,65 @@ class HostelKhojoApp {
       });
     } catch (e) {
       console.warn("Property mini-map notice:", e);
+    }
+  }
+
+  recenterMiniMap(lat, lng, zoom = 16) {
+    const numLat = parseFloat(lat);
+    const numLng = parseFloat(lng);
+    if (isNaN(numLat) || isNaN(numLng)) return;
+
+    // 1. Native Google Maps instance
+    if (this.googleMiniMap && typeof google !== "undefined" && google.maps) {
+      try {
+        const centerPos = new google.maps.LatLng(numLat, numLng);
+        this.googleMiniMap.setCenter(centerPos);
+        if (zoom) this.googleMiniMap.setZoom(zoom);
+        if (this.googleMiniMarker) {
+          this.googleMiniMarker.setPosition(centerPos);
+        } else {
+          this.googleMiniMarker = new google.maps.Marker({
+            position: centerPos,
+            map: this.googleMiniMap,
+            draggable: true,
+            title: "Drag to fine-tune entrance"
+          });
+        }
+      } catch (e) {
+        console.warn("Google mini map pan notice:", e);
+      }
+    }
+
+    // 2. Leaflet Mini Map instance
+    if (this.propertyMiniMap && typeof L !== "undefined") {
+      try {
+        this.propertyMiniMap.setView([numLat, numLng], zoom || 16, { animate: true, duration: 0.5 });
+        if (this.propertyMiniMarker) {
+          this.propertyMiniMarker.setLatLng([numLat, numLng]);
+        } else {
+          const pinHtml = `
+            <div style="position: relative; width: 34px; height: 42px; display: flex; align-items: center; justify-content: center; cursor: grab; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.55));">
+              <svg viewBox="0 0 24 24" width="34" height="42" style="display: block;">
+                <path fill="#EF4444" stroke="#FFFFFF" stroke-width="1.8" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
+                <circle cx="12" cy="9" r="3.4" fill="#FFFFFF"/>
+              </svg>
+            </div>
+          `;
+          const pinIcon = L.divIcon({
+            className: 'property-picker-pin',
+            html: pinHtml,
+            iconSize: [34, 42],
+            iconAnchor: [17, 42]
+          });
+          this.propertyMiniMarker = L.marker([numLat, numLng], { draggable: true, icon: pinIcon }).addTo(this.propertyMiniMap);
+        }
+        this.propertyMiniMap.invalidateSize();
+        setTimeout(() => {
+          if (this.propertyMiniMap) this.propertyMiniMap.invalidateSize();
+        }, 120);
+      } catch (e) {
+        console.warn("Leaflet mini map setView notice:", e);
+      }
     }
   }
 
@@ -846,14 +914,6 @@ class HostelKhojoApp {
     const parsed = this.parseGoogleMapsUrl(query);
     if (parsed) {
       this.updatePropertyCoords(parsed.lat, parsed.lng, parsed.isShortLink ? "Google Maps Share Link" : "Pasted Location");
-      if (this.googleMiniMap) {
-        this.googleMiniMap.setCenter({ lat: parsed.lat, lng: parsed.lng });
-        if (this.googleMiniMarker) this.googleMiniMarker.setPosition({ lat: parsed.lat, lng: parsed.lng });
-      } else if (this.propertyMiniMap) {
-        this.propertyMiniMap.setView([parsed.lat, parsed.lng], 15);
-        if (this.propertyMiniMarker) this.propertyMiniMarker.setLatLng([parsed.lat, parsed.lng]);
-        this.propertyMiniMap.invalidateSize();
-      }
       const resultsDiv = document.getElementById("prop-location-results");
       if (resultsDiv) resultsDiv.style.display = "none";
       return;
@@ -879,11 +939,6 @@ class HostelKhojoApp {
     const parsed = this.parseGoogleMapsUrl(val);
     if (parsed) {
       this.updatePropertyCoords(parsed.lat, parsed.lng, "Pasted Coordinates");
-      if (this.propertyMiniMap) {
-        this.propertyMiniMap.setView([parsed.lat, parsed.lng], 15);
-        if (this.propertyMiniMarker) this.propertyMiniMarker.setLatLng([parsed.lat, parsed.lng]);
-        this.propertyMiniMap.invalidateSize();
-      }
       return;
     }
 
@@ -976,11 +1031,6 @@ class HostelKhojoApp {
 
     // Center map and move pin
     this.updatePropertyCoords(lat, lng, shortName);
-    if (this.propertyMiniMap) {
-      this.propertyMiniMap.setView([lat, lng], 15);
-      if (this.propertyMiniMarker) this.propertyMiniMarker.setLatLng([lat, lng]);
-      this.propertyMiniMap.invalidateSize();
-    }
   }
 
   getCurrentLocationForProperty() {
@@ -992,19 +1042,46 @@ class HostelKhojoApp {
     this.showToast("Locating your current GPS position...", "info");
 
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
+      async (pos) => {
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
-        this.updatePropertyCoords(lat, lng, "Current GPS Location");
 
-        if (this.propertyMiniMap) {
-          this.propertyMiniMap.setView([lat, lng], 16);
-          if (this.propertyMiniMarker) this.propertyMiniMarker.setLatLng([lat, lng]);
-          this.propertyMiniMap.invalidateSize();
-        }
+        // 1. Immediately pan map and update coordinates
+        this.updatePropertyCoords(lat, lng, "Current GPS Location");
+        this.recenterMiniMap(lat, lng, 16);
 
         const searchInp = document.getElementById("prop-location-search");
         if (searchInp) searchInp.value = `Current Location (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
+
+        // 2. Reverse geocode to get actual city, landmark & street address
+        try {
+          const revRes = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`);
+          const revData = await revRes.json();
+          if (revData && revData.address) {
+            const city = revData.address.city || revData.address.town || revData.address.suburb || revData.address.state_district || "";
+            const road = revData.address.road || revData.address.neighbourhood || revData.address.suburb || "";
+            const landmark = revData.name || road || (revData.display_name ? revData.display_name.split(",")[0] : "");
+
+            const cityInp = document.getElementById("prop-city");
+            if (cityInp && (!cityInp.value.trim() || cityInp.value.trim().length === 0) && city) {
+              cityInp.value = city;
+            }
+
+            const uniInp = document.getElementById("prop-university");
+            if (uniInp && (!uniInp.value.trim() || uniInp.value.trim().length === 0) && landmark) {
+              uniInp.value = landmark;
+            }
+
+            const addrInp = document.getElementById("prop-address");
+            if (addrInp && (!addrInp.value.trim() || addrInp.value.trim().length === 0)) {
+              addrInp.value = revData.display_name;
+            }
+
+            if (searchInp) searchInp.value = revData.display_name;
+          }
+        } catch (revErr) {
+          console.warn("Reverse geocode notice:", revErr);
+        }
 
         this.showToast("Hostel location spotted via GPS!", "success");
       },
@@ -1042,6 +1119,9 @@ class HostelKhojoApp {
         </div>
       `;
     }
+
+    // Always pan the mini-map to these coordinates
+    this.recenterMiniMap(numLat, numLng);
   }
 
   parseGoogleMapsUrl(input, cityName = "") {
