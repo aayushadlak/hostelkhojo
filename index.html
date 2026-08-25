@@ -1290,9 +1290,17 @@
 
             <!-- Mini Map Location Picker -->
             <div style="margin-top: 10px; position: relative;">
-              <div id="prop-mini-map" style="height: 190px; width: 100%; border-radius: var(--radius-md); border: 1px solid var(--border-color); z-index: 1; background: #e5e7eb;"></div>
+              <div id="prop-mini-map" style="height: 210px; width: 100%; border-radius: var(--radius-md); border: 1px solid var(--border-color); z-index: 1; background: #e5e7eb;" onmouseenter="if(window.app && window.app.propertyMiniMap) window.app.propertyMiniMap.invalidateSize();"></div>
               <div style="position: absolute; bottom: 8px; left: 8px; background: rgba(15, 23, 42, 0.85); color: #ffffff; padding: 4px 10px; border-radius: 6px; font-size: 0.72rem; z-index: 1000; pointer-events: none; backdrop-filter: blur(4px);">
                 <i class="fa-solid fa-hand-pointer" style="color: #60a5fa;"></i> Click map or drag pin to adjust exact entrance
+              </div>
+              <div style="position: absolute; top: 8px; right: 8px; z-index: 1000; display: flex; gap: 4px;">
+                <button type="button" class="btn btn-xs" onclick="if(window.app) app.toggleMiniMapLayer('roadmap');" style="background: rgba(15, 23, 42, 0.85); color: #fff; border: 1px solid rgba(255,255,255,0.2); font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; backdrop-filter: blur(4px); cursor: pointer;">
+                  <i class="fa-solid fa-map" style="color: #4285F4;"></i> Google Map
+                </button>
+                <button type="button" class="btn btn-xs" onclick="if(window.app) app.toggleMiniMapLayer('satellite');" style="background: rgba(15, 23, 42, 0.85); color: #fff; border: 1px solid rgba(255,255,255,0.2); font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; backdrop-filter: blur(4px); cursor: pointer;">
+                  <i class="fa-solid fa-satellite" style="color: #34d399;"></i> Satellite
+                </button>
               </div>
             </div>
 

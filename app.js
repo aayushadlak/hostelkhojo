@@ -598,15 +598,24 @@ class HostelKhojoApp {
           attributionControl: false
         }).setView([lat, lng], 14);
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        // Google Maps Official Road Tiles Layer
+        const googleRoadLayer = L.tileLayer('https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+          maxZoom: 20,
+          subdomains: ['0', '1', '2', '3']
+        });
+
+        // OpenStreetMap Fallback Layer
+        const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           maxZoom: 19
-        }).addTo(this.propertyMiniMap);
+        });
+
+        googleRoadLayer.addTo(this.propertyMiniMap);
 
         const pinIcon = L.divIcon({
           className: 'property-picker-pin',
-          html: `<div style="font-size: 26px; line-height: 1; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.4)); cursor: grab;">📍</div>`,
-          iconSize: [28, 28],
-          iconAnchor: [14, 28]
+          html: `<div style="font-size: 28px; line-height: 1; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.4)); cursor: grab; transform: translate(-2px, -4px);">📍</div>`,
+          iconSize: [30, 30],
+          iconAnchor: [15, 28]
         });
 
         this.propertyMiniMarker = L.marker([lat, lng], {
@@ -625,6 +634,29 @@ class HostelKhojoApp {
           this.propertyMiniMarker.setLatLng(e.latlng);
           this.updatePropertyCoords(e.latlng.lat, e.latlng.lng, "Selected Map Point");
         });
+
+        // Automatic Resize & Visibility Observers so map tiles render immediately
+        if (window.ResizeObserver) {
+          const ro = new ResizeObserver(() => {
+            if (this.propertyMiniMap) this.propertyMiniMap.invalidateSize();
+          });
+          ro.observe(mapContainer);
+        }
+
+        if (window.IntersectionObserver) {
+          const io = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+              if (entry.isIntersecting && this.propertyMiniMap) {
+                this.propertyMiniMap.invalidateSize();
+              }
+            });
+          });
+          io.observe(mapContainer);
+        }
+
+        mapContainer.addEventListener('mouseenter', () => {
+          if (this.propertyMiniMap) this.propertyMiniMap.invalidateSize();
+        });
       } else {
         this.propertyMiniMap.setView([lat, lng], 14);
         if (this.propertyMiniMarker) {
@@ -633,12 +665,42 @@ class HostelKhojoApp {
         this.propertyMiniMap.invalidateSize();
       }
 
-      setTimeout(() => {
-        if (this.propertyMiniMap) this.propertyMiniMap.invalidateSize();
-      }, 150);
+      // Multi-staggered redraws for smooth CSS modal transitions
+      [50, 150, 300, 600, 1000].forEach(delay => {
+        setTimeout(() => {
+          if (this.propertyMiniMap) this.propertyMiniMap.invalidateSize();
+        }, delay);
+      });
     } catch (e) {
       console.warn("Property mini-map notice:", e);
     }
+  }
+
+  toggleMiniMapLayer(type) {
+    if (!this.propertyMiniMap || typeof L === "undefined") return;
+
+    if (this._miniMapCurrentLayer) {
+      this.propertyMiniMap.removeLayer(this._miniMapCurrentLayer);
+    }
+
+    if (type === "satellite") {
+      this._miniMapCurrentLayer = L.tileLayer('https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+        maxZoom: 20,
+        subdomains: ['0', '1', '2', '3']
+      }).addTo(this.propertyMiniMap);
+      this.showToast("Switched to Google Hybrid Satellite View", "info");
+    } else {
+      this._miniMapCurrentLayer = L.tileLayer('https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+        maxZoom: 20,
+        subdomains: ['0', '1', '2', '3']
+      }).addTo(this.propertyMiniMap);
+      this.showToast("Switched to Google Maps Roadmap View", "info");
+    }
+
+    if (this.propertyMiniMarker) {
+      this.propertyMiniMarker.bringToFront();
+    }
+    this.propertyMiniMap.invalidateSize();
   }
 
   handleLocationSearchInput(query) {
