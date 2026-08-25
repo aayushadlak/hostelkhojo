@@ -37,11 +37,11 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <!-- Optional Google Cloud Maps JavaScript & Places API Key -->
-  <!-- Set your Google Cloud API key below to enable official Google Places Autocomplete -->
+  <!-- Google Cloud Maps JavaScript & Places API (Official Engine) -->
   <script>
-    window.GOOGLE_MAPS_API_KEY = ""; // e.g. "AIzaSy..."
+    window.GOOGLE_MAPS_API_KEY = "AIzaSyBtCvdB_yUNQuRNGjzdUFKclteBWxGkVXY";
   </script>
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBtCvdB_yUNQuRNGjzdUFKclteBWxGkVXY&libraries=places&loading=async&callback=app.onGoogleMapsLoaded" async defer></script>
   
   <!-- Cache Invalidation Directives -->
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
@@ -49,7 +49,7 @@
   <meta http-equiv="Expires" content="0" />
 
   <!-- Main Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=26.0&t=20260825_gcloud_maps" />
+  <link rel="stylesheet" href="styles.css?v=27.0&t=20260825_gcloud_active" />
 </head>
 
 <body>

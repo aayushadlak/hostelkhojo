@@ -846,7 +846,10 @@ class HostelKhojoApp {
     const parsed = this.parseGoogleMapsUrl(query);
     if (parsed) {
       this.updatePropertyCoords(parsed.lat, parsed.lng, parsed.isShortLink ? "Google Maps Share Link" : "Pasted Location");
-      if (this.propertyMiniMap) {
+      if (this.googleMiniMap) {
+        this.googleMiniMap.setCenter({ lat: parsed.lat, lng: parsed.lng });
+        if (this.googleMiniMarker) this.googleMiniMarker.setPosition({ lat: parsed.lat, lng: parsed.lng });
+      } else if (this.propertyMiniMap) {
         this.propertyMiniMap.setView([parsed.lat, parsed.lng], 15);
         if (this.propertyMiniMarker) this.propertyMiniMarker.setLatLng([parsed.lat, parsed.lng]);
         this.propertyMiniMap.invalidateSize();
@@ -856,7 +859,12 @@ class HostelKhojoApp {
       return;
     }
 
-    // 2. Debounce real-time address search via OpenStreetMap Nominatim
+    // If Google Places Autocomplete is active, let Google's official widget handle predictions
+    if (window.google?.maps?.places && this.googleAutocomplete) {
+      return;
+    }
+
+    // 2. Debounce real-time address search via OpenStreetMap Nominatim fallback
     if (this.locationSearchDebounce) clearTimeout(this.locationSearchDebounce);
     this.locationSearchDebounce = setTimeout(() => {
       this.searchLocationNominatim(query);

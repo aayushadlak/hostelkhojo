@@ -3017,3 +3017,46 @@ button, input, select, textarea {
   font-size: 0.9rem;
 }
 
+/* Google Places Autocomplete dropdown on top of modal dialogs */
+.pac-container {
+  z-index: 100000 !important;
+  border-radius: var(--radius-md) !important;
+  border: 1.5px solid var(--border-highlight) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.22), 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  margin-top: 4px !important;
+  background: var(--bg-card) !important;
+  padding: 4px !important;
+}
+
+.pac-item {
+  padding: 10px 14px !important;
+  font-size: 0.85rem !important;
+  border-top: 1px solid var(--border-color) !important;
+  color: var(--text-primary) !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.pac-item:first-child {
+  border-top: none !important;
+}
+
+.pac-item:hover, .pac-item-selected {
+  background: rgba(99, 102, 241, 0.1) !important;
+  color: var(--primary) !important;
+}
+
+.pac-item-query {
+  font-size: 0.88rem !important;
+  font-weight: 700 !important;
+  color: var(--text-primary) !important;
+}
+
+.pac-matched {
+  font-weight: 800 !important;
+  color: var(--primary) !important;
+}
+
