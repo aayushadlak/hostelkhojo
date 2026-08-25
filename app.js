@@ -565,8 +565,97 @@ class HostelKhojoApp {
     this.leafletMarkers = [];
     this.propertyMiniMap = null;
     this.propertyMiniMarker = null;
+    this.googleMiniMap = null;
+    this.googleMiniMarker = null;
     this.locationSearchDebounce = null;
     this.currentLocationSearchResults = [];
+
+    // Check if Google Cloud Maps API Key is provided
+    this.loadGoogleMapsApiIfConfigured();
+  }
+
+  loadGoogleMapsApiIfConfigured() {
+    const apiKey = window.GOOGLE_MAPS_API_KEY || localStorage.getItem("hostelkhojo_gmaps_key") || "";
+    if (apiKey && !window.google?.maps && !document.getElementById("google-maps-sdk-script")) {
+      const script = document.createElement("script");
+      script.id = "google-maps-sdk-script";
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&loading=async&callback=app.onGoogleMapsLoaded`;
+      script.async = true;
+      script.defer = true;
+      document.head.appendChild(script);
+    } else if (window.google?.maps) {
+      this.initGooglePlacesAutocomplete();
+    }
+  }
+
+  onGoogleMapsLoaded() {
+    console.log("✅ Google Cloud Maps SDK & Places API connected successfully!");
+    this.isGoogleSdkLoaded = true;
+    this.initGooglePlacesAutocomplete();
+    if (document.getElementById("prop-mini-map") && document.getElementById("owner-property-modal")?.classList.contains("active")) {
+      this.initPropertyMiniMap();
+    }
+  }
+
+  initGooglePlacesAutocomplete() {
+    const input = document.getElementById("prop-location-search");
+    if (!input || !window.google?.maps?.places) return;
+
+    try {
+      if (this.googleAutocomplete) return; // already attached
+      this.googleAutocomplete = new google.maps.places.Autocomplete(input, {
+        componentRestrictions: { country: "in" },
+        fields: ["address_components", "geometry", "name", "formatted_address"]
+      });
+
+      this.googleAutocomplete.addListener("place_changed", () => {
+        const place = this.googleAutocomplete.getPlace();
+        if (!place || !place.geometry || !place.geometry.location) return;
+
+        const lat = place.geometry.location.lat();
+        const lng = place.geometry.location.lng();
+        const shortName = place.name || place.formatted_address?.split(",")[0] || "";
+
+        let city = "";
+        if (place.address_components) {
+          for (const comp of place.address_components) {
+            if (comp.types.includes("locality") || comp.types.includes("administrative_area_level_2")) {
+              city = comp.long_name;
+              break;
+            }
+          }
+        }
+
+        const cityInp = document.getElementById("prop-city");
+        if (cityInp && (!cityInp.value.trim() || cityInp.value.trim().length === 0) && city) {
+          cityInp.value = city;
+        }
+
+        const uniInp = document.getElementById("prop-university");
+        if (uniInp && (!uniInp.value.trim() || uniInp.value.trim().length === 0)) {
+          uniInp.value = shortName;
+        }
+
+        const addrInp = document.getElementById("prop-address");
+        if (addrInp && (!addrInp.value.trim() || addrInp.value.trim().length === 0)) {
+          addrInp.value = place.formatted_address || shortName;
+        }
+
+        this.updatePropertyCoords(lat, lng, shortName);
+
+        if (this.googleMiniMap) {
+          this.googleMiniMap.setCenter({ lat, lng });
+          this.googleMiniMap.setZoom(16);
+          if (this.googleMiniMarker) this.googleMiniMarker.setPosition({ lat, lng });
+        } else if (this.propertyMiniMap) {
+          this.propertyMiniMap.setView([lat, lng], 16);
+          if (this.propertyMiniMarker) this.propertyMiniMarker.setLatLng([lat, lng]);
+          this.propertyMiniMap.invalidateSize();
+        }
+      });
+    } catch (e) {
+      console.warn("Google Places Autocomplete init notice:", e);
+    }
   }
 
   escapeHtml(str) {
@@ -585,10 +674,53 @@ class HostelKhojoApp {
 
   initPropertyMiniMap(customLat = null, customLng = null) {
     const mapContainer = document.getElementById("prop-mini-map");
-    if (!mapContainer || typeof L === "undefined") return;
+    if (!mapContainer) return;
 
     let lat = customLat !== null ? customLat : (parseFloat(document.getElementById("prop-lat")?.value) || 28.6922);
     let lng = customLng !== null ? customLng : (parseFloat(document.getElementById("prop-lng")?.value) || 77.2100);
+
+    // If Google Cloud Maps JS SDK is active, render native Google Map
+    if (window.google && window.google.maps) {
+      try {
+        if (!this.googleMiniMap) {
+          this.googleMiniMap = new google.maps.Map(mapContainer, {
+            center: { lat, lng },
+            zoom: 15,
+            mapTypeControl: true,
+            streetViewControl: false,
+            fullscreenControl: false,
+            zoomControl: true
+          });
+
+          this.googleMiniMarker = new google.maps.Marker({
+            position: { lat, lng },
+            map: this.googleMiniMap,
+            draggable: true,
+            title: "Drag to adjust hostel entrance"
+          });
+
+          this.googleMiniMarker.addListener("dragend", () => {
+            const pos = this.googleMiniMarker.getPosition();
+            this.updatePropertyCoords(pos.lat(), pos.lng(), "Adjusted Entrance");
+          });
+
+          this.googleMiniMap.addListener("click", (e) => {
+            const clickLat = e.latLng.lat();
+            const clickLng = e.latLng.lng();
+            this.googleMiniMarker.setPosition({ lat: clickLat, lng: clickLng });
+            this.updatePropertyCoords(clickLat, clickLng, "Selected Map Point");
+          });
+        } else {
+          this.googleMiniMap.setCenter({ lat, lng });
+          if (this.googleMiniMarker) this.googleMiniMarker.setPosition({ lat, lng });
+        }
+        return;
+      } catch (gErr) {
+        console.warn("Native Google Map error, falling back to Leaflet:", gErr);
+      }
+    }
+
+    if (typeof L === "undefined") return;
 
     try {
       if (!this.propertyMiniMap) {
