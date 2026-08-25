@@ -45,6 +45,9 @@ class HostelDB(Base):
     image_mess = Column(String, nullable=True)
 
     address = Column(Text, nullable=False)
+    map_link = Column(String, nullable=True, default="")
+    lat = Column(Float, nullable=True, default=28.6922)
+    lng = Column(Float, nullable=True, default=77.2100)
     map_coords_json = Column(Text, default='{"top": 40, "left": 50}')
     amenities_json = Column(Text, default='[]')
     curfew = Column(String, default="11:00 PM")

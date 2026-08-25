@@ -1247,11 +1247,57 @@
           <div class="listing-section-header">
             <div class="listing-section-title">
               <span style="width: 28px; height: 28px; border-radius: 50%; background: var(--primary); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 0.8rem;">3</span>
-              Location & Address Details
+              Location & Map Spotter
             </div>
-            <span class="listing-section-badge"><i class="fa-solid fa-map-pin"></i> Live Map Ready</span>
+            <span class="listing-section-badge"><i class="fa-solid fa-location-crosshairs"></i> Live Map Ready</span>
           </div>
 
+          <!-- 1. MAP LOCATION SEARCH & PIN SPOTTER -->
+          <div style="background: var(--surface-low); border: 1.5px solid var(--border-color); border-radius: var(--radius-md); padding: 14px 16px; margin-bottom: 16px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+              <label style="font-size: 0.85rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0; display: flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-magnifying-glass-location" style="color: #ea4335;"></i> Search Google Maps Location / Landmark
+              </label>
+              <button type="button" class="btn btn-outline btn-xs" onclick="if(window.app) app.getCurrentLocationForProperty();" style="font-size: 0.76rem; padding: 4px 10px; border-radius: 6px; display: inline-flex; align-items: center; gap: 6px; font-weight: 600; border-color: var(--primary); color: var(--primary);">
+                <i class="fa-solid fa-crosshairs"></i> Use My GPS Location
+              </button>
+            </div>
+
+            <!-- Search Input with Live Dropdown -->
+            <div style="position: relative;">
+              <input type="text" id="prop-location-search" 
+                placeholder="Search hostel name, college, area (e.g. Kamla Nagar Delhi) or paste Google Maps link..." 
+                class="form-control" 
+                autocomplete="off"
+                oninput="if(window.app) app.handleLocationSearchInput(this.value);" 
+                onkeydown="if(event.key === 'Enter') { event.preventDefault(); if(window.app) app.triggerLocationSearch(); }"
+                style="padding-left: 36px; padding-right: 85px;" />
+              <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.9rem; pointer-events: none;"></i>
+              <button type="button" id="prop-location-search-btn" onclick="if(window.app) app.triggerLocationSearch();" class="btn btn-primary btn-xs" style="position: absolute; right: 6px; top: 50%; transform: translateY(-50%); font-size: 0.76rem; padding: 5px 12px; border-radius: 6px; font-weight: 700;">
+                Search
+              </button>
+              <!-- Search Results Dropdown List -->
+              <div id="prop-location-results" class="location-search-dropdown" style="display: none;"></div>
+            </div>
+
+            <!-- Spotted Location Feedback -->
+            <div id="prop-spotted-badge" style="margin-top: 8px; display: none;"></div>
+
+            <!-- Mini Map Location Picker -->
+            <div style="margin-top: 10px; position: relative;">
+              <div id="prop-mini-map" style="height: 190px; width: 100%; border-radius: var(--radius-md); border: 1px solid var(--border-color); z-index: 1; background: #e5e7eb;"></div>
+              <div style="position: absolute; bottom: 8px; left: 8px; background: rgba(15, 23, 42, 0.85); color: #ffffff; padding: 4px 10px; border-radius: 6px; font-size: 0.72rem; z-index: 1000; pointer-events: none; backdrop-filter: blur(4px);">
+                <i class="fa-solid fa-hand-pointer" style="color: #60a5fa;"></i> Click map or drag pin to adjust exact entrance
+              </div>
+            </div>
+
+            <!-- Hidden Inputs for Syncing -->
+            <input type="hidden" id="prop-map-link" value="" />
+            <input type="hidden" id="prop-lat" value="28.6922" />
+            <input type="hidden" id="prop-lng" value="77.2100" />
+          </div>
+
+          <!-- 2. ADDRESS FIELDS -->
           <div class="form-row" style="margin-bottom: 14px;">
             <div class="form-group" style="margin-bottom: 0;">
               <label style="font-size: 0.85rem; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; display: block;">
@@ -1267,27 +1313,11 @@
             </div>
           </div>
 
-          <div class="form-group" style="margin-bottom: 14px;">
+          <div class="form-group" style="margin-bottom: 0;">
             <label style="font-size: 0.85rem; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; display: block;">
               Full Street Address & Landmark <span style="color: var(--danger-red);">*</span>
             </label>
             <input type="text" id="prop-address" required placeholder="e.g. Plot 42, Block B, Opposite Gate 4, Kamla Nagar" class="form-control" />
-          </div>
-
-          <!-- Optional Map Coordinates -->
-          <div class="form-row" style="margin-bottom: 0;">
-            <div class="form-group" style="margin-bottom: 0;">
-              <label style="font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px; display: block;">
-                <i class="fa-solid fa-location-crosshairs" style="color: var(--primary);"></i> Map Latitude <span class="text-muted" style="font-weight: 400;">(Optional)</span>
-              </label>
-              <input type="number" step="0.000001" id="prop-lat" placeholder="e.g. 28.6922" class="form-control" />
-            </div>
-            <div class="form-group" style="margin-bottom: 0;">
-              <label style="font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px; display: block;">
-                <i class="fa-solid fa-location-crosshairs" style="color: var(--success-green);"></i> Map Longitude <span class="text-muted" style="font-weight: 400;">(Optional)</span>
-              </label>
-              <input type="number" step="0.000001" id="prop-lng" placeholder="e.g. 77.2100" class="form-control" />
-            </div>
           </div>
         </div>
 

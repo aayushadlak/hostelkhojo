@@ -2939,3 +2939,81 @@ button, input, select, textarea {
   }
 }
 
+/* ==========================================================================
+   14. LOCATION SEARCH & INTERACTIVE PIN SPOTTER
+   ========================================================================== */
+.location-search-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--bg-card);
+  border: 1.5px solid var(--border-highlight);
+  border-radius: var(--radius-md);
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.08);
+  max-height: 240px;
+  overflow-y: auto;
+  z-index: 1050;
+  padding: 4px;
+}
+
+.location-search-item {
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.82rem;
+  color: var(--text-primary);
+  transition: background 0.15s ease, transform 0.1s ease;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.location-search-item:last-child {
+  border-bottom: none;
+}
+
+.location-search-item:hover,
+.location-search-item.active {
+  background: rgba(99, 102, 241, 0.1);
+  color: var(--primary);
+}
+
+.location-search-item i {
+  margin-top: 3px;
+  flex-shrink: 0;
+  color: #ea4335;
+}
+
+.location-search-item-title {
+  font-weight: 700;
+  font-size: 0.85rem;
+  margin-bottom: 2px;
+  color: var(--text-primary);
+}
+
+.location-search-item-sub {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+.location-spotted-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #059669;
+  font-size: 0.78rem;
+  font-weight: 600;
+  animation: fadeIn 0.2s ease;
+}
+
+.location-spotted-badge i {
+  font-size: 0.9rem;
+}
+

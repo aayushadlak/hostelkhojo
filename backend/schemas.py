@@ -115,6 +115,9 @@ class HostelBase(BaseModel):
     imageWashroom: Optional[str] = None
     imageMess: Optional[str] = None
     address: str
+    mapLink: Optional[str] = ""
+    lat: Optional[float] = 28.6922
+    lng: Optional[float] = 77.2100
     mapCoords: Optional[Dict[str, Any]] = {"top": 40, "left": 50}
     amenities: List[str] = []
     curfew: str = "11:00 PM"
@@ -151,6 +154,9 @@ class HostelResponse(BaseModel):
     imageWashroom: Optional[str] = None
     imageMess: Optional[str] = None
     address: str
+    mapLink: Optional[str] = ""
+    lat: Optional[float] = 28.6922
+    lng: Optional[float] = 77.2100
     mapCoords: Optional[Dict[str, Any]] = {"top": 40, "left": 50}
     amenities: Optional[List[str]] = []
     curfew: Optional[str] = "11:00 PM"

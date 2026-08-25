@@ -329,6 +329,9 @@ def get_hostels(
                     "imageWashroom": getattr(h, "image_washroom", None) or "assets/images/room_shared.png",
                     "imageMess": h.image_mess or "assets/images/mess.png",
                     "address": str(h.address or ""),
+                    "mapLink": getattr(h, "map_link", "") or "",
+                    "lat": float(h.lat) if getattr(h, "lat", None) is not None else 28.6922,
+                    "lng": float(h.lng) if getattr(h, "lng", None) is not None else 77.2100,
                     "mapCoords": h.map_coords if isinstance(h.map_coords, dict) else {"top": 40, "left": 50},
                     "amenities": h.amenities if isinstance(h.amenities, list) else [],
                     "curfew": str(h.curfew or "11:00 PM"),
@@ -358,25 +361,25 @@ def get_hostel_detail(hostel_id: str, db: Session = Depends(get_db)):
 
     reviews_res = []
     try:
-        reviews_db = db.query(ReviewDB).filter(ReviewDB.hostel_id == h.id).all()
-        for r in reviews_db:
-            reviews_res.append({
-                "id": str(r.id),
-                "hostel_id": str(r.hostel_id),
-                "user_name": str(r.user_name),
-                "major": str(r.major or "Student"),
-                "rating": float(r.rating) if r.rating is not None else 5.0,
-                "comment": str(r.comment or ""),
-                "created_at": r.created_at.isoformat() if hasattr(r.created_at, "isoformat") and r.created_at else str(r.created_at)
-            })
-    except Exception:
-        pass
+        if hasattr(h, "reviews") and h.reviews:
+            reviews_res = [
+                {
+                    "id": r.id,
+                    "userName": r.user_name,
+                    "rating": r.rating,
+                    "comment": r.comment,
+                    "createdAt": r.created_at.strftime("%Y-%m-%d") if r.created_at else "2026-08-20"
+                }
+                for r in h.reviews
+            ]
+    except Exception as e:
+        reviews_res = []
 
     return {
-        "id": str(h.id),
-        "name": str(h.name or "Student Hostel"),
-        "university": str(h.university or "Campus Area"),
-        "city": str(h.city or "India"),
+        "id": h.id,
+        "name": h.name,
+        "university": h.university,
+        "city": h.city,
         "gender": str(h.gender or "Co-ed"),
         "type": str(h.type or "Student Stay"),
         "rent": float(h.rent) if h.rent is not None else 8000.0,
@@ -393,6 +396,9 @@ def get_hostel_detail(hostel_id: str, db: Session = Depends(get_db)):
         "imageWashroom": getattr(h, "image_washroom", None) or "assets/images/room_shared.png",
         "imageMess": h.image_mess or "assets/images/mess.png",
         "address": str(h.address or ""),
+        "mapLink": getattr(h, "map_link", "") or "",
+        "lat": float(h.lat) if getattr(h, "lat", None) is not None else 28.6922,
+        "lng": float(h.lng) if getattr(h, "lng", None) is not None else 77.2100,
         "mapCoords": h.map_coords if isinstance(h.map_coords, dict) else {"top": 40, "left": 50},
         "amenities": h.amenities if isinstance(h.amenities, list) else [],
         "curfew": str(h.curfew or "11:00 PM"),
@@ -687,6 +693,9 @@ def create_owner_property(
             image_washroom=hostel_in.imageWashroom or "assets/images/room_shared.png",
             image_mess=hostel_in.imageMess or "assets/images/mess.png",
             address=hostel_in.address,
+            map_link=getattr(hostel_in, "mapLink", "") or "",
+            lat=float(hostel_in.lat) if getattr(hostel_in, "lat", None) is not None else 28.6922,
+            lng=float(hostel_in.lng) if getattr(hostel_in, "lng", None) is not None else 77.2100,
             map_coords_json=json.dumps(hostel_in.mapCoords if isinstance(hostel_in.mapCoords, dict) else {"top": 40, "left": 50}),
             amenities_json=json.dumps(hostel_in.amenities or ["Wi-Fi", "4-Time Mess", "AC"]),
             curfew=hostel_in.curfew or "11:00 PM",
@@ -722,6 +731,9 @@ def create_owner_property(
             "imageWashroom": new_hostel.image_washroom,
             "imageMess": new_hostel.image_mess,
             "address": new_hostel.address,
+            "mapLink": getattr(new_hostel, "map_link", "") or "",
+            "lat": float(new_hostel.lat) if getattr(new_hostel, "lat", None) is not None else 28.6922,
+            "lng": float(new_hostel.lng) if getattr(new_hostel, "lng", None) is not None else 77.2100,
             "mapCoords": new_hostel.map_coords,
             "amenities": new_hostel.amenities,
             "curfew": new_hostel.curfew,
@@ -766,6 +778,12 @@ def update_owner_property(
         h.registration_fee = float(hostel_in.registrationFee)
     h.distance = hostel_in.distance
     h.address = hostel_in.address
+    if hasattr(hostel_in, "mapLink") and hostel_in.mapLink is not None:
+        h.map_link = hostel_in.mapLink
+    if hasattr(hostel_in, "lat") and hostel_in.lat is not None:
+        h.lat = hostel_in.lat
+    if hasattr(hostel_in, "lng") and hostel_in.lng is not None:
+        h.lng = hostel_in.lng
     h.description = hostel_in.description
     if hostel_in.imageMain is not None:
         h.image_main = hostel_in.imageMain

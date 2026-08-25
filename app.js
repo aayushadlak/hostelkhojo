@@ -563,6 +563,399 @@ class HostelKhojoApp {
     this.mapProvider = localStorage.getItem("hostelkhojo_map_provider") || "osm";
     this.leafletMap = null;
     this.leafletMarkers = [];
+    this.propertyMiniMap = null;
+    this.propertyMiniMarker = null;
+    this.locationSearchDebounce = null;
+    this.currentLocationSearchResults = [];
+  }
+
+  escapeHtml(str) {
+    if (!str) return "";
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  /* ==========================================================================
+     PROPERTY LISTING: INTERACTIVE MINI-MAP PIN SPOTTER & LOCATION SEARCH
+     ========================================================================== */
+
+  initPropertyMiniMap(customLat = null, customLng = null) {
+    const mapContainer = document.getElementById("prop-mini-map");
+    if (!mapContainer || typeof L === "undefined") return;
+
+    let lat = customLat !== null ? customLat : (parseFloat(document.getElementById("prop-lat")?.value) || 28.6922);
+    let lng = customLng !== null ? customLng : (parseFloat(document.getElementById("prop-lng")?.value) || 77.2100);
+
+    try {
+      if (!this.propertyMiniMap) {
+        this.propertyMiniMap = L.map(mapContainer, {
+          zoomControl: true,
+          scrollWheelZoom: true,
+          attributionControl: false
+        }).setView([lat, lng], 14);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19
+        }).addTo(this.propertyMiniMap);
+
+        const pinIcon = L.divIcon({
+          className: 'property-picker-pin',
+          html: `<div style="font-size: 26px; line-height: 1; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.4)); cursor: grab;">📍</div>`,
+          iconSize: [28, 28],
+          iconAnchor: [14, 28]
+        });
+
+        this.propertyMiniMarker = L.marker([lat, lng], {
+          draggable: true,
+          icon: pinIcon
+        }).addTo(this.propertyMiniMap);
+
+        // Update coordinates on drag
+        this.propertyMiniMarker.on('dragend', (e) => {
+          const pos = e.target.getLatLng();
+          this.updatePropertyCoords(pos.lat, pos.lng, "Fine-tuned Pin Location");
+        });
+
+        // Click on map to place pin
+        this.propertyMiniMap.on('click', (e) => {
+          this.propertyMiniMarker.setLatLng(e.latlng);
+          this.updatePropertyCoords(e.latlng.lat, e.latlng.lng, "Selected Map Point");
+        });
+      } else {
+        this.propertyMiniMap.setView([lat, lng], 14);
+        if (this.propertyMiniMarker) {
+          this.propertyMiniMarker.setLatLng([lat, lng]);
+        }
+        this.propertyMiniMap.invalidateSize();
+      }
+
+      setTimeout(() => {
+        if (this.propertyMiniMap) this.propertyMiniMap.invalidateSize();
+      }, 150);
+    } catch (e) {
+      console.warn("Property mini-map notice:", e);
+    }
+  }
+
+  handleLocationSearchInput(query) {
+    if (!query) {
+      const resultsDiv = document.getElementById("prop-location-results");
+      if (resultsDiv) resultsDiv.style.display = "none";
+      return;
+    }
+
+    // 1. Check if user pasted a Google Maps link or raw coordinates directly
+    const parsed = this.parseGoogleMapsUrl(query);
+    if (parsed) {
+      this.updatePropertyCoords(parsed.lat, parsed.lng, parsed.isShortLink ? "Google Maps Share Link" : "Pasted Location");
+      if (this.propertyMiniMap) {
+        this.propertyMiniMap.setView([parsed.lat, parsed.lng], 15);
+        if (this.propertyMiniMarker) this.propertyMiniMarker.setLatLng([parsed.lat, parsed.lng]);
+        this.propertyMiniMap.invalidateSize();
+      }
+      const resultsDiv = document.getElementById("prop-location-results");
+      if (resultsDiv) resultsDiv.style.display = "none";
+      return;
+    }
+
+    // 2. Debounce real-time address search via OpenStreetMap Nominatim
+    if (this.locationSearchDebounce) clearTimeout(this.locationSearchDebounce);
+    this.locationSearchDebounce = setTimeout(() => {
+      this.searchLocationNominatim(query);
+    }, 320);
+  }
+
+  triggerLocationSearch() {
+    const input = document.getElementById("prop-location-search");
+    if (!input || !input.value.trim()) return;
+    const val = input.value.trim();
+
+    const parsed = this.parseGoogleMapsUrl(val);
+    if (parsed) {
+      this.updatePropertyCoords(parsed.lat, parsed.lng, "Pasted Coordinates");
+      if (this.propertyMiniMap) {
+        this.propertyMiniMap.setView([parsed.lat, parsed.lng], 15);
+        if (this.propertyMiniMarker) this.propertyMiniMarker.setLatLng([parsed.lat, parsed.lng]);
+        this.propertyMiniMap.invalidateSize();
+      }
+      return;
+    }
+
+    this.searchLocationNominatim(val);
+  }
+
+  async searchLocationNominatim(query) {
+    const resultsDiv = document.getElementById("prop-location-results");
+    if (!resultsDiv) return;
+
+    if (!query || query.trim().length < 2) {
+      resultsDiv.style.display = "none";
+      return;
+    }
+
+    resultsDiv.innerHTML = `<div style="padding: 12px; text-align: center; color: var(--text-muted); font-size: 0.8rem;"><i class="fa-solid fa-spinner fa-spin"></i> Searching Google Maps & localities in India...</div>`;
+    resultsDiv.style.display = "block";
+
+    try {
+      let res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=in&limit=6&addressdetails=1`);
+      let data = await res.json();
+
+      if (!Array.isArray(data) || data.length === 0) {
+        res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1`);
+        data = await res.json();
+      }
+
+      if (!Array.isArray(data) || data.length === 0) {
+        resultsDiv.innerHTML = `
+          <div style="padding: 12px; text-align: center; color: var(--text-muted); font-size: 0.8rem;">
+            No location matches found. Try typing city name or university.
+          </div>
+        `;
+        return;
+      }
+
+      resultsDiv.innerHTML = data.map((item, idx) => {
+        const title = item.name || item.display_name.split(",")[0];
+        const sub = item.display_name;
+        return `
+          <div class="location-search-item" onclick="app.selectSearchResult(${idx})">
+            <i class="fa-solid fa-location-dot"></i>
+            <div>
+              <div class="location-search-item-title">${this.escapeHtml(title)}</div>
+              <div class="location-search-item-sub">${this.escapeHtml(sub)}</div>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      this.currentLocationSearchResults = data;
+    } catch (e) {
+      resultsDiv.innerHTML = `<div style="padding: 10px; color: var(--danger-red); font-size: 0.78rem;">Search service busy. You can click on the map to place the pin directly.</div>`;
+    }
+  }
+
+  selectSearchResult(idx) {
+    if (!this.currentLocationSearchResults || !this.currentLocationSearchResults[idx]) return;
+    const item = this.currentLocationSearchResults[idx];
+
+    const lat = parseFloat(item.lat);
+    const lng = parseFloat(item.lon);
+    if (isNaN(lat) || isNaN(lng)) return;
+
+    const shortName = item.name || item.display_name.split(",")[0];
+    const searchInp = document.getElementById("prop-location-search");
+    if (searchInp) searchInp.value = item.display_name;
+
+    const resultsDiv = document.getElementById("prop-location-results");
+    if (resultsDiv) resultsDiv.style.display = "none";
+
+    // Auto-fill City if empty
+    const cityInp = document.getElementById("prop-city");
+    if (cityInp && !cityInp.value.trim()) {
+      const city = item.address?.city || item.address?.town || item.address?.state_district || item.address?.county || item.address?.state || "";
+      if (city) cityInp.value = city;
+    }
+
+    // Auto-fill University / Landmark if empty
+    const uniInp = document.getElementById("prop-university");
+    if (uniInp && !uniInp.value.trim()) {
+      uniInp.value = shortName;
+    }
+
+    // Auto-fill Street Address if empty
+    const addrInp = document.getElementById("prop-address");
+    if (addrInp && !addrInp.value.trim()) {
+      addrInp.value = item.display_name;
+    }
+
+    // Center map and move pin
+    this.updatePropertyCoords(lat, lng, shortName);
+    if (this.propertyMiniMap) {
+      this.propertyMiniMap.setView([lat, lng], 15);
+      if (this.propertyMiniMarker) this.propertyMiniMarker.setLatLng([lat, lng]);
+      this.propertyMiniMap.invalidateSize();
+    }
+  }
+
+  getCurrentLocationForProperty() {
+    if (!navigator.geolocation) {
+      this.showToast("Geolocation is not supported by your browser.", "warning");
+      return;
+    }
+
+    this.showToast("Locating your current GPS position...", "info");
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        this.updatePropertyCoords(lat, lng, "Current GPS Location");
+
+        if (this.propertyMiniMap) {
+          this.propertyMiniMap.setView([lat, lng], 16);
+          if (this.propertyMiniMarker) this.propertyMiniMarker.setLatLng([lat, lng]);
+          this.propertyMiniMap.invalidateSize();
+        }
+
+        const searchInp = document.getElementById("prop-location-search");
+        if (searchInp) searchInp.value = `Current Location (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
+
+        this.showToast("Hostel location spotted via GPS!", "success");
+      },
+      (err) => {
+        this.showToast("Unable to retrieve GPS position. Please type location in search box.", "warning");
+      },
+      { timeout: 10000, enableHighAccuracy: true }
+    );
+  }
+
+  updatePropertyCoords(lat, lng, label = "") {
+    const latInp = document.getElementById("prop-lat");
+    const lngInp = document.getElementById("prop-lng");
+    const mapLinkInp = document.getElementById("prop-map-link");
+    const badge = document.getElementById("prop-spotted-badge");
+
+    const numLat = parseFloat(lat);
+    const numLng = parseFloat(lng);
+    if (isNaN(numLat) || isNaN(numLng)) return;
+
+    if (latInp) latInp.value = numLat;
+    if (lngInp) lngInp.value = numLng;
+    const gmapsUrl = `https://www.google.com/maps?q=${numLat},${numLng}`;
+    if (mapLinkInp) mapLinkInp.value = gmapsUrl;
+
+    if (badge) {
+      badge.style.display = "block";
+      badge.innerHTML = `
+        <div class="location-spotted-badge">
+          <i class="fa-solid fa-circle-check"></i>
+          <span><b>Spotted:</b> ${label ? this.escapeHtml(label) + ' • ' : ''}${numLat.toFixed(4)}, ${numLng.toFixed(4)}</span>
+          <a href="${gmapsUrl}" target="_blank" style="margin-left: 8px; color: var(--primary); font-weight: 700; text-decoration: underline; display: inline-flex; align-items: center; gap: 4px;">
+            Open Google Maps <i class="fa-solid fa-arrow-up-right-from-square font-xs"></i>
+          </a>
+        </div>
+      `;
+    }
+  }
+
+  parseGoogleMapsUrl(input, cityName = "") {
+    if (!input) return null;
+    let urlStr = String(input).trim();
+    if (!urlStr) return null;
+
+    if (urlStr.includes("<iframe") && urlStr.includes("src=")) {
+      const matchSrc = urlStr.match(/src=["']([^"']+)["']/i);
+      if (matchSrc) urlStr = matchSrc[1];
+    }
+
+    const coordMatch = urlStr.match(/^\s*(-?\d{1,2}\.\d+)[,\s]+(-?\d{1,3}\.\d+)\s*$/);
+    if (coordMatch) {
+      const lat = parseFloat(coordMatch[1]);
+      const lng = parseFloat(coordMatch[2]);
+      if (!isNaN(lat) && !isNaN(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+        return { lat, lng, validUrl: false, isCoords: true };
+      }
+    }
+
+    const atMatch = urlStr.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+    if (atMatch) {
+      const lat = parseFloat(atMatch[1]);
+      const lng = parseFloat(atMatch[2]);
+      if (!isNaN(lat) && !isNaN(lng)) {
+        return { lat, lng, validUrl: true };
+      }
+    }
+
+    const queryMatch = urlStr.match(/[?&](?:q|ll|sll|query|destination)=(?:loc:)?(-?\d+\.\d+)[,+ ]+(-?\d+\.\d+)/i);
+    if (queryMatch) {
+      const lat = parseFloat(queryMatch[1]);
+      const lng = parseFloat(queryMatch[2]);
+      if (!isNaN(lat) && !isNaN(lng)) {
+        return { lat, lng, validUrl: true };
+      }
+    }
+
+    const pathMatch = urlStr.match(/\/(?:dir|search|place)\/(?:[^\/]*\/)*(-?\d+\.\d+)[,+ ]+(-?\d+\.\d+)/i);
+    if (pathMatch) {
+      const lat = parseFloat(pathMatch[1]);
+      const lng = parseFloat(pathMatch[2]);
+      if (!isNaN(lat) && !isNaN(lng)) {
+        return { lat, lng, validUrl: true };
+      }
+    }
+
+    const pbLatMatch = urlStr.match(/!3d(-?\d+\.\d+)/);
+    const pbLngMatch = urlStr.match(/!(?:2d|4d)(-?\d+\.\d+)/);
+    if (pbLatMatch && pbLngMatch) {
+      const lat = parseFloat(pbLatMatch[1]);
+      const lng = parseFloat(pbLngMatch[1]);
+      if (!isNaN(lat) && !isNaN(lng)) {
+        return { lat, lng, validUrl: true };
+      }
+    }
+
+    const geoMatch = urlStr.match(/geo:(-?\d+\.\d+),(-?\d+\.\d+)/i);
+    if (geoMatch) {
+      const lat = parseFloat(geoMatch[1]);
+      const lng = parseFloat(geoMatch[2]);
+      if (!isNaN(lat) && !isNaN(lng)) {
+        return { lat, lng, validUrl: true };
+      }
+    }
+
+    const isGmapsLink = /^(https?:\/\/)?(maps\.app\.goo\.gl|goo\.gl\/maps|www\.google\.[a-z.]+\/maps|maps\.google\.[a-z.]+)/i.test(urlStr);
+    if (isGmapsLink) {
+      const cityCoords = this.getCityCoordinates(cityName);
+      return {
+        lat: cityCoords.lat,
+        lng: cityCoords.lng,
+        validUrl: true,
+        isShortLink: true
+      };
+    }
+
+    return null;
+  }
+
+  getCityCoordinates(cityName = "") {
+    const cityMap = {
+      "delhi": { lat: 28.6922, lng: 77.2100 },
+      "new delhi": { lat: 28.6922, lng: 77.2100 },
+      "kota": { lat: 25.1800, lng: 75.8300 },
+      "pune": { lat: 18.5204, lng: 73.8567 },
+      "bengaluru": { lat: 12.9716, lng: 77.5946 },
+      "bangalore": { lat: 12.9716, lng: 77.5946 },
+      "mumbai": { lat: 19.0760, lng: 72.8777 },
+      "jaipur": { lat: 26.9124, lng: 75.7873 },
+      "dehradun": { lat: 30.3165, lng: 78.0322 },
+      "indore": { lat: 22.7196, lng: 75.8577 },
+      "noida": { lat: 28.5355, lng: 77.3910 },
+      "greater noida": { lat: 28.4744, lng: 77.5040 },
+      "gurgaon": { lat: 28.4595, lng: 77.0266 },
+      "gurugram": { lat: 28.4595, lng: 77.0266 },
+      "chandigarh": { lat: 30.7333, lng: 76.7794 },
+      "lucknow": { lat: 26.8467, lng: 80.9462 },
+      "hyderabad": { lat: 17.3850, lng: 78.4867 },
+      "chennai": { lat: 13.0827, lng: 80.2707 },
+      "kolkata": { lat: 22.5726, lng: 88.3639 },
+      "ahmedabad": { lat: 23.0225, lng: 72.5714 },
+      "varanasi": { lat: 25.3176, lng: 82.9739 },
+      "patna": { lat: 25.5941, lng: 85.1376 },
+      "bhopal": { lat: 23.2599, lng: 77.4126 },
+      "kanpur": { lat: 26.4499, lng: 80.3319 }
+    };
+
+    const key = String(cityName || "").toLowerCase().trim();
+    for (const c in cityMap) {
+      if (key.includes(c)) {
+        return cityMap[c];
+      }
+    }
+    return { lat: 28.6922, lng: 77.2100 };
   }
 
   setMapProvider(provider) {
@@ -657,6 +1050,8 @@ class HostelKhojoApp {
 
         const marker = L.marker([h.lat, h.lng], { icon: customIcon }).addTo(this.leafletMap);
 
+        const directionsUrl = h.mapLink || `https://www.google.com/maps/dir/?api=1&destination=${h.lat},${h.lng}`;
+
         const popupContent = `
           <div class="gmaps-infowindow">
             <img src="${h.imageMain || 'assets/images/exterior1.png'}" alt="${h.name}" />
@@ -670,7 +1065,7 @@ class HostelKhojoApp {
               <button onclick="app.openHostelDetail('${h.id}')" class="gmaps-infowindow-btn" style="flex: 1;">
                 View Details
               </button>
-              <a href="https://www.google.com/maps/dir/?api=1&destination=${h.lat},${h.lng}" target="_blank" class="gmaps-infowindow-btn" style="background: #059669; flex: 1; display: inline-flex; align-items: center; justify-content: center; text-decoration: none;">
+              <a href="${directionsUrl}" target="_blank" class="gmaps-infowindow-btn" style="background: #059669; flex: 1; display: inline-flex; align-items: center; justify-content: center; text-decoration: none;">
                 Directions
               </a>
             </div>
@@ -697,8 +1092,16 @@ class HostelKhojoApp {
     this.renderOpenStreetMap();
   }
 
-  openGoogleDirections(lat, lng, name = "") {
+  openGoogleDirections(lat, lng, name = "", mapLink = "") {
+    if (mapLink && (mapLink.startsWith("http://") || mapLink.startsWith("https://") || mapLink.startsWith("geo:"))) {
+      window.open(mapLink, "_blank");
+      return;
+    }
     if (!lat || !lng) {
+      if (name) {
+        window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`, "_blank");
+        return;
+      }
       this.showToast("Location coordinates not available for this hostel.", "info");
       return;
     }
@@ -2219,6 +2622,17 @@ class HostelKhojoApp {
 
     this.toggleOccupancyInputs({});
 
+    // Reset location search, pin spotter, and coordinates
+    const searchInp = document.getElementById("prop-location-search");
+    if (searchInp) searchInp.value = "";
+    const resultsDiv = document.getElementById("prop-location-results");
+    if (resultsDiv) resultsDiv.style.display = "none";
+    const spottedBadge = document.getElementById("prop-spotted-badge");
+    if (spottedBadge) spottedBadge.style.display = "none";
+    if (document.getElementById("prop-map-link")) document.getElementById("prop-map-link").value = "";
+    if (document.getElementById("prop-lat")) document.getElementById("prop-lat").value = "28.6922";
+    if (document.getElementById("prop-lng")) document.getElementById("prop-lng").value = "77.2100";
+
     // Reset stepper pill to step 1
     const pills = document.querySelectorAll(".listing-step-pill");
     if (pills && pills.length > 0) {
@@ -2227,6 +2641,9 @@ class HostelKhojoApp {
     }
 
     this.openModal("owner-property-modal");
+    setTimeout(() => {
+      this.initPropertyMiniMap(28.6922, 77.2100);
+    }, 250);
   }
 
   openOwnerPropertyModalFromProfile() {
@@ -2899,8 +3316,14 @@ class HostelKhojoApp {
     document.getElementById("prop-distance").value = hostel.distance || "";
     document.getElementById("prop-address").value = hostel.address || "";
     document.getElementById("prop-description").value = hostel.description || "";
-    if (document.getElementById("prop-lat")) document.getElementById("prop-lat").value = hostel.lat || "";
-    if (document.getElementById("prop-lng")) document.getElementById("prop-lng").value = hostel.lng || "";
+    
+    const hLat = hostel.lat || 28.6922;
+    const hLng = hostel.lng || 77.2100;
+    if (document.getElementById("prop-lat")) document.getElementById("prop-lat").value = hLat;
+    if (document.getElementById("prop-lng")) document.getElementById("prop-lng").value = hLng;
+    if (document.getElementById("prop-map-link")) document.getElementById("prop-map-link").value = hostel.mapLink || `https://www.google.com/maps?q=${hLat},${hLng}`;
+    if (document.getElementById("prop-location-search")) document.getElementById("prop-location-search").value = hostel.address || hostel.university || "";
+    this.updatePropertyCoords(hLat, hLng, hostel.name || "");
 
     // Populate property photos (Hostel, Rooms, Washroom, Mess)
     const photos = {
@@ -2936,6 +3359,9 @@ class HostelKhojoApp {
     }
 
     this.openModal("owner-property-modal");
+    setTimeout(() => {
+      this.initPropertyMiniMap(hLat, hLng);
+    }, 250);
   }
 
   selectPropertyType(type) {
@@ -3061,6 +3487,7 @@ class HostelKhojoApp {
     const address = document.getElementById("prop-address").value.trim();
     const lat = parseFloat(document.getElementById("prop-lat")?.value) || 28.6922;
     const lng = parseFloat(document.getElementById("prop-lng")?.value) || 77.2100;
+    const mapLink = document.getElementById("prop-map-link")?.value.trim() || `https://www.google.com/maps?q=${lat},${lng}`;
     const description = document.getElementById("prop-description").value.trim();
 
     // Collect checked room occupancies & their individual monthly rents
@@ -3128,6 +3555,7 @@ class HostelKhojoApp {
       address,
       lat,
       lng,
+      mapLink,
       imageMain,
       imageSingle,
       imageShared: imageWashroom,
@@ -4157,6 +4585,11 @@ class HostelKhojoApp {
       if (container && (!container.children || container.children.length === 0)) {
         this.renderOccupancyRentInputs({ "1 Occupancy": 12000, "2 Occupancy": 8500 });
       }
+      setTimeout(() => {
+        const curLat = parseFloat(document.getElementById("prop-lat")?.value) || 28.6922;
+        const curLng = parseFloat(document.getElementById("prop-lng")?.value) || 77.2100;
+        this.initPropertyMiniMap(curLat, curLng);
+      }, 250);
     }
 
     const modal = document.getElementById(id);
