@@ -674,53 +674,10 @@ class HostelKhojoApp {
 
   initPropertyMiniMap(customLat = null, customLng = null) {
     const mapContainer = document.getElementById("prop-mini-map");
-    if (!mapContainer) return;
+    if (!mapContainer || typeof L === "undefined") return;
 
     let lat = customLat !== null ? customLat : (parseFloat(document.getElementById("prop-lat")?.value) || 28.6922);
     let lng = customLng !== null ? customLng : (parseFloat(document.getElementById("prop-lng")?.value) || 77.2100);
-
-    // If Google Cloud Maps JS SDK is active, render native Google Map
-    if (window.google && window.google.maps) {
-      try {
-        if (!this.googleMiniMap) {
-          this.googleMiniMap = new google.maps.Map(mapContainer, {
-            center: { lat, lng },
-            zoom: 15,
-            mapTypeControl: true,
-            streetViewControl: false,
-            fullscreenControl: false,
-            zoomControl: true
-          });
-
-          this.googleMiniMarker = new google.maps.Marker({
-            position: { lat, lng },
-            map: this.googleMiniMap,
-            draggable: true,
-            title: "Drag to adjust hostel entrance"
-          });
-
-          this.googleMiniMarker.addListener("dragend", () => {
-            const pos = this.googleMiniMarker.getPosition();
-            this.updatePropertyCoords(pos.lat(), pos.lng(), "Adjusted Entrance");
-          });
-
-          this.googleMiniMap.addListener("click", (e) => {
-            const clickLat = e.latLng.lat();
-            const clickLng = e.latLng.lng();
-            this.googleMiniMarker.setPosition({ lat: clickLat, lng: clickLng });
-            this.updatePropertyCoords(clickLat, clickLng, "Selected Map Point");
-          });
-        } else {
-          this.googleMiniMap.setCenter({ lat, lng });
-          if (this.googleMiniMarker) this.googleMiniMarker.setPosition({ lat, lng });
-        }
-        return;
-      } catch (gErr) {
-        console.warn("Native Google Map error, falling back to Leaflet:", gErr);
-      }
-    }
-
-    if (typeof L === "undefined") return;
 
     try {
       if (!this.propertyMiniMap) {
