@@ -749,23 +749,48 @@
         .replace(/'/g, '&#039;');
     }
 
-    // 4. Extract Query Parameter
-    function getHostelIdFromUrl() {
+    function slugify(text) {
+      return String(text || '')
+        .toLowerCase()
+        .trim()
+        .replace(/[^\w\s-]/g, '')
+        .replace(/[\s_-]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+    }
+
+    // 4. Extract Query Parameter & Hostel Name Slug
+    function getHostelQuery() {
       const params = new URLSearchParams(window.location.search);
       let id = params.get("id") || params.get("hostel");
-      if (!id && window.location.hash) {
-        id = window.location.hash.replace(/^#(hostel-|\/hostel\/)/i, "");
+      let name = params.get("name") || params.get("slug") || params.get("title");
+      
+      const pathname = window.location.pathname;
+      if (pathname.includes("/hostel/")) {
+        const pathPart = pathname.split("/hostel/")[1].replace(/\/$/, "");
+        if (pathPart && !pathPart.endsWith(".html")) {
+          name = decodeURIComponent(pathPart);
+        }
       }
-      return id ? decodeURIComponent(id) : null;
+
+      if (!id && !name && window.location.hash) {
+        const hashVal = window.location.hash.replace(/^#(hostel-|\/hostel\/)/i, "");
+        if (hashVal) {
+          id = decodeURIComponent(hashVal);
+        }
+      }
+
+      return {
+        id: id ? decodeURIComponent(id) : null,
+        name: name ? decodeURIComponent(name) : null
+      };
     }
 
     // 5. Load Hostel Data (Synchronous local hydration + Async Cloud sync)
     async function loadHostelData() {
-      const id = getHostelIdFromUrl();
-      if (!id) {
-        showErrorState("No hostel property ID specified in URL.");
-        return;
-      }
+      const query = getHostelQuery();
+      const id = query.id;
+      const name = query.name;
+      const targetSlug = name ? slugify(name) : '';
 
       // Step 1: Immediate hydration from local storage cache
       let allHostels = [];
@@ -779,7 +804,19 @@
         });
       } catch (e) {}
 
-      let h = allHostels.find(item => String(item.id) === String(id) || (item.name && item.name.toLowerCase() === String(id).toLowerCase()));
+      function matchesHostel(item) {
+        if (!item) return false;
+        if (id && String(item.id).toLowerCase() === String(id).toLowerCase()) return true;
+        if (name && item.name && item.name.toLowerCase() === name.toLowerCase()) return true;
+        if (targetSlug && item.name) {
+          const itemSlug = slugify(item.name);
+          if (itemSlug === targetSlug) return true;
+          if (targetSlug.includes(itemSlug) || itemSlug.includes(targetSlug)) return true;
+        }
+        return false;
+      }
+
+      let h = allHostels.find(matchesHostel);
 
       const fallbackHostels = [
         {
@@ -823,7 +860,7 @@
       ];
 
       if (!h) {
-        h = fallbackHostels.find(item => String(item.id) === String(id) || (item.name && item.name.toLowerCase() === String(id).toLowerCase()));
+        h = fallbackHostels.find(matchesHostel);
       }
 
       // If already found locally, render immediately so user sees zero delay!
@@ -838,7 +875,7 @@
         if (res.ok) {
           const cloudData = await res.json();
           if (Array.isArray(cloudData)) {
-            const cloudMatch = cloudData.find(item => String(item.id) === String(id) || (item.name && item.name.toLowerCase() === String(id).toLowerCase()));
+            const cloudMatch = cloudData.find(matchesHostel);
             if (cloudMatch) {
               currentHostel = cloudMatch;
               renderHostelDetails(cloudMatch);
@@ -862,7 +899,15 @@
 
     function renderHostelDetails(h) {
       document.title = `${h.name} | Hostel Khojo 🇮🇳`;
-      document.getElementById("page-meta-title").innerText = `${h.name} | Hostel Khojo`;
+      const metaTitle = document.getElementById("page-meta-title");
+      if (metaTitle) metaTitle.innerText = `${h.name} | Hostel Khojo`;
+      
+      const safeSlug = slugify(h.name);
+      try {
+        const cleanUrl = `hostel.html?name=${encodeURIComponent(safeSlug)}&id=${encodeURIComponent(h.id)}`;
+        window.history.replaceState(null, `${h.name} | Hostel Khojo`, cleanUrl);
+      } catch (e) {}
+
       document.getElementById("bc-city").innerText = h.city || "Campus Area";
       document.getElementById("bc-title").innerText = h.name;
 

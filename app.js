@@ -179,7 +179,7 @@ class HostelKhojoApp {
       const rawHash = window.location.hash;
       const hId = rawHash.replace(/^#(hostel-|\/hostel\/)/i, "");
       if (hId) {
-        window.location.replace(`hostel.html?id=${encodeURIComponent(hId)}`);
+        window.location.replace(this.getHostelUrl(decodeURIComponent(hId)));
         return;
       }
     }
@@ -547,7 +547,7 @@ class HostelKhojoApp {
                 <button class="btn btn-outline btn-sm ${isComparing ? 'active' : ''}" onclick="app.toggleCompare('${h.id}')">
                   <i class="fa-solid fa-scale-balanced"></i> ${isComparing ? 'Added' : 'Compare'}
                 </button>
-                <a href="hostel.html?id=${encodeURIComponent(h.id)}" target="_blank" class="btn btn-primary btn-sm">
+                <a href="${this.getHostelUrl(h)}" target="_blank" class="btn btn-primary btn-sm">
                   View Details
                 </a>
               </div>
@@ -1924,7 +1924,7 @@ class HostelKhojoApp {
           <td><strong>Action</strong></td>
           ${selectedHostels.map(h => `
             <td>
-              <a href="hostel.html?id=${encodeURIComponent(h.id)}" target="_blank" class="btn btn-primary btn-sm btn-block" onclick="app.closeModal('comparison-modal')">
+              <a href="${this.getHostelUrl(h)}" target="_blank" class="btn btn-primary btn-sm btn-block" onclick="app.closeModal('comparison-modal')">
                 Book / View Detail
               </a>
             </td>
@@ -1937,12 +1937,35 @@ class HostelKhojoApp {
   }
 
   /* ==========================================================================
-     HOSTEL DETAIL - NEW BROWSER TAB CONTROLLER
+     HOSTEL DETAIL - NEW BROWSER TAB CONTROLLER WITH NAME SLUG
      ========================================================================== */
+  slugify(text) {
+    return String(text || '')
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, '')
+      .replace(/[\s_-]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  }
+
+  getHostelUrl(hostelOrId) {
+    if (!hostelOrId) return 'hostel.html';
+    let h = null;
+    if (typeof hostelOrId === 'object' && hostelOrId !== null) {
+      h = hostelOrId;
+    } else {
+      const target = String(hostelOrId).toLowerCase();
+      h = (this.hostels && this.hostels.find(item => String(item.id).toLowerCase() === target || (item.name && item.name.toLowerCase() === target))) ||
+          (this.ownerProperties && this.ownerProperties.find(item => String(item.id).toLowerCase() === target || (item.name && item.name.toLowerCase() === target)));
+    }
+    const nameSlug = h && h.name ? this.slugify(h.name) : 'hostel';
+    const id = h && h.id ? h.id : (typeof hostelOrId === 'string' ? hostelOrId : 'stay');
+    return `hostel.html?name=${encodeURIComponent(nameSlug)}&id=${encodeURIComponent(id)}`;
+  }
+
   openHostelDetail(id) {
     if (!id) return;
-    const safeId = encodeURIComponent(String(id));
-    window.open(`hostel.html?id=${safeId}`, '_blank');
+    window.open(this.getHostelUrl(id), '_blank');
   }
 
   switchTabMessPane(btnEl, paneId) {
