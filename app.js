@@ -97,9 +97,6 @@ class HostelKhojoApp {
     this.comparisonIds = [];
     this.activePills = new Set();
 
-    this.openHostelTabs = JSON.parse(localStorage.getItem("hostelkhojo_open_hostel_tabs") || "[]");
-    this.activeHostelTabId = null;
-
     this.currentUser = JSON.parse(localStorage.getItem("hostelkhojo_user") || "null");
     this.currentOwnerUser = JSON.parse(localStorage.getItem("hostelkhojo_owner_user") || "null");
     this.currentAdminUser = null; // Super Admin always requires password verification on access
@@ -151,7 +148,6 @@ class HostelKhojoApp {
     }
 
     this.updateSavedCount();
-    this.renderWorkspaceTabs();
     this.renderHostels();
     this.renderRoommates();
     this.setMapProvider(this.mapProvider);
@@ -183,7 +179,7 @@ class HostelKhojoApp {
       const rawHash = window.location.hash;
       const hId = rawHash.replace(/^#(hostel-|\/hostel\/)/i, "");
       if (hId) {
-        this.openHostelTab(decodeURIComponent(hId), true);
+        this.openHostelDetail(decodeURIComponent(hId));
         return;
       }
     }
@@ -270,10 +266,6 @@ class HostelKhojoApp {
     this.applyFilters();
     this.renderHostels();
     this.renderMapPins();
-    this.renderWorkspaceTabs();
-    if (this.activeHostelTabId) {
-      this.renderDedicatedHostelView(this.activeHostelTabId);
-    }
 
 
     try {
@@ -1807,8 +1799,6 @@ class HostelKhojoApp {
   updateSavedCount() {
     const countEl = document.getElementById("saved-count");
     if (countEl) countEl.innerText = this.savedIds.length;
-    const wtabCountEl = document.getElementById("wtab-saved-count");
-    if (wtabCountEl) wtabCountEl.innerText = this.savedIds.length;
   }
 
   showSavedHostels() {
@@ -1945,563 +1935,9 @@ class HostelKhojoApp {
   }
 
   /* ==========================================================================
-     WORKSPACE & DYNAMIC HOSTEL TABS ENGINE
+     HOSTEL DETAIL MODAL (CLEAN POPUP VIEW)
      ========================================================================== */
-  renderWorkspaceTabs() {
-    // 1. Saved count update
-    const wtabSavedCount = document.getElementById("wtab-saved-count");
-    if (wtabSavedCount) wtabSavedCount.innerText = this.savedIds.length;
-
-    // 2. Owner & Admin Portal tabs visibility
-    const wtabOwner = document.getElementById("wtab-owner");
-    if (wtabOwner) {
-      wtabOwner.style.display = this.currentOwnerUser ? "inline-flex" : "none";
-    }
-    const wtabAdmin = document.getElementById("wtab-admin");
-    if (wtabAdmin) {
-      wtabAdmin.style.display = this.currentAdminUser ? "inline-flex" : "none";
-    }
-
-    // 3. Dynamic Hostel Tabs
-    const tabsListEl = document.getElementById("dynamic-hostel-tabs-list");
-    const dividerEl = document.getElementById("hostel-tabs-divider");
-    const actionsEl = document.getElementById("tabs-bar-actions");
-
-    if (tabsListEl) {
-      if (this.openHostelTabs && this.openHostelTabs.length > 0) {
-        if (dividerEl) dividerEl.style.display = "block";
-        if (actionsEl) actionsEl.style.display = "flex";
-
-        tabsListEl.innerHTML = this.openHostelTabs.map(tab => {
-          const isActive = String(this.activeHostelTabId) === String(tab.id);
-          const genderClass = (tab.gender || "Boys").toLowerCase().replace(/[^a-z]/g, '');
-          const safeId = String(tab.id).replace(/'/g, "\\'");
-          const safeName = this.escapeHtml(tab.name || 'Hostel');
-          return `
-            <div class="workspace-tab ${isActive ? 'active' : ''}" 
-                 id="hostel-tab-${tab.id}" 
-                 onclick="app.switchHostelTab('${safeId}')" 
-                 title="${safeName}">
-              <i class="fa-solid fa-hotel tab-icon"></i>
-              <span class="tab-title">${safeName}</span>
-              <span class="tab-gender-badge gender-${genderClass}">${tab.gender || 'Co-ed'}</span>
-              <button class="tab-close-btn" onclick="app.closeHostelTab(event, '${safeId}')" title="Close this hostel tab">&times;</button>
-            </div>
-          `;
-        }).join('');
-      } else {
-        tabsListEl.innerHTML = "";
-        if (dividerEl) dividerEl.style.display = "none";
-        if (actionsEl) actionsEl.style.display = "none";
-      }
-    }
-  }
-
-  openHostelTab(hostelId, activate = true) {
-    if (!hostelId) return;
-    
-    // Find hostel from hostels or owner properties or custom properties
-    let hostel = this.hostels.find(h => String(h.id) === String(hostelId) || (h.name && h.name.toLowerCase() === String(hostelId).toLowerCase()));
-    if (!hostel && this.ownerProperties) {
-      hostel = this.ownerProperties.find(h => String(h.id) === String(hostelId) || (h.name && h.name.toLowerCase() === String(hostelId).toLowerCase()));
-    }
-    if (!hostel) {
-      const customProps = JSON.parse(localStorage.getItem("hostelkhojo_custom_properties") || "[]");
-      hostel = customProps.find(h => String(h.id) === String(hostelId) || (h.name && h.name.toLowerCase() === String(hostelId).toLowerCase()));
-    }
-
-    if (!hostel) {
-      this.showToast("Hostel not found or has been removed.", "warning");
-      return;
-    }
-
-    // Add to open tabs if not already present
-    if (!Array.isArray(this.openHostelTabs)) this.openHostelTabs = [];
-    const existingIdx = this.openHostelTabs.findIndex(t => String(t.id) === String(hostel.id));
-    if (existingIdx === -1) {
-      this.openHostelTabs.push({
-        id: hostel.id,
-        name: hostel.name,
-        gender: hostel.gender || "Boys",
-        rent: hostel.rent || 8000
-      });
-      localStorage.setItem("hostelkhojo_open_hostel_tabs", JSON.stringify(this.openHostelTabs));
-    }
-
-    this.renderWorkspaceTabs();
-
-    if (activate) {
-      this.switchHostelTab(hostel.id);
-    }
-  }
-
-  switchHostelTab(hostelId) {
-    let hostel = this.hostels.find(h => String(h.id) === String(hostelId) || (h.name && h.name.toLowerCase() === String(hostelId).toLowerCase()));
-    if (!hostel && this.ownerProperties) {
-      hostel = this.ownerProperties.find(h => String(h.id) === String(hostelId) || (h.name && h.name.toLowerCase() === String(hostelId).toLowerCase()));
-    }
-    if (!hostel) {
-      const customProps = JSON.parse(localStorage.getItem("hostelkhojo_custom_properties") || "[]");
-      hostel = customProps.find(h => String(h.id) === String(hostelId) || (h.name && h.name.toLowerCase() === String(hostelId).toLowerCase()));
-    }
-
-    if (!hostel) {
-      this.showToast("Hostel property not found.", "warning");
-      this.switchTab("hostels");
-      return;
-    }
-
-    this.activeHostelTabId = hostel.id;
-
-    // Ensure tab exists in openHostelTabs
-    if (!Array.isArray(this.openHostelTabs)) this.openHostelTabs = [];
-    if (!this.openHostelTabs.some(t => String(t.id) === String(hostel.id))) {
-      this.openHostelTabs.push({
-        id: hostel.id,
-        name: hostel.name,
-        gender: hostel.gender || "Boys",
-        rent: hostel.rent || 8000
-      });
-      localStorage.setItem("hostelkhojo_open_hostel_tabs", JSON.stringify(this.openHostelTabs));
-    }
-
-    // Hide all main tab contents
-    document.querySelectorAll(".tab-content").forEach(t => t.style.display = "none");
-    document.querySelectorAll(".nav-link").forEach(l => l.classList.remove("active"));
-    document.querySelectorAll(".workspace-tab").forEach(l => l.classList.remove("active"));
-    document.querySelectorAll(".mobile-nav-item").forEach(m => m.classList.remove("active"));
-
-    // Render & display dedicated hostel tab view
-    this.renderDedicatedHostelView(hostel.id);
-    const hostelTabView = document.getElementById("tab-hostel-view");
-    if (hostelTabView) hostelTabView.style.display = "block";
-
-    this.renderWorkspaceTabs();
-
-    // Update URL hash
-    try {
-      window.location.hash = "hostel-" + encodeURIComponent(hostel.id);
-    } catch (e) {}
-
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
-  closeHostelTab(event, hostelId) {
-    if (event) {
-      event.stopPropagation();
-      event.preventDefault();
-    }
-
-    if (!Array.isArray(this.openHostelTabs)) this.openHostelTabs = [];
-    this.openHostelTabs = this.openHostelTabs.filter(t => String(t.id) !== String(hostelId));
-    localStorage.setItem("hostelkhojo_open_hostel_tabs", JSON.stringify(this.openHostelTabs));
-
-    if (String(this.activeHostelTabId) === String(hostelId)) {
-      if (this.openHostelTabs.length > 0) {
-        const nextTab = this.openHostelTabs[this.openHostelTabs.length - 1];
-        this.switchHostelTab(nextTab.id);
-      } else {
-        this.activeHostelTabId = null;
-        this.switchTab("hostels");
-      }
-    } else {
-      this.renderWorkspaceTabs();
-    }
-  }
-
-  closeAllHostelTabs() {
-    this.openHostelTabs = [];
-    this.activeHostelTabId = null;
-    localStorage.removeItem("hostelkhojo_open_hostel_tabs");
-    this.renderWorkspaceTabs();
-    this.switchTab("hostels");
-    this.showToast("Closed all open hostel tabs.", "info");
-  }
-
-  copyHostelShareLink(hostelId) {
-    const url = `${window.location.origin}${window.location.pathname}#hostel-${encodeURIComponent(hostelId)}`;
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(url).then(() => {
-        this.showToast("Hostel tab link copied to clipboard! 📋", "success");
-      }).catch(() => {
-        this.showToast(`Shareable Link: ${url}`, "info");
-      });
-    } else {
-      this.showToast(`Shareable Link: ${url}`, "info");
-    }
-  }
-
-  /* DEDICATED FULL-PAGE HOSTEL VIEW RENDERER */
-  renderDedicatedHostelView(id) {
-    const hostelTabView = document.getElementById("tab-hostel-view");
-    if (!hostelTabView) return;
-
-    let h = this.hostels.find(item => String(item.id) === String(id) || (item.name && item.name.toLowerCase() === String(id).toLowerCase()));
-    if (!h && this.ownerProperties) {
-      h = this.ownerProperties.find(item => String(item.id) === String(id) || (item.name && item.name.toLowerCase() === String(id).toLowerCase()));
-    }
-    if (!h) {
-      const customProps = JSON.parse(localStorage.getItem("hostelkhojo_custom_properties") || "[]");
-      h = customProps.find(item => String(item.id) === String(id) || (item.name && item.name.toLowerCase() === String(id).toLowerCase()));
-    }
-    if (!h) return;
-
-    const isSaved = this.savedIds.includes(h.id);
-    const isComparing = this.comparisonIds.includes(h.id);
-    const genderClass = (h.gender || 'Boys').toLowerCase().replace(/[^a-z]/g, '');
-
-    const galleryItems = [
-      { label: "Hostel Exterior", icon: "fa-building", img: h.imageMain || 'assets/images/exterior1.png' },
-      { label: "Rooms & Study", icon: "fa-bed", img: h.imageSingle || 'assets/images/room_single.png' },
-      { label: "Washroom & Bath", icon: "fa-shower", img: h.imageWashroom || h.imageShared || 'assets/images/room_shared.png' },
-      { label: "Mess & Dining", icon: "fa-utensils", img: h.imageMess || 'assets/images/mess.png' }
-    ];
-
-    const safeId = String(h.id).replace(/'/g, "\\'");
-    const safeName = this.escapeHtml(h.name);
-    const safeAddress = this.escapeHtml(h.address || h.city || "Campus Area");
-    const safeUniversity = this.escapeHtml(h.university || "Nearby Campus");
-
-    hostelTabView.innerHTML = `
-      <!-- TOP BREADCRUMB & QUICK ACTIONS BAR -->
-      <div class="hostel-tab-breadcrumb-bar">
-        <div class="hostel-breadcrumbs">
-          <a onclick="app.switchTab('hostels')"><i class="fa-solid fa-arrow-left"></i> Explore Hostels</a>
-          <span>/</span>
-          <span>${this.escapeHtml(h.city || 'India')}</span>
-          <span>/</span>
-          <strong style="color: var(--text-primary);">${safeName}</strong>
-        </div>
-
-        <div class="hostel-tab-quick-actions">
-          <button class="btn btn-outline btn-sm ${isSaved ? 'active' : ''}" onclick="app.toggleSave('${safeId}')" id="page-save-btn-${h.id}">
-            <i class="fa-solid fa-bookmark"></i> ${isSaved ? 'Saved' : 'Save'}
-          </button>
-          <button class="btn btn-outline btn-sm ${isComparing ? 'active' : ''}" onclick="app.toggleCompare('${safeId}')">
-            <i class="fa-solid fa-scale-balanced"></i> ${isComparing ? 'Comparing' : 'Compare'}
-          </button>
-          <button class="btn btn-outline btn-sm" onclick="app.copyHostelShareLink('${safeId}')" title="Copy shareable link to this hostel">
-            <i class="fa-solid fa-share-nodes"></i> Share Tab
-          </button>
-          <a href="https://wa.me/919876543210?text=${encodeURIComponent('Hi, I am interested in visiting ' + h.name + ' on HostelKhojo. Please share room availability.')}" target="_blank" class="btn btn-sm" style="background: #25D366; color: white; border: none; font-weight: 600;">
-            <i class="fa-brands fa-whatsapp"></i> WhatsApp Warden
-          </a>
-        </div>
-      </div>
-
-      <!-- MAIN HOSTEL PAGE GRID -->
-      <div class="hostel-page-grid">
-        
-        <!-- LEFT / MAIN CONTENT COLUMN -->
-        <div class="hostel-main-column">
-          
-          <!-- HERO PHOTO GALLERY (EXTERIOR, ROOMS, WASHROOM, MESS) -->
-          <div class="hostel-page-card" style="padding: 16px;">
-            <div class="hostel-hero-gallery-wrap">
-              <img id="tab-active-hero-img" src="${galleryItems[0].img}" alt="${safeName}" class="hostel-hero-gallery-main" />
-              <div id="tab-active-hero-badge" class="hostel-hero-badge-overlay">
-                <i class="fa-solid ${galleryItems[0].icon}"></i> ${galleryItems[0].label}
-              </div>
-            </div>
-            
-            <div class="hostel-thumbs-row">
-              ${galleryItems.map((item, idx) => `
-                <div class="hostel-thumb-item ${idx === 0 ? 'active' : ''}" onclick="app.switchDetailHeroImage(this, '${item.img}', '${item.label}', '${item.icon}')">
-                  <img src="${item.img}" alt="${item.label}" />
-                  <div class="hostel-thumb-title">
-                    <i class="fa-solid ${item.icon}"></i> ${item.label}
-                  </div>
-                </div>
-              `).join('')}
-            </div>
-          </div>
-
-          <!-- PROPERTY HEADER & DETAILS CARD -->
-          <div class="hostel-page-card">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; margin-bottom: 18px;">
-              <div>
-                <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px; flex-wrap: wrap;">
-                  <span class="badge-gender ${genderClass}">${h.gender}</span>
-                  ${h.verified ? `<span class="badge-verified"><i class="fa-solid fa-circle-check"></i> Verified Stay</span>` : ''}
-                  <span class="badge" style="background: var(--surface-container); color: var(--text-secondary);"><i class="fa-solid fa-shield-halved"></i> 100% Deposit Safe</span>
-                  <span class="badge badge-accent"><i class="fa-solid fa-bolt"></i> Zero Brokerage</span>
-                </div>
-                <h1 style="font-size: 1.85rem; font-weight: 800; color: var(--text-primary); margin-bottom: 6px;">${safeName}</h1>
-                <p class="text-muted" style="font-size: 0.95rem; margin: 0;">
-                  <i class="fa-solid fa-location-dot" style="color: var(--danger-red);"></i> ${safeAddress} • <strong>${h.distance} km</strong> from ${safeUniversity}
-                </p>
-              </div>
-              <div style="text-align: right;">
-                <div style="font-size: 2rem; font-weight: 800; color: var(--primary);">₹${Number(h.rent).toLocaleString('en-IN')}<span style="font-size: 0.95rem; color: var(--text-muted); font-weight: 500;">/mo</span></div>
-                <div class="card-rating" style="justify-content: flex-end; margin-top: 4px; font-size: 0.92rem;">
-                  <i class="fa-solid fa-star" style="color: var(--warning-amber);"></i> <strong>${h.rating || 4.8}</strong> (${h.reviewsCount || (h.reviews ? h.reviews.length : 12)} student reviews)
-                </div>
-              </div>
-            </div>
-
-            <!-- KEY HIGHLIGHTS & WARDEN POLICIES GRID -->
-            <div class="hostel-specs-grid">
-              <div class="spec-item">
-                <span class="spec-label">Gate Curfew</span>
-                <span class="spec-value"><i class="fa-solid fa-clock" style="color: var(--warning-amber);"></i> ${h.curfew || '10:30 PM'}</span>
-              </div>
-              <div class="spec-item">
-                <span class="spec-label">Security Deposit</span>
-                <span class="spec-value"><i class="fa-solid fa-shield-halved" style="color: var(--success-green);"></i> ₹${Number(h.deposit || 5000).toLocaleString('en-IN')} (Refundable)</span>
-              </div>
-              <div class="spec-item">
-                <span class="spec-label">Registration Fee</span>
-                <span class="spec-value"><i class="fa-solid fa-file-invoice-dollar" style="color: var(--primary);"></i> ${h.registrationFee && h.registrationFee > 0 ? '₹' + Number(h.registrationFee).toLocaleString('en-IN') : '₹0 (Free)'}</span>
-              </div>
-              <div class="spec-item">
-                <span class="spec-label">Notice Period</span>
-                <span class="spec-value"><i class="fa-solid fa-calendar-day" style="color: var(--secondary);"></i> 30 Days</span>
-              </div>
-            </div>
-
-            <!-- ABOUT PROPERTY DESCRIPTION -->
-            <div style="margin-bottom: 24px;">
-              <h3 style="font-size: 1.15rem; margin-bottom: 8px;"><i class="fa-solid fa-circle-info" style="color: var(--primary);"></i> About Property</h3>
-              <p style="color: var(--text-secondary); line-height: 1.65; font-size: 0.94rem; margin: 0;">${this.escapeHtml(h.description || "Modern student hostel accommodation featuring complete security, high-speed Wi-Fi, study spaces, and nutritious meals near university campus.")}</p>
-            </div>
-
-            <!-- ROOM OCCUPANCY & TRANSPARENT PRICING CARDS -->
-            <div style="margin-bottom: 24px;">
-              <h3 style="font-size: 1.15rem; margin-bottom: 6px;"><i class="fa-solid fa-bed" style="color: var(--primary);"></i> Room Occupancy & Pricing</h3>
-              <p class="text-muted" style="font-size: 0.84rem; margin-bottom: 12px;">Choose your preferred sharing option. All rooms include private study table, wardrobe, and comfortable mattress.</p>
-              
-              <div class="hostel-occupancy-grid">
-                ${(h.roomSharing || ['1 Occupancy', '2 Occupancy']).map(type => {
-                  let exactRent = (h.occupancyPricing && h.occupancyPricing[type]) ? h.occupancyPricing[type] : null;
-                  if (!exactRent) {
-                    let multiplier = 1.0;
-                    const tLower = String(type).toLowerCase();
-                    if (tLower.includes('1') || tLower.includes('single')) multiplier = 1.35;
-                    else if (tLower.includes('2') || tLower.includes('double')) multiplier = 1.0;
-                    else if (tLower.includes('3') || tLower.includes('triple')) multiplier = 0.8;
-                    else if (tLower.includes('4') || tLower.includes('quad')) multiplier = 0.65;
-                    exactRent = Math.round(h.rent * multiplier);
-                  }
-                  return `
-                    <div class="occupancy-pricing-card">
-                      <div class="occ-title">${type}</div>
-                      <div class="occ-price">₹${Number(exactRent).toLocaleString('en-IN')}<span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">/mo</span></div>
-                      <div class="occ-features">
-                        <i class="fa-solid fa-check" style="color: var(--success-green);"></i> Furnished Bed<br/>
-                        <i class="fa-solid fa-check" style="color: var(--success-green);"></i> Study Desk & Lamp<br/>
-                        <i class="fa-solid fa-check" style="color: var(--success-green);"></i> Dedicated Wardrobe
-                      </div>
-                      <button class="btn btn-outline btn-sm btn-block" onclick="document.getElementById('booking-occ-select').value='${type}'; document.getElementById('booking-visit-phone').focus();">
-                        Select This Room
-                      </button>
-                    </div>
-                  `;
-                }).join('')}
-              </div>
-            </div>
-
-            <!-- 4-TIME HOMESTYLE MESS MENU -->
-            ${h.messMenu ? `
-              <div style="margin-bottom: 24px;">
-                <h3 style="font-size: 1.15rem; margin-bottom: 12px;"><i class="fa-solid fa-utensils" style="color: var(--warning-amber);"></i> 4-Time Homestyle Mess Menu</h3>
-                <div class="mess-tabs-nav">
-                  <button class="mess-tab-btn active" onclick="app.switchTabMessPane(this, 'page-mess-bf')"><i class="fa-solid fa-mug-hot"></i> Breakfast</button>
-                  <button class="mess-tab-btn" onclick="app.switchTabMessPane(this, 'page-mess-lunch')"><i class="fa-solid fa-bowl-rice"></i> Lunch</button>
-                  <button class="mess-tab-btn" onclick="app.switchTabMessPane(this, 'page-mess-snacks')"><i class="fa-solid fa-cookie-bite"></i> Snacks</button>
-                  <button class="mess-tab-btn" onclick="app.switchTabMessPane(this, 'page-mess-dinner')"><i class="fa-solid fa-utensils"></i> Dinner</button>
-                </div>
-                <div class="mess-menu-content">
-                  <div id="page-mess-bf" class="mess-pane-content">
-                    <i class="fa-solid fa-mug-hot" style="color: var(--warning-amber); font-size: 1.4rem;"></i>
-                    <div>
-                      <strong>Breakfast (7:30 AM - 9:30 AM):</strong><br/>
-                      ${this.escapeHtml(h.messMenu.breakfast || 'Puri Bhaji / Stuffed Parathas, Boiled Eggs / Sprouts, Fresh Milk & Hot Chai')}
-                    </div>
-                  </div>
-                  <div id="page-mess-lunch" class="mess-pane-content" style="display:none;">
-                    <i class="fa-solid fa-bowl-rice" style="color: var(--success-green); font-size: 1.4rem;"></i>
-                    <div>
-                      <strong>Lunch (12:30 PM - 2:30 PM):</strong><br/>
-                      ${this.escapeHtml(h.messMenu.lunch || 'Full Thali: Dal Tadka, Seasonal Veg, Paneer/Egg Curry, Jeera Rice, Fresh Rotis & Salad')}
-                    </div>
-                  </div>
-                  <div id="page-mess-snacks" class="mess-pane-content" style="display:none;">
-                    <i class="fa-solid fa-cookie-bite" style="color: var(--secondary); font-size: 1.4rem;"></i>
-                    <div>
-                      <strong>Evening Snacks (5:00 PM - 6:30 PM):</strong><br/>
-                      ${this.escapeHtml(h.messMenu.snacks || 'Samosa / Poha / Bread Pakora with Green Chutney & Masala Chai')}
-                    </div>
-                  </div>
-                  <div id="page-mess-dinner" class="mess-pane-content" style="display:none;">
-                    <i class="fa-solid fa-utensils" style="color: var(--primary); font-size: 1.4rem;"></i>
-                    <div>
-                      <strong>Dinner (8:00 PM - 10:00 PM):</strong><br/>
-                      ${this.escapeHtml(h.messMenu.dinner || 'Special North Indian / South Indian Dinner, Dal Makhani, Paneer Butter Masala, Gulab Jamun & Ice Cream')}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ` : ''}
-
-            <!-- INCLUDED AMENITIES & FACILITIES -->
-            <div style="margin-bottom: 24px;">
-              <h3 style="font-size: 1.15rem; margin-bottom: 12px;"><i class="fa-solid fa-wand-magic-sparkles" style="color: var(--secondary);"></i> Included Amenities & Facilities</h3>
-              <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-                ${(h.amenities || ["Wi-Fi", "4-Time Mess", "AC", "Daily Housekeeping", "24/7 Security", "Laundry"]).map(a => `
-                  <span class="amenity-chip" style="padding: 7px 14px; font-size: 0.88rem;">
-                    <i class="fa-solid fa-circle-check" style="color: var(--success-green);"></i> ${this.escapeHtml(a)}
-                  </span>
-                `).join('')}
-              </div>
-            </div>
-
-            <!-- LOCATION & GOOGLE MAPS CARD -->
-            <div style="margin-bottom: 24px;">
-              <h3 style="font-size: 1.15rem; margin-bottom: 8px;"><i class="fa-solid fa-map-location-dot" style="color: var(--danger-red);"></i> Campus Location & Neighborhood</h3>
-              <p class="text-muted" style="font-size: 0.88rem; margin-bottom: 12px;">
-                <i class="fa-solid fa-building-columns"></i> <strong>${h.distance} km</strong> to ${safeUniversity} • Safe campus residential colony with 24/7 CCTV surveillance.
-              </p>
-              
-              <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-                <button class="btn btn-outline" onclick="app.openGoogleDirections(${h.lat || 28.6922}, ${h.lng || 77.2100}, '${encodeURIComponent(h.name)}')" style="color: #4285F4; border-color: #4285F4; font-weight: 600;">
-                  <i class="fa-solid fa-diamond-turn-right" style="color: #ea4335;"></i> Get Driving Directions in Google Maps
-                </button>
-                <a href="${h.mapLink || `https://www.google.com/maps?q=${h.lat || 28.6922},${h.lng || 77.2100}`}" target="_blank" class="btn btn-outline" style="font-weight: 600;">
-                  <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Coordinates
-                </a>
-              </div>
-            </div>
-
-            <!-- VERIFIED STUDENT REVIEWS & WRITE REVIEW -->
-            <div>
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
-                <h3 style="font-size: 1.15rem; margin: 0;"><i class="fa-solid fa-comments" style="color: var(--primary);"></i> Student Reviews & Ratings</h3>
-                <span class="badge badge-success"><i class="fa-solid fa-shield-check"></i> 100% Genuine Student Reviews</span>
-              </div>
-
-              <div class="reviews-grid-list">
-                ${(h.reviews && h.reviews.length > 0) ? h.reviews.map(r => `
-                  <div class="review-item-card">
-                    <div class="review-item-header">
-                      <div class="review-item-author">${this.escapeHtml(r.name)} <span class="review-item-meta">• ${this.escapeHtml(r.major || 'Student')}</span></div>
-                      <div class="card-rating"><i class="fa-solid fa-star" style="color: var(--warning-amber);"></i> ${r.rating || 5}</div>
-                    </div>
-                    <p style="font-size: 0.88rem; color: var(--text-secondary); margin: 0; line-height: 1.5;">&ldquo;${this.escapeHtml(r.comment)}&rdquo;</p>
-                  </div>
-                `).join('') : `
-                  <div class="review-item-card" style="text-align: center; color: var(--text-muted); padding: 24px;">
-                    <i class="fa-solid fa-comment-dots" style="font-size: 1.6rem; margin-bottom: 8px; display: block; color: var(--primary);"></i>
-                    Be the first student to review <strong>${safeName}</strong>!
-                  </div>
-                `}
-              </div>
-
-              <!-- WRITE A REVIEW FORM -->
-              <div class="write-review-box">
-                <h4 style="font-size: 1rem; font-weight: 700; margin-bottom: 6px;"><i class="fa-solid fa-pen"></i> Leave a Student Review</h4>
-                <p class="text-muted" style="font-size: 0.82rem; margin-bottom: 12px;">Share your stay experience regarding food, Wi-Fi speed, warden, and room cleanliness.</p>
-                
-                <form onsubmit="app.submitHostelReview(event, '${safeId}')">
-                  <div style="display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap;">
-                    <div style="flex: 1; min-width: 200px;">
-                      <input type="text" id="review-author-name" placeholder="Your Name (e.g. Rahul Sharma)" class="form-control" value="${this.currentUser ? this.currentUser.full_name || '' : ''}" required />
-                    </div>
-                    <div style="flex: 1; min-width: 200px;">
-                      <input type="text" id="review-author-major" placeholder="Course / College (e.g. DU North Campus B.Com)" class="form-control" />
-                    </div>
-                  </div>
-
-                  <div style="margin-bottom: 10px;">
-                    <label style="font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 4px;">Overall Rating:</label>
-                    <div class="star-rating-select" id="star-rating-picker">
-                      <span class="star-icon active" onclick="app.selectReviewStarRating(1)"><i class="fa-solid fa-star"></i></span>
-                      <span class="star-icon active" onclick="app.selectReviewStarRating(2)"><i class="fa-solid fa-star"></i></span>
-                      <span class="star-icon active" onclick="app.selectReviewStarRating(3)"><i class="fa-solid fa-star"></i></span>
-                      <span class="star-icon active" onclick="app.selectReviewStarRating(4)"><i class="fa-solid fa-star"></i></span>
-                      <span class="star-icon active" onclick="app.selectReviewStarRating(5)"><i class="fa-solid fa-star"></i></span>
-                    </div>
-                    <input type="hidden" id="review-rating-val" value="5" />
-                  </div>
-
-                  <div style="margin-bottom: 12px;">
-                    <textarea id="review-comment" placeholder="Write your review here... (e.g. Great homestyle food, fast Wi-Fi and safe campus environment!)" class="form-control" rows="3" required></textarea>
-                  </div>
-
-                  <button type="submit" class="btn btn-primary btn-sm">
-                    <i class="fa-solid fa-paper-plane"></i> Submit Review
-                  </button>
-                </form>
-              </div>
-            </div>
-
-          </div>
-
-        </div>
-
-        <!-- RIGHT SIDEBAR (STICKY VISIT BOOKING CARD) -->
-        <div class="hostel-side-column">
-          <div class="hostel-sticky-booking-sidebar">
-            <div class="booking-sidebar-header">
-              <span style="font-size: 0.78rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted); display: block;">Starting From</span>
-              <div class="booking-price-tag">
-                ₹${Number(h.rent).toLocaleString('en-IN')}<span>/month</span>
-              </div>
-              <span class="badge badge-success" style="margin-top: 6px;"><i class="fa-solid fa-circle-check"></i> Instant Warden Confirmation</span>
-            </div>
-
-            <h4 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 4px; color: var(--text-primary);">
-              <i class="fa-solid fa-calendar-check" style="color: var(--primary);"></i> Schedule Free Campus Visit
-            </h4>
-            <p class="text-muted" style="font-size: 0.8rem; margin-bottom: 16px;">Zero brokerage fee & visit without advance deposit.</p>
-
-            <form onsubmit="app.handleBookingSubmit(event, '${safeId}')">
-              <div class="form-group">
-                <label>Room Sharing Choice</label>
-                <select id="booking-occ-select" class="form-control" required>
-                  ${(h.roomSharing || ['1 Occupancy', '2 Occupancy']).map(s => {
-                    const pr = (h.occupancyPricing && h.occupancyPricing[s]) ? ` (₹${Number(h.occupancyPricing[s]).toLocaleString('en-IN')}/mo)` : '';
-                    return `<option value="${s}">${s}${pr}</option>`;
-                  }).join('')}
-                </select>
-              </div>
-
-              <div class="form-group">
-                <label>Preferred Visit Date</label>
-                <input type="date" class="form-control" required value="${new Date(Date.now() + 86400000).toISOString().split('T')[0]}" />
-              </div>
-
-              <div class="form-group">
-                <label>Student WhatsApp Number</label>
-                <input type="tel" id="booking-visit-phone" placeholder="+91 98765 43210" class="form-control" value="${this.currentUser ? this.currentUser.phone || '' : ''}" required />
-              </div>
-
-              <button type="submit" class="btn btn-accent btn-block btn-lg" style="margin-top: 16px;">
-                <i class="fa-solid fa-paper-plane"></i> Confirm Free Visit
-              </button>
-
-              <button type="button" class="btn btn-outline btn-block" onclick="app.openGoogleDirections(${h.lat || 28.6922}, ${h.lng || 77.2100}, '${encodeURIComponent(h.name)}')"
-                style="margin-top: 10px; border-color: #4285F4; color: #4285F4; font-weight: 600;">
-                <i class="fa-solid fa-map-location-dot" style="color: #ea4335;"></i> Open in Google Maps
-              </button>
-
-              <div style="margin-top: 16px; padding-top: 16px; border-top: 1px dashed var(--border-color); text-align: center;">
-                <p class="text-muted font-xs" style="margin-bottom: 8px;">Looking for roommates for this hostel?</p>
-                <button type="button" class="btn btn-outline btn-sm btn-block" onclick="app.switchTab('roommates')">
-                  <i class="fa-solid fa-user-group"></i> Find Compatible Roommates
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-
-      </div>
-    `;
-  }
-
-  /* HOSTEL DETAIL MODAL (LEGACY / DIRECT MODAL COMPATIBILITY) */
   openHostelDetail(id) {
-    this.openHostelTab(id, true);
-
     const h = this.hostels.find(item => String(item.id) === String(id) || (item.name && item.name.toLowerCase() === String(id).toLowerCase()));
     if (!h) return;
 
@@ -2516,16 +1952,21 @@ class HostelKhojoApp {
       { label: "Mess & Dining", icon: "fa-utensils", img: h.imageMess || 'assets/images/mess.png' }
     ];
 
+    const safeName = this.escapeHtml(h.name);
+    const safeAddress = this.escapeHtml(h.address || h.city);
+    const safeUniversity = this.escapeHtml(h.university || 'Campus');
+    const safeId = this.escapeHtml(h.id);
+
     modalContent.innerHTML = `
       <div class="modal-detail-layout">
         <div class="detail-content-col">
           <div class="detail-gallery-main" style="position: relative;">
-            <img id="detail-active-img" src="${galleryItems[0].img}" alt="${h.name}" />
+            <img id="detail-active-img" src="${galleryItems[0].img}" alt="${safeName}" />
             <span id="detail-active-label" class="badge" style="position: absolute; bottom: 12px; left: 12px; background: rgba(15, 23, 42, 0.8); color: #fff; backdrop-filter: blur(8px); padding: 5px 12px; font-size: 0.82rem; border-radius: 6px;">
               <i class="fa-solid ${galleryItems[0].icon}"></i> ${galleryItems[0].label}
             </span>
           </div>
-          <div class="detail-thumbs-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+          <div class="detail-thumbs-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 8px;">
             ${galleryItems.map((item, idx) => `
               <div class="detail-thumb ${idx === 0 ? 'active' : ''}" onclick="app.switchDetailImage(this, '${item.img}', '${item.label}', '${item.icon}')" style="cursor: pointer; position: relative;">
                 <img src="${item.img}" alt="${item.label}" style="height: 65px; width: 100%; object-fit: cover; border-radius: 6px;" />
@@ -2535,35 +1976,159 @@ class HostelKhojoApp {
               </div>
             `).join('')}
           </div>
-          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; margin-top: 14px;">
+
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 18px; flex-wrap: wrap; margin-top: 16px;">
             <div>
-              <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
+              <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px; flex-wrap: wrap;">
                 <span class="badge-gender ${genderClass}">${h.gender}</span>
                 ${h.verified ? `<span class="badge-verified"><i class="fa-solid fa-circle-check"></i> Verified Stay</span>` : ''}
               </div>
-              <h2 style="font-size: 1.6rem; font-weight: 800; color: var(--text-primary); margin-bottom: 4px;">${h.name}</h2>
-              <p class="text-muted" style="font-size: 0.9rem;">
-                <i class="fa-solid fa-location-dot" style="color: var(--danger-red);"></i> ${h.address || h.city} • <strong>${h.distance} km</strong> to ${h.university || 'Campus'}
+              <h2 style="font-size: 1.55rem; font-weight: 800; color: var(--text-primary); margin-bottom: 4px;">${safeName}</h2>
+              <p class="text-muted" style="font-size: 0.88rem; margin: 0;">
+                <i class="fa-solid fa-location-dot" style="color: var(--danger-red);"></i> ${safeAddress} • <strong>${h.distance} km</strong> to ${safeUniversity}
               </p>
             </div>
             <div style="text-align: right;">
-              <div style="font-size: 1.8rem; font-weight: 800; color: var(--primary);">₹${Number(h.rent).toLocaleString('en-IN')}<span style="font-size: 0.9rem; color: var(--text-muted); font-weight: 500;">/mo</span></div>
+              <div style="font-size: 1.75rem; font-weight: 800; color: var(--primary);">₹${Number(h.rent).toLocaleString('en-IN')}<span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">/mo</span></div>
+              <div class="card-rating" style="justify-content: flex-end; margin-top: 2px;"><i class="fa-solid fa-star" style="color: var(--warning-amber);"></i> ${h.rating || 4.8} (${h.reviewsCount || 12} reviews)</div>
             </div>
+          </div>
+
+          <!-- HIGHLIGHT SPECS -->
+          <div class="hostel-specs-grid" style="margin-bottom: 18px;">
+            <div class="spec-item">
+              <span class="spec-label">Gate Curfew</span>
+              <span class="spec-value"><i class="fa-solid fa-clock" style="color: var(--warning-amber);"></i> ${h.curfew || '10:30 PM'}</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-label">Security Deposit</span>
+              <span class="spec-value"><i class="fa-solid fa-shield-halved" style="color: var(--success-green);"></i> ₹${Number(h.deposit || 5000).toLocaleString('en-IN')}</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-label">Notice Period</span>
+              <span class="spec-value"><i class="fa-solid fa-calendar-day" style="color: var(--primary);"></i> 30 Days</span>
+            </div>
+          </div>
+
+          <!-- DESCRIPTION -->
+          <div style="margin-bottom: 18px;">
+            <h4 style="font-size: 1rem; margin-bottom: 6px;"><i class="fa-solid fa-circle-info" style="color: var(--primary);"></i> About Property</h4>
+            <p style="color: var(--text-secondary); line-height: 1.6; font-size: 0.88rem; margin: 0;">${this.escapeHtml(h.description || "Well-maintained student hostel accommodation with high-speed Wi-Fi, nutritious food, study desk, and safe environment.")}</p>
+          </div>
+
+          <!-- ROOM SHARING & PRICING -->
+          <div style="margin-bottom: 18px;">
+            <h4 style="font-size: 1rem; margin-bottom: 8px;"><i class="fa-solid fa-bed" style="color: var(--primary);"></i> Room Sharing & Pricing</h4>
+            <div class="hostel-occupancy-grid">
+              ${(h.roomSharing || ['1 Occupancy', '2 Occupancy']).map(type => {
+                let exactRent = (h.occupancyPricing && h.occupancyPricing[type]) ? h.occupancyPricing[type] : Math.round(h.rent * (type.includes('1') ? 1.3 : 1.0));
+                return `
+                  <div class="occupancy-pricing-card">
+                    <div class="occ-title">${type}</div>
+                    <div class="occ-price">₹${Number(exactRent).toLocaleString('en-IN')}<span style="font-size:0.75rem; color:var(--text-muted);">/mo</span></div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+
+          <!-- AMENITIES -->
+          <div style="margin-bottom: 18px;">
+            <h4 style="font-size: 1rem; margin-bottom: 8px;"><i class="fa-solid fa-wand-magic-sparkles" style="color: var(--secondary);"></i> Included Amenities</h4>
+            <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+              ${(h.amenities || ["Wi-Fi", "4-Time Mess", "AC", "Daily Housekeeping", "24/7 Security"]).map(a => `
+                <span class="amenity-chip" style="padding: 6px 12px; font-size: 0.82rem;">
+                  <i class="fa-solid fa-circle-check" style="color: var(--success-green);"></i> ${this.escapeHtml(a)}
+                </span>
+              `).join('')}
+            </div>
+          </div>
+
+          <!-- MESS FOOD SCHEDULE -->
+          ${h.messMenu ? `
+            <div style="margin-bottom: 18px;">
+              <h4 style="font-size: 1rem; margin-bottom: 8px;"><i class="fa-solid fa-utensils" style="color: var(--primary);"></i> Weekly Mess Menu</h4>
+              <div class="mess-tabs-nav" style="margin-bottom: 8px;">
+                <button type="button" class="mess-tab-btn active" onclick="app.switchTabMessPane(this, 'modal-mess-breakfast')">Breakfast</button>
+                <button type="button" class="mess-tab-btn" onclick="app.switchTabMessPane(this, 'modal-mess-lunch')">Lunch</button>
+                <button type="button" class="mess-tab-btn" onclick="app.switchTabMessPane(this, 'modal-mess-snacks')">Snacks</button>
+                <button type="button" class="mess-tab-btn" onclick="app.switchTabMessPane(this, 'modal-mess-dinner')">Dinner</button>
+              </div>
+              <div class="mess-tab-content-wrap">
+                <div id="modal-mess-breakfast" class="mess-pane-content">
+                  <i class="fa-solid fa-mug-hot" style="color: var(--warning-amber);"></i> <div><strong>Breakfast (7:30 AM - 9:30 AM):</strong><br/>${this.escapeHtml(h.messMenu.breakfast || 'Puri Bhaji / Paratha / Idli Sambhar & Tea')}</div>
+                </div>
+                <div id="modal-mess-lunch" class="mess-pane-content" style="display:none;">
+                  <i class="fa-solid fa-bowl-rice" style="color: var(--success-green);"></i> <div><strong>Lunch (12:30 PM - 2:30 PM):</strong><br/>${this.escapeHtml(h.messMenu.lunch || 'North/South Indian Thali, Dal, Paneer/Veg Sabzi, Roti, Rice & Curd')}</div>
+                </div>
+                <div id="modal-mess-snacks" class="mess-pane-content" style="display:none;">
+                  <i class="fa-solid fa-cookie-bite" style="color: var(--secondary);"></i> <div><strong>Evening Snacks (5:00 PM - 6:30 PM):</strong><br/>${this.escapeHtml(h.messMenu.snacks || 'Samosa / Poha / Bread Pakora & Masala Chai')}</div>
+                </div>
+                <div id="modal-mess-dinner" class="mess-pane-content" style="display:none;">
+                  <i class="fa-solid fa-utensils" style="color: var(--primary);"></i> <div><strong>Dinner (8:00 PM - 10:00 PM):</strong><br/>${this.escapeHtml(h.messMenu.dinner || 'Special North Indian / South Indian Dinner, Dal Makhani, Paneer Butter Masala & Dessert')}</div>
+                </div>
+              </div>
+            </div>
+          ` : ''}
+
+          <!-- STUDENT REVIEWS -->
+          <div>
+            <h4 style="font-size: 1rem; margin-bottom: 8px;"><i class="fa-solid fa-comments" style="color: var(--primary);"></i> Student Reviews</h4>
+            <div class="reviews-grid-list">
+              ${(h.reviews && h.reviews.length > 0) ? h.reviews.map(r => `
+                <div class="review-item-card">
+                  <div class="review-item-header">
+                    <div class="review-item-author">${this.escapeHtml(r.name)} <span class="review-item-meta">• ${this.escapeHtml(r.major || 'Student')}</span></div>
+                    <div class="card-rating"><i class="fa-solid fa-star" style="color: var(--warning-amber);"></i> ${r.rating || 5}</div>
+                  </div>
+                  <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0; line-height: 1.5;">&ldquo;${this.escapeHtml(r.comment)}&rdquo;</p>
+                </div>
+              `).join('') : `
+                <p class="text-muted font-xs">No reviews yet. Be the first to review!</p>
+              `}
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT / SIDEBAR COLUMN -->
+        <div class="detail-sidebar-col">
+          <div class="booking-sidebar-card">
+            <div style="font-size: 0.78rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted);">Starting From</div>
+            <div style="font-size: 1.8rem; font-weight: 800; color: var(--primary); margin-bottom: 12px;">₹${Number(h.rent).toLocaleString('en-IN')}<span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">/month</span></div>
+
+            <form onsubmit="app.handleBookingSubmit(event, '${safeId}')">
+              <div class="form-group">
+                <label>Room Sharing</label>
+                <select class="form-control" required>
+                  ${(h.roomSharing || ['1 Occupancy', '2 Occupancy']).map(s => `<option value="${s}">${s}</option>`).join('')}
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Preferred Visit Date</label>
+                <input type="date" class="form-control" required value="${new Date(Date.now() + 86400000).toISOString().split('T')[0]}" />
+              </div>
+              <div class="form-group">
+                <label>Student WhatsApp Number</label>
+                <input type="tel" placeholder="+91 98765 43210" class="form-control" value="${this.currentUser ? this.currentUser.phone || '' : ''}" required />
+              </div>
+              <button type="submit" class="btn btn-accent btn-block btn-lg" style="margin-top: 14px;">
+                <i class="fa-solid fa-paper-plane"></i> Schedule Free Visit
+              </button>
+            </form>
+
+            <a href="https://wa.me/919876543210?text=${encodeURIComponent('Hi, I am interested in ' + h.name + ' on HostelKhojo. Please share room availability.')}" target="_blank" class="btn btn-block btn-sm" style="background: #25D366; color: white; border: none; font-weight: 600; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+              <i class="fa-brands fa-whatsapp"></i> Chat with Warden
+            </a>
+
+            <button type="button" class="btn btn-outline btn-block btn-sm" onclick="app.openGoogleDirections(${h.lat || 28.6922}, ${h.lng || 77.2100}, '${encodeURIComponent(h.name)}')" style="margin-top: 8px; border-color: #4285F4; color: #4285F4; font-weight: 600;">
+              <i class="fa-solid fa-diamond-turn-right" style="color: #ea4335;"></i> Google Maps Directions
+            </button>
           </div>
         </div>
       </div>
     `;
-  }
 
-  switchDetailHeroImage(thumbEl, src, label = null, icon = null) {
-    const activeImg = document.getElementById("tab-active-hero-img");
-    if (activeImg) activeImg.src = src;
-    const activeBadge = document.getElementById("tab-active-hero-badge");
-    if (activeBadge && label) {
-      activeBadge.innerHTML = `<i class="fa-solid ${icon || 'fa-camera'}"></i> ${label}`;
-    }
-    document.querySelectorAll(".hostel-thumb-item").forEach(t => t.classList.remove("active"));
-    if (thumbEl) thumbEl.classList.add("active");
+    this.openModal("hostel-detail-modal");
   }
 
   switchTabMessPane(btnEl, paneId) {
@@ -2610,7 +2175,7 @@ class HostelKhojoApp {
         date: "Just now"
       });
       hostel.reviewsCount = (hostel.reviewsCount || 0) + 1;
-      this.renderDedicatedHostelView(hostel.id);
+      this.openHostelDetail(hostel.id);
       this.showToast("Thank you! Your verified student review has been posted! ⭐", "success");
     }
   }
@@ -4384,7 +3949,7 @@ class HostelKhojoApp {
       this.showToast("Admin has removed this property.", "warning");
       return;
     }
-    this.openHostelTab(hostelId, true);
+    this.openHostelDetail(hostelId);
   }
 
   openEditPropertyModal(hostelId) {
@@ -4809,13 +4374,10 @@ class HostelKhojoApp {
     this.loadOwnerDashboardData();
     this.renderUserProfileProperties();
     
-    // Automatically create and open the newly listed/edited hostel tab!
-    this.openHostelTab(newHostelObj.id, true);
-
     if (isCloudSaved) {
-      this.showToast(id ? "Hostel listing updated & tab opened! 🚀" : "New PG/Hostel tab created & published live! 🚀", "success");
+      this.showToast(id ? "Property listing updated live on all devices!" : "New PG/Hostel published live to all devices worldwide!", "success");
     } else {
-      this.showToast(id ? "Hostel listing updated & tab opened!" : "Hostel tab created & saved locally! 🚀", "success");
+      this.showToast("Property saved locally on this browser. Log in as an Owner to sync your listing to all devices worldwide!", "info");
     }
   }
 
@@ -5459,8 +5021,6 @@ class HostelKhojoApp {
         </button>
       `;
     }
-
-    this.renderWorkspaceTabs();
   }
 
   openUserProfileModal() {
@@ -5503,8 +5063,6 @@ class HostelKhojoApp {
 
   /* GENERAL TAB SWITCHER & /user ROUTER */
   switchTab(tabName) {
-    this.activeHostelTabId = null;
-
     if (tabName === "admin") {
       if (!this.currentAdminUser || this.currentAdminUser.role !== "admin") {
         this.openAdminPortal();
@@ -5515,13 +5073,10 @@ class HostelKhojoApp {
       }
       document.querySelectorAll(".tab-content").forEach(t => t.style.display = "none");
       document.querySelectorAll(".nav-link").forEach(l => l.classList.remove("active"));
-      document.querySelectorAll(".workspace-tab").forEach(l => l.classList.remove("active"));
       document.querySelectorAll(".mobile-nav-item").forEach(m => m.classList.remove("active"));
 
-      document.getElementById("wtab-admin")?.classList.add("active");
       const adminTab = document.getElementById("tab-admin");
       if (adminTab) adminTab.style.display = "block";
-      this.renderWorkspaceTabs();
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
@@ -5536,14 +5091,11 @@ class HostelKhojoApp {
       }
       document.querySelectorAll(".tab-content").forEach(t => t.style.display = "none");
       document.querySelectorAll(".nav-link").forEach(l => l.classList.remove("active"));
-      document.querySelectorAll(".workspace-tab").forEach(l => l.classList.remove("active"));
       document.querySelectorAll(".mobile-nav-item").forEach(m => m.classList.remove("active"));
       document.getElementById("mob-nav-owner")?.classList.add("active");
-      document.getElementById("wtab-owner")?.classList.add("active");
 
       const ownerTab = document.getElementById("tab-owner");
       if (ownerTab) ownerTab.style.display = "block";
-      this.renderWorkspaceTabs();
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
@@ -5609,14 +5161,12 @@ class HostelKhojoApp {
 
       document.querySelectorAll(".tab-content").forEach(t => t.style.display = "none");
       document.querySelectorAll(".nav-link").forEach(l => l.classList.remove("active"));
-      document.querySelectorAll(".workspace-tab").forEach(l => l.classList.remove("active"));
       document.querySelectorAll(".mobile-nav-item").forEach(m => m.classList.remove("active"));
 
       this.renderUserProfileProperties();
 
       const userTab = document.getElementById("tab-user");
       if (userTab) userTab.style.display = "block";
-      this.renderWorkspaceTabs();
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
@@ -5632,7 +5182,6 @@ class HostelKhojoApp {
 
     document.querySelectorAll(".tab-content").forEach(t => t.style.display = "none");
     document.querySelectorAll(".nav-link").forEach(l => l.classList.remove("active"));
-    document.querySelectorAll(".workspace-tab").forEach(l => l.classList.remove("active"));
     document.querySelectorAll(".mobile-nav-item").forEach(m => m.classList.remove("active"));
 
     if (tabName === "hostels") {
@@ -5640,20 +5189,15 @@ class HostelKhojoApp {
       if (hTab) hTab.style.display = "block";
       document.getElementById("nav-hostels-btn")?.classList.add("active");
       document.getElementById("mob-nav-hostels")?.classList.add("active");
-      document.getElementById("wtab-hostels")?.classList.add("active");
     } else if (tabName === "roommates") {
       const rmTab = document.getElementById("tab-roommates");
       if (rmTab) rmTab.style.display = "block";
       document.getElementById("nav-roommates-btn")?.classList.add("active");
       document.getElementById("mob-nav-roommates")?.classList.add("active");
-      document.getElementById("wtab-roommates")?.classList.add("active");
     } else if (tabName === "saved") {
       const hTab = document.getElementById("tab-hostels");
       if (hTab) hTab.style.display = "block";
-      document.getElementById("wtab-saved")?.classList.add("active");
     }
-
-    this.renderWorkspaceTabs();
   }
 
   async savePhoneNumber() {
