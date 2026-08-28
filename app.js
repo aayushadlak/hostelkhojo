@@ -399,16 +399,15 @@ class HostelKhojoApp {
       if (layout) layout.className = "explorer-layout split-view";
       if (gridBtn) gridBtn.classList.remove("active");
       if (splitBtn) splitBtn.classList.add("active");
-      setTimeout(() => {
-        if (this.mapProvider === "osm" || this.mapProvider === "google") {
-          this.renderOpenStreetMap();
+      
+      this.renderOpenStreetMap();
+      [50, 150, 300, 600].forEach(delay => {
+        setTimeout(() => {
           if (this.leafletMap) {
             this.leafletMap.invalidateSize();
           }
-        } else {
-          this.renderMapPins();
-        }
-      }, 150);
+        }, delay);
+      });
     } else {
       if (layout) layout.className = "explorer-layout grid-view";
       if (gridBtn) gridBtn.classList.add("active");
