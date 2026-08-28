@@ -179,7 +179,7 @@ class HostelKhojoApp {
       const rawHash = window.location.hash;
       const hId = rawHash.replace(/^#(hostel-|\/hostel\/)/i, "");
       if (hId) {
-        this.openHostelDetail(decodeURIComponent(hId));
+        window.location.replace(`hostel.html?id=${encodeURIComponent(hId)}`);
         return;
       }
     }
@@ -195,6 +195,8 @@ class HostelKhojoApp {
       this.openOwnerPortal();
     } else if (path.includes("/user") || path.includes("/profile") || hash === "#user" || hash === "#profile") {
       this.switchTab("user");
+    } else {
+      this.switchTab("hostels");
     }
   }
 

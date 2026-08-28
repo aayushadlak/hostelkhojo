@@ -759,7 +759,7 @@
       return id ? decodeURIComponent(id) : null;
     }
 
-    // 5. Load Hostel Data
+    // 5. Load Hostel Data (Synchronous local hydration + Async Cloud sync)
     async function loadHostelData() {
       const id = getHostelIdFromUrl();
       if (!id) {
@@ -767,7 +767,7 @@
         return;
       }
 
-      // Check local caches
+      // Step 1: Immediate hydration from local storage cache
       let allHostels = [];
       try {
         ["hostelkhojo_real_properties", "hostelkhojo_custom_properties", "hostelkhojo_owner_properties"].forEach(key => {
@@ -779,70 +779,85 @@
         });
       } catch (e) {}
 
-      // Try fetching cloud backend
+      let h = allHostels.find(item => String(item.id) === String(id) || (item.name && item.name.toLowerCase() === String(id).toLowerCase()));
+
+      const fallbackHostels = [
+        {
+          id: "h_1",
+          name: "Stanza Living - Cambridge House",
+          city: "Delhi",
+          address: "Hudson Lane, GTB Nagar, North Campus, Delhi",
+          university: "Delhi University North Campus",
+          gender: "Boys",
+          rent: 8500,
+          deposit: 5000,
+          registrationFee: 0,
+          curfew: "10:30 PM",
+          distance: 0.4,
+          rating: 4.9,
+          reviewsCount: 24,
+          verified: true,
+          featured: true,
+          lat: 28.6942,
+          lng: 77.2085,
+          imageMain: "assets/images/exterior1.png",
+          imageSingle: "assets/images/room_single.png",
+          imageShared: "assets/images/room_shared.png",
+          imageWashroom: "assets/images/room_shared.png",
+          imageMess: "assets/images/mess.png",
+          description: "Premium student accommodation right in Hudson Lane. Features biometric entry, ultra-fast 300 Mbps Wi-Fi, air conditioning, daily chef-curated 4-time meals, and daily housekeeping.",
+          amenities: ["High-Speed Wi-Fi", "4-Time Mess", "AC Rooms", "Daily Housekeeping", "24/7 Security", "Biometric Entry", "RO Purified Water", "Power Backup", "Laundry Service"],
+          roomSharing: ["1 Occupancy", "2 Occupancy", "3 Occupancy"],
+          occupancyPricing: { "1 Occupancy": 12500, "2 Occupancy": 8500, "3 Occupancy": 6800 },
+          messMenu: {
+            breakfast: "Aloo Paratha / Puri Bhaji / Poha / Idli Sambhar & Fresh Tea/Coffee",
+            lunch: "North/South Indian Thali, Dal Tadka, Paneer/Veg Sabzi, Fresh Roti, Rice & Curd",
+            snacks: "Samosa / Bread Pakora / Poha & Masala Chai",
+            dinner: "Special Dal Makhani, Paneer Butter Masala, Fresh Rotis, Jeera Rice & Gulab Jamun"
+          },
+          reviews: [
+            { name: "Aditya Verma", major: "SRCC B.Com (Hons)", rating: 5, comment: "Best hostel in North Campus! Food is very hygienic and Wi-Fi speed is excellent for online lectures.", date: "2 days ago" },
+            { name: "Rohan Gupta", major: "Hindu College Physics", rating: 5, comment: "Warden is very supportive, and walking distance to college saves lots of commute time.", date: "1 week ago" }
+          ]
+        }
+      ];
+
+      if (!h) {
+        h = fallbackHostels.find(item => String(item.id) === String(id) || (item.name && item.name.toLowerCase() === String(id).toLowerCase()));
+      }
+
+      // If already found locally, render immediately so user sees zero delay!
+      if (h) {
+        currentHostel = h;
+        renderHostelDetails(h);
+      }
+
+      // Step 2: Asynchronously fetch authoritative cloud backend data
       try {
         const res = await fetch("https://hostelkhojo.onrender.com/api/hostels");
         if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data)) allHostels.unshift(...data);
+          const cloudData = await res.json();
+          if (Array.isArray(cloudData)) {
+            const cloudMatch = cloudData.find(item => String(item.id) === String(id) || (item.name && item.name.toLowerCase() === String(id).toLowerCase()));
+            if (cloudMatch) {
+              currentHostel = cloudMatch;
+              renderHostelDetails(cloudMatch);
+              return;
+            }
+          }
         }
       } catch (e) {}
 
-      // Find hostel
-      let h = allHostels.find(item => String(item.id) === String(id) || (item.name && item.name.toLowerCase() === String(id).toLowerCase()));
-
-      // Fallback default properties
-      if (!h) {
-        const fallbackHostels = [
-          {
-            id: "h_1",
-            name: "Stanza Living - Cambridge House",
-            city: "Delhi",
-            address: "Hudson Lane, GTB Nagar, North Campus, Delhi",
-            university: "Delhi University North Campus",
-            gender: "Boys",
-            rent: 8500,
-            deposit: 5000,
-            registrationFee: 0,
-            curfew: "10:30 PM",
-            distance: 0.4,
-            rating: 4.9,
-            reviewsCount: 24,
-            verified: true,
-            featured: true,
-            lat: 28.6942,
-            lng: 77.2085,
-            imageMain: "assets/images/exterior1.png",
-            imageSingle: "assets/images/room_single.png",
-            imageShared: "assets/images/room_shared.png",
-            imageWashroom: "assets/images/room_shared.png",
-            imageMess: "assets/images/mess.png",
-            description: "Premium student accommodation right in Hudson Lane. Features biometric entry, ultra-fast 300 Mbps Wi-Fi, air conditioning, daily chef-curated 4-time meals, and daily housekeeping.",
-            amenities: ["High-Speed Wi-Fi", "4-Time Mess", "AC Rooms", "Daily Housekeeping", "24/7 Security", "Biometric Entry", "RO Purified Water", "Power Backup", "Laundry Service"],
-            roomSharing: ["1 Occupancy", "2 Occupancy", "3 Occupancy"],
-            occupancyPricing: { "1 Occupancy": 12500, "2 Occupancy": 8500, "3 Occupancy": 6800 },
-            messMenu: {
-              breakfast: "Aloo Paratha / Puri Bhaji / Poha / Idli Sambhar & Fresh Tea/Coffee",
-              lunch: "North/South Indian Thali, Dal Tadka, Paneer/Veg Sabzi, Fresh Roti, Rice & Curd",
-              snacks: "Samosa / Bread Pakora / Poha & Masala Chai",
-              dinner: "Special Dal Makhani, Paneer Butter Masala, Fresh Rotis, Jeera Rice & Gulab Jamun"
-            },
-            reviews: [
-              { name: "Aditya Verma", major: "SRCC B.Com (Hons)", rating: 5, comment: "Best hostel in North Campus! Food is very hygienic and Wi-Fi speed is excellent for online lectures.", date: "2 days ago" },
-              { name: "Rohan Gupta", major: "Hindu College Physics", rating: 5, comment: "Warden is very supportive, and walking distance to college saves lots of commute time.", date: "1 week ago" }
-            ]
-          }
-        ];
-        h = fallbackHostels.find(item => String(item.id) === String(id) || (item.name && item.name.toLowerCase() === String(id).toLowerCase())) || fallbackHostels[0];
+      // If still not rendered
+      if (!currentHostel) {
+        if (allHostels.length > 0) {
+          currentHostel = allHostels[0];
+          renderHostelDetails(currentHostel);
+        } else {
+          currentHostel = fallbackHostels[0];
+          renderHostelDetails(currentHostel);
+        }
       }
-
-      if (!h) {
-        showErrorState("Hostel listing not found or has been removed.");
-        return;
-      }
-
-      currentHostel = h;
-      renderHostelDetails(h);
     }
 
     function renderHostelDetails(h) {
