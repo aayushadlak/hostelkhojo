@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title id="page-meta-title">Hostel Details | Hostel Khojo 🇮🇳</title>
+  <meta name="description" id="page-meta-desc"
+    content="View verified student hostel details, transparent room sharing rent, 4-time homestyle mess menu, warden policies, and schedule a free campus visit on Hostel Khojo." />
+  <meta name="theme-color" content="#4f46e5" />
+
+  <!-- Favicon & Tab Logo -->
+  <link rel="icon" type="image/svg+xml" href="logo-icon.svg?v=4" />
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon.png?v=4" />
+  <link rel="apple-touch-icon" href="logo-icon.svg?v=4" />
+
+  <!-- Google Fonts: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome 6 Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+  <!-- Leaflet Live Map Engine -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Main Stylesheet -->
+  <link rel="stylesheet" href="styles.css?v=33.0" />
+
+  <style>
+    /* Dedicated Full-Page Hostel Detail Layout */
+    .hostel-detail-container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 24px 20px 60px 20px;
+    }
+
+    .detail-top-nav-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 12px 18px;
+    }
+
+    .detail-breadcrumbs {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      flex-wrap: wrap;
+    }
+
+    .detail-breadcrumbs a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: color 0.2s;
+    }
+
+    .detail-breadcrumbs a:hover {
+      text-decoration: underline;
+    }
+
+    .detail-breadcrumbs .sep {
+      opacity: 0.5;
+      font-size: 0.75rem;
+    }
+
+    .detail-breadcrumbs .current-title {
+      color: var(--text-primary);
+      font-weight: 700;
+    }
+
+    .detail-quick-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .hostel-detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 28px;
+      align-items: start;
+    }
+
+    @media (max-width: 992px) {
+      .hostel-detail-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .detail-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* Gallery Hero */
+    .detail-hero-gallery-wrap {
+      position: relative;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      background: #0f172a;
+      height: 400px;
+    }
+
+    @media (max-width: 768px) {
+      .detail-hero-gallery-wrap {
+        height: 260px;
+      }
+    }
+
+    .detail-hero-gallery-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: opacity 0.3s ease;
+    }
+
+    .detail-hero-badge {
+      position: absolute;
+      bottom: 14px;
+      left: 14px;
+      background: rgba(15, 23, 42, 0.85);
+      color: #ffffff;
+      backdrop-filter: blur(10px);
+      padding: 6px 14px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .detail-thumbs-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .detail-thumb-btn {
+      border: 2px solid transparent;
+      background: var(--surface-container);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      cursor: pointer;
+      padding: 0;
+      text-align: center;
+      transition: all 0.2s ease;
+    }
+
+    .detail-thumb-btn img {
+      width: 100%;
+      height: 75px;
+      object-fit: cover;
+      display: block;
+    }
+
+    @media (max-width: 768px) {
+      .detail-thumb-btn img {
+        height: 55px;
+      }
+    }
+
+    .detail-thumb-btn .thumb-lbl {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      padding: 5px 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: block;
+    }
+
+    .detail-thumb-btn.active {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.25);
+    }
+
+    .detail-thumb-btn.active .thumb-lbl {
+      color: var(--primary);
+      font-weight: 700;
+    }
+
+    /* Specs Grid */
+    .specs-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 12px;
+      margin: 20px 0;
+    }
+
+    .spec-box {
+      background: var(--surface-container);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 14px 12px;
+      text-align: center;
+    }
+
+    .spec-box .lbl {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+      display: block;
+    }
+
+    .spec-box .val {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    /* Occupancy Cards */
+    .occupancies-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 12px;
+      margin: 14px 0 20px 0;
+    }
+
+    .occ-card {
+      background: var(--surface-container);
+      border: 1.5px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      text-align: center;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+
+    .occ-card:hover {
+      border-color: var(--primary);
+      transform: translateY(-2px);
+    }
+
+    .occ-card .occ-name {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+
+    .occ-card .occ-rent {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--primary);
+    }
+
+    .occ-card .occ-rent span {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    /* Mess Menu Tabs */
+    .mess-nav-strip {
+      display: flex;
+      gap: 8px;
+      background: var(--surface-container);
+      padding: 6px;
+      border-radius: var(--radius-md);
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+
+    .mess-tab-btn {
+      flex: 1;
+      min-width: 80px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      font-weight: 600;
+      font-size: 0.84rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .mess-tab-btn.active {
+      background: var(--bg-surface);
+      color: var(--primary);
+      box-shadow: var(--shadow-sm);
+      font-weight: 700;
+    }
+
+    .mess-content-box {
+      background: var(--surface-container);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 16px 18px;
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      line-height: 1.6;
+      font-size: 0.92rem;
+    }
+
+    /* Sticky Sidebar */
+    .sticky-booking-card {
+      position: sticky;
+      top: 90px;
+      background: var(--bg-surface);
+      border: 1.5px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      box-shadow: var(--shadow-md);
+    }
+
+    .booking-price-banner {
+      border-bottom: 1px dashed var(--border-color);
+      padding-bottom: 16px;
+      margin-bottom: 18px;
+    }
+
+    /* Reviews List */
+    .review-card-item {
+      background: var(--surface-container);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 14px 18px;
+      margin-bottom: 12px;
+    }
+
+    .review-card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .star-select-strip {
+      display: flex;
+      gap: 6px;
+      font-size: 1.2rem;
+      color: #cbd5e1;
+      cursor: pointer;
+    }
+
+    .star-select-strip .star-icon.active {
+      color: #f59e0b;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- TOP HEADER / NAVBAR -->
+  <nav class="navbar" id="main-nav">
+    <div class="nav-container">
+      <a href="index.html" class="brand-logo" title="Back to Hostel Khojo Explore">
+        <img src="logo-icon.svg" alt="HostelKhojo" class="logo-img" />
+        <span class="logo-text">Hostel<span class="logo-highlight">Khojo</span></span>
+      </a>
+
+      <div class="nav-links">
+        <a href="index.html" class="nav-link"><i class="fa-solid fa-hotel"></i> Explore Hostels</a>
+        <a href="index.html#roommates" class="nav-link"><i class="fa-solid fa-user-group"></i> Find Roommates</a>
+      </div>
+
+      <div class="nav-actions">
+        <button class="theme-toggle-btn" id="theme-toggle-btn" onclick="toggleTheme()" title="Toggle Dark/Light Mode">
+          <i class="fa-solid fa-moon"></i>
+        </button>
+        <a href="index.html" class="btn btn-outline btn-sm">
+          <i class="fa-solid fa-arrow-left"></i> <span class="btn-text-full">Explore Hostels</span><span class="btn-text-short">Explore</span>
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- MAIN HOSTEL DETAIL PAGE CONTENT -->
+  <main class="hostel-detail-container">
+
+    <!-- BREADCRUMB & QUICK CONTROLS BAR -->
+    <div class="detail-top-nav-bar">
+      <div class="detail-breadcrumbs">
+        <a href="index.html"><i class="fa-solid fa-arrow-left"></i> All Hostels</a>
+        <span class="sep">/</span>
+        <span id="bc-city">Location</span>
+        <span class="sep">/</span>
+        <span class="current-title" id="bc-title">Hostel Details</span>
+      </div>
+
+      <div class="detail-quick-actions">
+        <button class="btn btn-outline btn-sm" id="btn-save-hostel" onclick="toggleSaveCurrentHostel()">
+          <i class="fa-regular fa-bookmark"></i> <span id="save-btn-text">Save</span>
+        </button>
+        <button class="btn btn-outline btn-sm" onclick="shareHostelLink()" title="Copy shareable link">
+          <i class="fa-solid fa-share-nodes"></i> Share
+        </button>
+        <a id="btn-top-whatsapp" href="#" target="_blank" class="btn btn-sm" style="background: #25D366; color: #fff; border: none; font-weight: 700;">
+          <i class="fa-brands fa-whatsapp"></i> Chat with Warden
+        </a>
+      </div>
+    </div>
+
+    <!-- MAIN TWO-COLUMN GRID -->
+    <div class="hostel-detail-grid">
+
+      <!-- LEFT / MAIN CONTENT COLUMN -->
+      <div class="detail-main-col">
+
+        <!-- 1. PHOTO GALLERY CARD -->
+        <div class="detail-card" style="padding: 16px;">
+          <div class="detail-hero-gallery-wrap">
+            <img id="detail-active-hero-img" src="assets/images/exterior1.png" alt="Hostel Property" />
+            <div id="detail-hero-badge" class="detail-hero-badge">
+              <i class="fa-solid fa-building"></i> Hostel Exterior
+            </div>
+          </div>
+
+          <div class="detail-thumbs-strip" id="gallery-thumbs-container">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+
+        <!-- 2. PROPERTY OVERVIEW CARD -->
+        <div class="detail-card">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; margin-bottom: 16px;">
+            <div>
+              <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px; flex-wrap: wrap;">
+                <span class="badge-gender" id="hostel-gender-badge">Boys</span>
+                <span class="badge-verified" id="hostel-verified-badge"><i class="fa-solid fa-circle-check"></i> Verified Stay</span>
+                <span class="badge" style="background: var(--surface-container); color: var(--text-secondary);"><i class="fa-solid fa-shield-halved"></i> 100% Deposit Safe</span>
+                <span class="badge badge-accent"><i class="fa-solid fa-bolt"></i> Zero Brokerage</span>
+              </div>
+
+              <h1 id="hostel-name-title" style="font-size: 1.85rem; font-weight: 800; color: var(--text-primary); margin-bottom: 6px;">Hostel Name</h1>
+              <p class="text-muted" style="font-size: 0.95rem; margin: 0;">
+                <i class="fa-solid fa-location-dot" style="color: var(--danger-red);"></i> <span id="hostel-address-text">Address</span> • <strong id="hostel-distance-text">0.5 km</strong> to <span id="hostel-univ-text">Campus</span>
+              </p>
+            </div>
+
+            <div style="text-align: right;">
+              <div style="font-size: 2.1rem; font-weight: 800; color: var(--primary);" id="hostel-rent-val">₹8,500<span style="font-size: 0.95rem; color: var(--text-muted); font-weight: 500;">/mo</span></div>
+              <div class="card-rating" style="justify-content: flex-end; margin-top: 4px; font-size: 0.95rem;" id="hostel-rating-box">
+                <i class="fa-solid fa-star" style="color: var(--warning-amber);"></i> <strong>4.8</strong> (12 reviews)
+              </div>
+            </div>
+          </div>
+
+          <!-- KEY POLICIES & SPECS GRID -->
+          <div class="specs-grid">
+            <div class="spec-box">
+              <span class="lbl">Gate Curfew</span>
+              <span class="val" id="spec-curfew"><i class="fa-solid fa-clock" style="color: var(--warning-amber);"></i> 10:30 PM</span>
+            </div>
+            <div class="spec-box">
+              <span class="lbl">Security Deposit</span>
+              <span class="val" id="spec-deposit"><i class="fa-solid fa-shield-halved" style="color: var(--success-green);"></i> ₹5,000</span>
+            </div>
+            <div class="spec-box">
+              <span class="lbl">Registration Fee</span>
+              <span class="val" id="spec-regfee"><i class="fa-solid fa-file-invoice-dollar" style="color: var(--primary);"></i> ₹0 (Free)</span>
+            </div>
+            <div class="spec-box">
+              <span class="lbl">Notice Period</span>
+              <span class="val"><i class="fa-solid fa-calendar-day" style="color: var(--secondary);"></i> 30 Days</span>
+            </div>
+          </div>
+
+          <!-- ABOUT PROPERTY -->
+          <div style="margin-bottom: 24px;">
+            <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 8px;"><i class="fa-solid fa-circle-info" style="color: var(--primary);"></i> About Property</h3>
+            <p id="hostel-desc-text" style="color: var(--text-secondary); line-height: 1.65; font-size: 0.94rem; margin: 0;">
+              Modern student hostel accommodation featuring complete security, high-speed Wi-Fi, study spaces, and nutritious meals near university campus.
+            </p>
+          </div>
+
+          <!-- ROOM OCCUPANCY & PRICING -->
+          <div style="margin-bottom: 24px;">
+            <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 6px;"><i class="fa-solid fa-bed" style="color: var(--primary);"></i> Room Sharing & Pricing</h3>
+            <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 12px;">Choose your preferred occupancy option. All rooms include private study table, wardrobe, and comfortable mattress.</p>
+            <div class="occupancies-grid" id="occupancies-container">
+              <!-- Rendered by JS -->
+            </div>
+          </div>
+
+          <!-- 4-TIME HOMESTYLE MESS MENU -->
+          <div style="margin-bottom: 24px;" id="mess-menu-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap;">
+              <h3 style="font-size: 1.15rem; font-weight: 700; margin: 0;"><i class="fa-solid fa-utensils" style="color: var(--primary);"></i> 4-Time Daily Mess Menu</h3>
+              <span class="badge badge-success"><i class="fa-solid fa-wheat-awn"></i> Fresh & Hygienic</span>
+            </div>
+            <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 12px;">Healthy meals prepared daily. Special weekend feast included.</p>
+
+            <div class="mess-nav-strip">
+              <button type="button" class="mess-tab-btn active" onclick="switchMessMenuTab(this, 'mess-breakfast')"><i class="fa-solid fa-mug-hot"></i> Breakfast</button>
+              <button type="button" class="mess-tab-btn" onclick="switchMessMenuTab(this, 'mess-lunch')"><i class="fa-solid fa-bowl-rice"></i> Lunch</button>
+              <button type="button" class="mess-tab-btn" onclick="switchMessMenuTab(this, 'mess-snacks')"><i class="fa-solid fa-cookie-bite"></i> Snacks</button>
+              <button type="button" class="mess-tab-btn" onclick="switchMessMenuTab(this, 'mess-dinner')"><i class="fa-solid fa-utensils"></i> Dinner</button>
+            </div>
+
+            <div class="mess-content-box" id="mess-breakfast">
+              <i class="fa-solid fa-mug-hot" style="color: var(--warning-amber); font-size: 1.5rem; margin-top: 2px;"></i>
+              <div>
+                <strong>Breakfast (7:30 AM - 9:30 AM):</strong><br/>
+                <span id="mess-bf-text">Puri Bhaji / Aloo Paratha / Poha / Idli Sambhar & Hot Tea/Coffee</span>
+              </div>
+            </div>
+            <div class="mess-content-box" id="mess-lunch" style="display: none;">
+              <i class="fa-solid fa-bowl-rice" style="color: var(--success-green); font-size: 1.5rem; margin-top: 2px;"></i>
+              <div>
+                <strong>Lunch (12:30 PM - 2:30 PM):</strong><br/>
+                <span id="mess-lunch-text">North/South Indian Thali, Dal Tadka, Paneer/Seasonal Sabzi, Fresh Roti, Basmati Rice, Salad & Curd</span>
+              </div>
+            </div>
+            <div class="mess-content-box" id="mess-snacks" style="display: none;">
+              <i class="fa-solid fa-cookie-bite" style="color: var(--secondary); font-size: 1.5rem; margin-top: 2px;"></i>
+              <div>
+                <strong>Evening Snacks (5:00 PM - 6:30 PM):</strong><br/>
+                <span id="mess-snacks-text">Samosa / Poha / Bread Pakora with Green Chutney & Masala Chai</span>
+              </div>
+            </div>
+            <div class="mess-content-box" id="mess-dinner" style="display: none;">
+              <i class="fa-solid fa-utensils" style="color: var(--primary); font-size: 1.5rem; margin-top: 2px;"></i>
+              <div>
+                <strong>Dinner (8:00 PM - 10:00 PM):</strong><br/>
+                <span id="mess-dinner-text">Special North Indian / South Indian Dinner, Dal Makhani, Paneer Butter Masala, Gulab Jamun & Ice Cream</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- INCLUDED AMENITIES -->
+          <div style="margin-bottom: 24px;">
+            <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 12px;"><i class="fa-solid fa-wand-magic-sparkles" style="color: var(--secondary);"></i> Included Amenities & Facilities</h3>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px;" id="amenities-container">
+              <!-- Rendered by JS -->
+            </div>
+          </div>
+
+          <!-- LOCATION & GOOGLE MAPS -->
+          <div style="margin-bottom: 24px;">
+            <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 8px;"><i class="fa-solid fa-map-location-dot" style="color: var(--danger-red);"></i> Campus Location & Neighborhood</h3>
+            <p class="text-muted" style="font-size: 0.88rem; margin-bottom: 12px;" id="map-sub-text">
+              Safe student residential colony with 24/7 CCTV surveillance and walking distance to campus.
+            </p>
+
+            <div id="hostel-page-map" style="height: 280px; width: 100%; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: 14px; background: #e2e8f0;"></div>
+
+            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+              <button class="btn btn-outline" id="btn-gmaps-dir" onclick="openGoogleMapsDirections()" style="color: #4285F4; border-color: #4285F4; font-weight: 700;">
+                <i class="fa-solid fa-diamond-turn-right" style="color: #ea4335;"></i> Get Driving Directions in Google Maps
+              </button>
+              <a id="btn-open-coords" href="#" target="_blank" class="btn btn-outline" style="font-weight: 600;">
+                <i class="fa-solid fa-arrow-up-right-from-square"></i> Open in Google Maps
+              </a>
+            </div>
+          </div>
+
+          <!-- STUDENT REVIEWS & WRITE REVIEW -->
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
+              <h3 style="font-size: 1.15rem; font-weight: 700; margin: 0;"><i class="fa-solid fa-comments" style="color: var(--primary);"></i> Student Reviews & Ratings</h3>
+              <span class="badge badge-success"><i class="fa-solid fa-shield-check"></i> 100% Genuine Student Reviews</span>
+            </div>
+
+            <div id="reviews-list-container">
+              <!-- Rendered by JS -->
+            </div>
+
+            <!-- WRITE REVIEW FORM -->
+            <div class="detail-card" style="margin-top: 18px; margin-bottom: 0; background: var(--surface-container);">
+              <h4 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 6px;"><i class="fa-solid fa-pen"></i> Leave a Student Review</h4>
+              <p class="text-muted" style="font-size: 0.84rem; margin-bottom: 14px;">Share your stay experience regarding food, Wi-Fi speed, warden, and room cleanliness.</p>
+
+              <form onsubmit="submitReview(event)">
+                <div style="display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap;">
+                  <div style="flex: 1; min-width: 200px;">
+                    <input type="text" id="review-inp-name" placeholder="Your Name (e.g. Rahul Sharma)" class="form-control" required />
+                  </div>
+                  <div style="flex: 1; min-width: 200px;">
+                    <input type="text" id="review-inp-major" placeholder="Course / College (e.g. DU North Campus B.Com)" class="form-control" />
+                  </div>
+                </div>
+
+                <div style="margin-bottom: 12px;">
+                  <label style="font-size: 0.84rem; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 4px;">Overall Rating:</label>
+                  <div class="star-select-strip" id="star-picker">
+                    <span class="star-icon active" onclick="setReviewRating(1)"><i class="fa-solid fa-star"></i></span>
+                    <span class="star-icon active" onclick="setReviewRating(2)"><i class="fa-solid fa-star"></i></span>
+                    <span class="star-icon active" onclick="setReviewRating(3)"><i class="fa-solid fa-star"></i></span>
+                    <span class="star-icon active" onclick="setReviewRating(4)"><i class="fa-solid fa-star"></i></span>
+                    <span class="star-icon active" onclick="setReviewRating(5)"><i class="fa-solid fa-star"></i></span>
+                  </div>
+                  <input type="hidden" id="review-rating-val" value="5" />
+                </div>
+
+                <div style="margin-bottom: 14px;">
+                  <textarea id="review-inp-comment" placeholder="Write your review here... (e.g. Great homestyle food, fast Wi-Fi and safe campus environment!)" class="form-control" rows="3" required></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-sm">
+                  <i class="fa-solid fa-paper-plane"></i> Submit Verified Review
+                </button>
+              </form>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- RIGHT SIDEBAR (STICKY VISIT BOOKING CARD) -->
+      <div class="detail-side-col">
+        <div class="sticky-booking-card">
+          <div class="booking-price-banner">
+            <span style="font-size: 0.78rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted); display: block;">Starting From</span>
+            <div style="font-size: 2.1rem; font-weight: 800; color: var(--primary); margin: 2px 0 6px 0;" id="sidebar-price-val">
+              ₹8,500<span style="font-size: 0.95rem; color: var(--text-muted); font-weight: 500;">/month</span>
+            </div>
+            <span class="badge badge-success"><i class="fa-solid fa-circle-check"></i> Instant Warden Confirmation</span>
+          </div>
+
+          <h3 style="font-size: 1.15rem; font-weight: 800; margin-bottom: 4px; color: var(--text-primary);">
+            <i class="fa-solid fa-calendar-check" style="color: var(--primary);"></i> Schedule Free Campus Visit
+          </h3>
+          <p class="text-muted" style="font-size: 0.82rem; margin-bottom: 18px;">Zero brokerage fee & visit without advance deposit.</p>
+
+          <form onsubmit="handleVisitBooking(event)">
+            <div class="form-group">
+              <label>Room Sharing Choice</label>
+              <select id="book-occ-select" class="form-control" required>
+                <!-- Rendered by JS -->
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Preferred Visit Date</label>
+              <input type="date" id="book-date-input" class="form-control" required />
+            </div>
+
+            <div class="form-group">
+              <label>Student WhatsApp Number</label>
+              <input type="tel" id="book-phone-input" placeholder="+91 98765 43210" class="form-control" required />
+            </div>
+
+            <button type="submit" class="btn btn-accent btn-block btn-lg" style="margin-top: 16px;">
+              <i class="fa-solid fa-paper-plane"></i> Confirm Free Visit
+            </button>
+          </form>
+
+          <a id="btn-side-whatsapp" href="#" target="_blank" class="btn btn-block btn-sm" style="background: #25D366; color: white; border: none; font-weight: 700; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <i class="fa-brands fa-whatsapp"></i> Chat with Warden
+          </a>
+
+          <button type="button" class="btn btn-outline btn-block btn-sm" onclick="openGoogleMapsDirections()" style="margin-top: 8px; border-color: #4285F4; color: #4285F4; font-weight: 600;">
+            <i class="fa-solid fa-diamond-turn-right" style="color: #ea4335;"></i> Google Maps Directions
+          </button>
+
+          <div style="margin-top: 18px; padding-top: 16px; border-top: 1px dashed var(--border-color); text-align: center;">
+            <p class="text-muted font-xs" style="margin-bottom: 8px;">Looking for roommates for this hostel?</p>
+            <a href="index.html#roommates" class="btn btn-outline btn-sm btn-block">
+              <i class="fa-solid fa-user-group"></i> Find Compatible Roommates
+            </a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- TOAST CONTAINER -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- JAVASCRIPT ENGINE -->
+  <script>
+    let currentHostel = null;
+    let pageMap = null;
+    let pageMarker = null;
+
+    // 1. Theme Management
+    function initTheme() {
+      const savedTheme = localStorage.getItem("hostelkhojo_theme") || localStorage.getItem("dormify_theme") || "light";
+      document.documentElement.setAttribute("data-theme", savedTheme);
+      updateThemeIcon(savedTheme);
+    }
+
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute("data-theme") || "light";
+      const next = current === "dark" ? "light" : "dark";
+      document.documentElement.setAttribute("data-theme", next);
+      localStorage.setItem("hostelkhojo_theme", next);
+      updateThemeIcon(next);
+    }
+
+    function updateThemeIcon(theme) {
+      const icon = document.querySelector("#theme-toggle-btn i");
+      if (icon) {
+        icon.className = theme === "dark" ? "fa-solid fa-sun" : "fa-solid fa-moon";
+      }
+    }
+
+    // 2. Toast Notifications
+    function showToast(msg, type = "info") {
+      const container = document.getElementById("toast-container");
+      if (!container) return;
+      const toast = document.createElement("div");
+      toast.className = `toast toast-${type}`;
+      toast.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-circle-check' : type === 'warning' ? 'fa-triangle-exclamation' : 'fa-circle-info'}"></i> <span>${msg}</span>`;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.classList.add("fade-out");
+        setTimeout(() => toast.remove(), 400);
+      }, 3500);
+    }
+
+    // 3. Helper Escape HTML
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // 4. Extract Query Parameter
+    function getHostelIdFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      let id = params.get("id") || params.get("hostel");
+      if (!id && window.location.hash) {
+        id = window.location.hash.replace(/^#(hostel-|\/hostel\/)/i, "");
+      }
+      return id ? decodeURIComponent(id) : null;
+    }
+
+    // 5. Load Hostel Data
+    async function loadHostelData() {
+      const id = getHostelIdFromUrl();
+      if (!id) {
+        showErrorState("No hostel property ID specified in URL.");
+        return;
+      }
+
+      // Check local caches
+      let allHostels = [];
+      try {
+        ["hostelkhojo_real_properties", "hostelkhojo_custom_properties", "hostelkhojo_owner_properties"].forEach(key => {
+          const stored = localStorage.getItem(key);
+          if (stored) {
+            const list = JSON.parse(stored);
+            if (Array.isArray(list)) allHostels.push(...list);
+          }
+        });
+      } catch (e) {}
+
+      // Try fetching cloud backend
+      try {
+        const res = await fetch("https://hostelkhojo.onrender.com/api/hostels");
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) allHostels.unshift(...data);
+        }
+      } catch (e) {}
+
+      // Find hostel
+      let h = allHostels.find(item => String(item.id) === String(id) || (item.name && item.name.toLowerCase() === String(id).toLowerCase()));
+
+      // Fallback default properties
+      if (!h) {
+        const fallbackHostels = [
+          {
+            id: "h_1",
+            name: "Stanza Living - Cambridge House",
+            city: "Delhi",
+            address: "Hudson Lane, GTB Nagar, North Campus, Delhi",
+            university: "Delhi University North Campus",
+            gender: "Boys",
+            rent: 8500,
+            deposit: 5000,
+            registrationFee: 0,
+            curfew: "10:30 PM",
+            distance: 0.4,
+            rating: 4.9,
+            reviewsCount: 24,
+            verified: true,
+            featured: true,
+            lat: 28.6942,
+            lng: 77.2085,
+            imageMain: "assets/images/exterior1.png",
+            imageSingle: "assets/images/room_single.png",
+            imageShared: "assets/images/room_shared.png",
+            imageWashroom: "assets/images/room_shared.png",
+            imageMess: "assets/images/mess.png",
+            description: "Premium student accommodation right in Hudson Lane. Features biometric entry, ultra-fast 300 Mbps Wi-Fi, air conditioning, daily chef-curated 4-time meals, and daily housekeeping.",
+            amenities: ["High-Speed Wi-Fi", "4-Time Mess", "AC Rooms", "Daily Housekeeping", "24/7 Security", "Biometric Entry", "RO Purified Water", "Power Backup", "Laundry Service"],
+            roomSharing: ["1 Occupancy", "2 Occupancy", "3 Occupancy"],
+            occupancyPricing: { "1 Occupancy": 12500, "2 Occupancy": 8500, "3 Occupancy": 6800 },
+            messMenu: {
+              breakfast: "Aloo Paratha / Puri Bhaji / Poha / Idli Sambhar & Fresh Tea/Coffee",
+              lunch: "North/South Indian Thali, Dal Tadka, Paneer/Veg Sabzi, Fresh Roti, Rice & Curd",
+              snacks: "Samosa / Bread Pakora / Poha & Masala Chai",
+              dinner: "Special Dal Makhani, Paneer Butter Masala, Fresh Rotis, Jeera Rice & Gulab Jamun"
+            },
+            reviews: [
+              { name: "Aditya Verma", major: "SRCC B.Com (Hons)", rating: 5, comment: "Best hostel in North Campus! Food is very hygienic and Wi-Fi speed is excellent for online lectures.", date: "2 days ago" },
+              { name: "Rohan Gupta", major: "Hindu College Physics", rating: 5, comment: "Warden is very supportive, and walking distance to college saves lots of commute time.", date: "1 week ago" }
+            ]
+          }
+        ];
+        h = fallbackHostels.find(item => String(item.id) === String(id) || (item.name && item.name.toLowerCase() === String(id).toLowerCase())) || fallbackHostels[0];
+      }
+
+      if (!h) {
+        showErrorState("Hostel listing not found or has been removed.");
+        return;
+      }
+
+      currentHostel = h;
+      renderHostelDetails(h);
+    }
+
+    function renderHostelDetails(h) {
+      document.title = `${h.name} | Hostel Khojo 🇮🇳`;
+      document.getElementById("page-meta-title").innerText = `${h.name} | Hostel Khojo`;
+      document.getElementById("bc-city").innerText = h.city || "Campus Area";
+      document.getElementById("bc-title").innerText = h.name;
+
+      document.getElementById("hostel-name-title").innerText = h.name;
+      document.getElementById("hostel-address-text").innerText = h.address || h.city || "Campus Colony";
+      document.getElementById("hostel-distance-text").innerText = `${h.distance || 0.5} km`;
+      document.getElementById("hostel-univ-text").innerText = h.university || "Nearby University";
+
+      const genderClass = (h.gender || "Boys").toLowerCase().replace(/[^a-z]/g, '');
+      const genderEl = document.getElementById("hostel-gender-badge");
+      genderEl.className = `badge-gender ${genderClass}`;
+      genderEl.innerText = h.gender || "Boys";
+
+      if (!h.verified) {
+        document.getElementById("hostel-verified-badge").style.display = "none";
+      }
+
+      document.getElementById("hostel-rent-val").innerHTML = `₹${Number(h.rent).toLocaleString('en-IN')}<span style="font-size: 0.95rem; color: var(--text-muted); font-weight: 500;">/mo</span>`;
+      document.getElementById("sidebar-price-val").innerHTML = `₹${Number(h.rent).toLocaleString('en-IN')}<span style="font-size: 0.95rem; color: var(--text-muted); font-weight: 500;">/month</span>`;
+
+      document.getElementById("hostel-rating-box").innerHTML = `<i class="fa-solid fa-star" style="color: var(--warning-amber);"></i> <strong>${h.rating || 4.8}</strong> (${h.reviewsCount || (h.reviews ? h.reviews.length : 12)} reviews)`;
+
+      document.getElementById("spec-curfew").innerHTML = `<i class="fa-solid fa-clock" style="color: var(--warning-amber);"></i> ${h.curfew || '10:30 PM'}`;
+      document.getElementById("spec-deposit").innerHTML = `<i class="fa-solid fa-shield-halved" style="color: var(--success-green);"></i> ₹${Number(h.deposit || 5000).toLocaleString('en-IN')}`;
+      document.getElementById("spec-regfee").innerHTML = `<i class="fa-solid fa-file-invoice-dollar" style="color: var(--primary);"></i> ${h.registrationFee && h.registrationFee > 0 ? '₹' + Number(h.registrationFee).toLocaleString('en-IN') : '₹0 (Free)'}`;
+
+      document.getElementById("hostel-desc-text").innerText = h.description || "Well-maintained student hostel accommodation with high-speed Wi-Fi, nutritious food, study desk, and safe environment.";
+
+      // Gallery setup
+      const galleryItems = [
+        { label: "Hostel Exterior", icon: "fa-building", img: h.imageMain || 'assets/images/exterior1.png' },
+        { label: "Rooms & Study", icon: "fa-bed", img: h.imageSingle || 'assets/images/room_single.png' },
+        { label: "Washroom & Bath", icon: "fa-shower", img: h.imageWashroom || h.imageShared || 'assets/images/room_shared.png' },
+        { label: "Mess & Dining", icon: "fa-utensils", img: h.imageMess || 'assets/images/mess.png' }
+      ];
+
+      document.getElementById("detail-active-hero-img").src = galleryItems[0].img;
+      document.getElementById("detail-hero-badge").innerHTML = `<i class="fa-solid ${galleryItems[0].icon}"></i> ${galleryItems[0].label}`;
+
+      const thumbsContainer = document.getElementById("gallery-thumbs-container");
+      thumbsContainer.innerHTML = galleryItems.map((item, idx) => `
+        <button type="button" class="detail-thumb-btn ${idx === 0 ? 'active' : ''}" onclick="switchHeroGalleryImage(this, '${item.img}', '${item.label}', '${item.icon}')">
+          <img src="${item.img}" alt="${item.label}" />
+          <span class="thumb-lbl"><i class="fa-solid ${item.icon}"></i> ${item.label}</span>
+        </button>
+      `).join('');
+
+      // Room Occupancies
+      const occupanciesContainer = document.getElementById("occupancies-container");
+      const roomTypes = h.roomSharing || ["1 Occupancy", "2 Occupancy", "3 Occupancy"];
+      occupanciesContainer.innerHTML = roomTypes.map(type => {
+        let exactRent = (h.occupancyPricing && h.occupancyPricing[type]) ? h.occupancyPricing[type] : null;
+        if (!exactRent) {
+          let mult = 1.0;
+          if (type.includes('1')) mult = 1.35;
+          else if (type.includes('3')) mult = 0.8;
+          else if (type.includes('4')) mult = 0.65;
+          exactRent = Math.round(h.rent * mult);
+        }
+        return `
+          <div class="occ-card">
+            <div class="occ-name">${type}</div>
+            <div class="occ-rent">₹${Number(exactRent).toLocaleString('en-IN')}<span>/mo</span></div>
+          </div>
+        `;
+      }).join('');
+
+      // Occupancy select options
+      const occSelect = document.getElementById("book-occ-select");
+      occSelect.innerHTML = roomTypes.map(type => `<option value="${type}">${type}</option>`).join('');
+
+      // Mess Menu
+      if (h.messMenu) {
+        if (h.messMenu.breakfast) document.getElementById("mess-bf-text").innerText = h.messMenu.breakfast;
+        if (h.messMenu.lunch) document.getElementById("mess-lunch-text").innerText = h.messMenu.lunch;
+        if (h.messMenu.snacks) document.getElementById("mess-snacks-text").innerText = h.messMenu.snacks;
+        if (h.messMenu.dinner) document.getElementById("mess-dinner-text").innerText = h.messMenu.dinner;
+      }
+
+      // Amenities
+      const amenitiesContainer = document.getElementById("amenities-container");
+      const amenitiesList = h.amenities || ["Wi-Fi", "4-Time Mess", "AC", "Daily Housekeeping", "24/7 Security", "RO Water", "Power Backup"];
+      amenitiesContainer.innerHTML = amenitiesList.map(a => `
+        <span class="amenity-chip" style="padding: 7px 14px; font-size: 0.88rem;">
+          <i class="fa-solid fa-circle-check" style="color: var(--success-green);"></i> ${escapeHtml(a)}
+        </span>
+      `).join('');
+
+      // WhatsApp Links
+      const waMsg = encodeURIComponent(`Hi, I am interested in ${h.name} on HostelKhojo. Please share room availability.`);
+      const waUrl = `https://wa.me/919876543210?text=${waMsg}`;
+      document.getElementById("btn-top-whatsapp").href = waUrl;
+      document.getElementById("btn-side-whatsapp").href = waUrl;
+
+      // Google Maps Links
+      const lat = h.lat || 28.6942;
+      const lng = h.lng || 77.2085;
+      document.getElementById("btn-open-coords").href = h.mapLink || `https://www.google.com/maps?q=${lat},${lng}`;
+
+      // Date Picker default
+      const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+      document.getElementById("book-date-input").value = tomorrow;
+
+      // Saved Status
+      updateSaveButtonUI();
+
+      // Render Reviews
+      renderReviewsList(h.reviews || []);
+
+      // Initialize Leaflet Map
+      initHostelMap(lat, lng, h.name);
+    }
+
+    function switchHeroGalleryImage(btnEl, src, label, icon) {
+      const activeImg = document.getElementById("detail-active-hero-img");
+      if (activeImg) activeImg.src = src;
+      const badge = document.getElementById("detail-hero-badge");
+      if (badge) badge.innerHTML = `<i class="fa-solid ${icon || 'fa-camera'}"></i> ${label}`;
+      document.querySelectorAll(".detail-thumb-btn").forEach(b => b.classList.remove("active"));
+      if (btnEl) btnEl.classList.add("active");
+    }
+
+    function switchMessMenuTab(btnEl, targetId) {
+      document.querySelectorAll(".mess-tab-btn").forEach(b => b.classList.remove("active"));
+      if (btnEl) btnEl.classList.add("active");
+      ["mess-breakfast", "mess-lunch", "mess-snacks", "mess-dinner"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = id === targetId ? "flex" : "none";
+      });
+    }
+
+    function initHostelMap(lat, lng, title) {
+      if (typeof L === "undefined") return;
+      const mapContainer = document.getElementById("hostel-page-map");
+      if (!mapContainer) return;
+
+      if (pageMap) {
+        pageMap.remove();
+        pageMap = null;
+      }
+
+      pageMap = L.map('hostel-page-map', {
+        center: [lat, lng],
+        zoom: 16,
+        scrollWheelZoom: false
+      });
+
+      L.tileLayer('https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+        maxZoom: 20,
+        subdomains: ['0', '1', '2', '3'],
+        attribution: '&copy; Google Maps | Hostel Khojo'
+      }).addTo(pageMap);
+
+      const pinIcon = L.divIcon({
+        className: 'custom-map-pin',
+        html: `<div style="background: var(--primary); color: #fff; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.3); border: 2px solid #fff; font-size: 1.1rem;"><i class="fa-solid fa-hotel"></i></div>`,
+        iconSize: [36, 36],
+        iconAnchor: [18, 18]
+      });
+
+      pageMarker = L.marker([lat, lng], { icon: pinIcon }).addTo(pageMap)
+        .bindPopup(`<strong>${escapeHtml(title)}</strong><br/>Exact Entrance Location`)
+        .openPopup();
+    }
+
+    function openGoogleMapsDirections() {
+      if (!currentHostel) return;
+      const lat = currentHostel.lat || 28.6942;
+      const lng = currentHostel.lng || 77.2085;
+      const name = encodeURIComponent(currentHostel.name);
+      window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&destination_place_id=${name}`, '_blank');
+    }
+
+    function toggleSaveCurrentHostel() {
+      if (!currentHostel) return;
+      let saved = JSON.parse(localStorage.getItem("hostelkhojo_saved") || "[]");
+      const id = currentHostel.id;
+      if (saved.includes(id)) {
+        saved = saved.filter(i => i !== id);
+        showToast("Removed from saved hostels", "info");
+      } else {
+        saved.push(id);
+        showToast("Hostel saved to your bookmarks! 🔖", "success");
+      }
+      localStorage.setItem("hostelkhojo_saved", JSON.stringify(saved));
+      updateSaveButtonUI();
+    }
+
+    function updateSaveButtonUI() {
+      if (!currentHostel) return;
+      const saved = JSON.parse(localStorage.getItem("hostelkhojo_saved") || "[]");
+      const isSaved = saved.includes(currentHostel.id);
+      const btn = document.getElementById("btn-save-hostel");
+      const text = document.getElementById("save-btn-text");
+      if (btn && text) {
+        btn.className = `btn btn-outline btn-sm ${isSaved ? 'active' : ''}`;
+        btn.querySelector("i").className = isSaved ? "fa-solid fa-bookmark" : "fa-regular fa-bookmark";
+        text.innerText = isSaved ? "Saved" : "Save";
+      }
+    }
+
+    function shareHostelLink() {
+      const url = window.location.href;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(() => {
+          showToast("Shareable link copied to clipboard! 📋", "success");
+        }).catch(() => {
+          showToast(url, "info");
+        });
+      } else {
+        showToast(url, "info");
+      }
+    }
+
+    function setReviewRating(val) {
+      document.getElementById("review-rating-val").value = val;
+      const stars = document.querySelectorAll("#star-picker .star-icon");
+      stars.forEach((s, idx) => {
+        s.classList.toggle("active", idx < val);
+      });
+    }
+
+    function renderReviewsList(reviews) {
+      const container = document.getElementById("reviews-list-container");
+      if (!container) return;
+
+      if (!Array.isArray(reviews) || reviews.length === 0) {
+        container.innerHTML = `
+          <div class="review-card-item" style="text-align: center; color: var(--text-muted); padding: 24px;">
+            <i class="fa-solid fa-comment-dots" style="font-size: 1.8rem; color: var(--primary); margin-bottom: 8px; display: block;"></i>
+            Be the first student resident to review this property!
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = reviews.map(r => `
+        <div class="review-card-item">
+          <div class="review-card-head">
+            <div>
+              <strong style="color: var(--text-primary); font-size: 0.95rem;">${escapeHtml(r.name)}</strong>
+              <span class="text-muted font-xs" style="margin-left: 6px;">• ${escapeHtml(r.major || 'Student')}</span>
+            </div>
+            <div class="card-rating" style="font-size: 0.85rem;"><i class="fa-solid fa-star" style="color: var(--warning-amber);"></i> ${r.rating || 5}</div>
+          </div>
+          <p style="font-size: 0.88rem; color: var(--text-secondary); margin: 0; line-height: 1.5;">&ldquo;${escapeHtml(r.comment)}&rdquo;</p>
+        </div>
+      `).join('');
+    }
+
+    function submitReview(e) {
+      e.preventDefault();
+      const name = document.getElementById("review-inp-name").value.trim();
+      const major = document.getElementById("review-inp-major").value.trim() || "Student";
+      const comment = document.getElementById("review-inp-comment").value.trim();
+      const rating = parseInt(document.getElementById("review-rating-val").value) || 5;
+
+      if (!name || !comment) {
+        showToast("Please fill in your name and review comments.", "warning");
+        return;
+      }
+
+      if (!currentHostel.reviews) currentHostel.reviews = [];
+      currentHostel.reviews.unshift({
+        name,
+        major,
+        rating,
+        comment,
+        date: "Just now"
+      });
+
+      renderReviewsList(currentHostel.reviews);
+      document.getElementById("review-inp-comment").value = "";
+      showToast("Thank you! Your verified student review has been published! ⭐", "success");
+    }
+
+    function handleVisitBooking(e) {
+      e.preventDefault();
+      const occ = document.getElementById("book-occ-select").value;
+      const date = document.getElementById("book-date-input").value;
+      const phone = document.getElementById("book-phone-input").value.trim();
+
+      if (!phone || phone.length < 10) {
+        showToast("Please enter a valid 10-digit mobile number.", "warning");
+        return;
+      }
+
+      // Save visit booking locally
+      const bookings = JSON.parse(localStorage.getItem("hostelkhojo_bookings") || "[]");
+      bookings.unshift({
+        id: "b_" + Date.now(),
+        hostelId: currentHostel.id,
+        hostelName: currentHostel.name,
+        roomType: occ,
+        visitDate: date,
+        phone,
+        status: "Confirmed",
+        bookedAt: new Date().toISOString()
+      });
+      localStorage.setItem("hostelkhojo_bookings", JSON.stringify(bookings));
+
+      showToast(`🎉 Visit scheduled for ${date}! Warden has been notified via WhatsApp.`, "success");
+    }
+
+    function showErrorState(msg) {
+      const main = document.querySelector(".hostel-detail-container");
+      if (main) {
+        main.innerHTML = `
+          <div class="empty-state" style="padding: 60px 20px; text-align: center; background: var(--bg-surface); border-radius: var(--radius-lg); border: 1px solid var(--border-color); margin-top: 30px;">
+            <i class="fa-solid fa-hotel" style="font-size: 3.5rem; color: var(--text-muted); margin-bottom: 16px;"></i>
+            <h2>Hostel Listing Not Found</h2>
+            <p class="text-muted" style="margin: 8px 0 24px 0;">${escapeHtml(msg)}</p>
+            <a href="index.html" class="btn btn-primary btn-lg">
+              <i class="fa-solid fa-arrow-left"></i> Return to Explore Hostels
+            </a>
+          </div>
+        `;
+      }
+    }
+
+    // Initialize on page load
+    document.addEventListener("DOMContentLoaded", () => {
+      initTheme();
+      loadHostelData();
+    });
+  </script>
+</body>
+
+</html>

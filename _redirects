@@ -1,3 +1,6 @@
 # SPA Routing and API Proxying for Web Host Deployments
-/api/*  https://hostelkhojo.onrender.com/api/:splat  200!
-/*      /index.html                                   200
+/api/*       https://hostelkhojo.onrender.com/api/:splat  200!
+/hostel.html /hostel.html                                 200
+/hostel/*    /hostel.html                                 200
+/hostel      /hostel.html                                 200
+/*           /index.html                                  200
