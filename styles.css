@@ -3458,6 +3458,7 @@ button, input, select, textarea {
     padding: 9px 12px;
     border-radius: 8px;
     -webkit-appearance: none;
+    appearance: none;
   }
 
   /* Photo Upload Grid: 2x2 Clean Layout on Mobile / iPhone */
