@@ -105,6 +105,54 @@
     </div>
   </nav>
 
+  <!-- DYNAMIC HOSTEL WORKSPACE TAB BAR -->
+  <div class="workspace-tabs-bar" id="hostel-tabs-bar">
+    <div class="tabs-bar-inner">
+      <div class="tabs-scroll-container" id="tabs-scroll-container">
+        <!-- Base App Navigation Tabs -->
+        <button class="workspace-tab active" id="wtab-hostels" onclick="app.switchTab('hostels')" title="Explore Hostels & PGs">
+          <i class="fa-solid fa-compass tab-icon"></i>
+          <span class="tab-title">Explore Hostels</span>
+        </button>
+
+        <button class="workspace-tab" id="wtab-roommates" onclick="app.switchTab('roommates')" title="Roommate Matcher">
+          <i class="fa-solid fa-user-group tab-icon"></i>
+          <span class="tab-title">Roommates</span>
+        </button>
+
+        <button class="workspace-tab" id="wtab-saved" onclick="app.showSavedHostels()" title="Saved Hostels">
+          <i class="fa-solid fa-bookmark tab-icon"></i>
+          <span class="tab-title">Saved (<span id="wtab-saved-count">0</span>)</span>
+        </button>
+
+        <button class="workspace-tab" id="wtab-owner" onclick="app.switchTab('owner')" style="display: none;" title="PG / Hostel Owner Dashboard">
+          <i class="fa-solid fa-building-user tab-icon"></i>
+          <span class="tab-title">Owner Portal</span>
+        </button>
+
+        <button class="workspace-tab" id="wtab-admin" onclick="app.switchTab('admin')" style="display: none;" title="Super Admin Portal">
+          <i class="fa-solid fa-shield-halved tab-icon"></i>
+          <span class="tab-title">Admin Portal</span>
+        </button>
+
+        <!-- Divider between static tabs and dynamic hostel tabs -->
+        <div class="tabs-divider" id="hostel-tabs-divider" style="display: none;"></div>
+
+        <!-- Dynamic Hostel Tabs Container -->
+        <div class="dynamic-tabs-list" id="dynamic-hostel-tabs-list">
+          <!-- Rendered dynamically by JS -->
+        </div>
+      </div>
+
+      <!-- Tab Actions (Close All Tabs) -->
+      <div class="tabs-bar-actions" id="tabs-bar-actions" style="display: none;">
+        <button class="tabs-action-btn" onclick="app.closeAllHostelTabs()" title="Close all open hostel tabs">
+          <i class="fa-solid fa-xmark"></i> Close Tabs
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- MAIN TAB: HOSTELS SEARCH & EXPLORE -->
   <main id="tab-hostels" class="tab-content active">
 
@@ -320,6 +368,11 @@
       </div>
 
     </div>
+  </main>
+
+  <!-- DEDICATED HOSTEL TAB DETAIL VIEW PAGE (DYNAMIC TABS) -->
+  <main id="tab-hostel-view" class="tab-content hostel-detail-page" style="display: none;">
+    <!-- Rendered dynamically by app.renderDedicatedHostelView(hostelId) -->
   </main>
 
   <!-- SECONDARY TAB: ROOMMATE MATCHER -->
