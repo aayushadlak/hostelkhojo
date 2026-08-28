@@ -1350,27 +1350,27 @@ class HostelKhojoApp {
       this.leafletMap.removeLayer(this.currentTileLayerObj);
     }
 
-    let tileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-    let attribution = '&copy; OpenStreetMap contributors | Hostel Khojo 🇮🇳';
-    let maxZoom = 19;
-    let subdomains = ['a', 'b', 'c'];
+    let tileUrl = 'https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}';
+    let attribution = '&copy; Google Maps | Hostel Khojo 🇮🇳';
+    let maxZoom = 20;
+    let subdomains = ['0', '1', '2', '3'];
 
     if (layerType === "satellite") {
-      tileUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
-      attribution = '&copy; Esri & Maxar Earth Imagery | Hostel Khojo';
+      tileUrl = 'https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}';
+      attribution = '&copy; Google Satellite Imagery | Hostel Khojo';
+      maxZoom = 20;
+      subdomains = ['0', '1', '2', '3'];
+    } else if (layerType === "dark") {
+      tileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+      attribution = '&copy; OpenStreetMap contributors | Hostel Khojo';
       maxZoom = 19;
       subdomains = ['a', 'b', 'c'];
-    } else if (layerType === "dark") {
-      tileUrl = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
-      attribution = '&copy; CartoDB DarkMatter | Hostel Khojo';
+    } else {
+      // Google Roadmap
+      tileUrl = 'https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}';
+      attribution = '&copy; Google Maps | Hostel Khojo 🇮🇳';
       maxZoom = 20;
-      subdomains = ['a', 'b', 'c', 'd'];
-    } else if (layerType === "street") {
-      // Crisp Voyager / OpenStreetMap
-      tileUrl = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
-      attribution = '&copy; CartoDB Voyager | OpenStreetMap | Hostel Khojo';
-      maxZoom = 20;
-      subdomains = ['a', 'b', 'c', 'd'];
+      subdomains = ['0', '1', '2', '3'];
     }
 
     try {
@@ -1428,14 +1428,11 @@ class HostelKhojoApp {
         // Add custom positioned zoom controls
         L.control.zoom({ position: 'bottomleft' }).addTo(this.leafletMap);
 
-        // Add default tile layer
-        const defaultTileUrl = (document.documentElement.getAttribute("data-theme") === "dark" || this.currentMapTileLayer === "dark")
-          ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-          : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
-
-        this.currentTileLayerObj = L.tileLayer(defaultTileUrl, {
+        // Add Google Maps Road Layer (Clean, No Watermark, No API Key error)
+        this.currentTileLayerObj = L.tileLayer('https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
           maxZoom: 20,
-          attribution: '&copy; CartoDB | OpenStreetMap | Hostel Khojo 🇮🇳'
+          subdomains: ['0', '1', '2', '3'],
+          attribution: '&copy; Google Maps | Hostel Khojo 🇮🇳'
         }).addTo(this.leafletMap);
 
         // Listen for map move/zoom for "Search as map moves"
