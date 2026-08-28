@@ -105,6 +105,17 @@ class HostelKhojoApp {
 
     this.currentViewMode = "grid"; // 'grid' or 'split'
     this.currentSort = "recommended";
+    this.currentMapTileLayer = "street"; // 'street', 'satellite', 'dark'
+    this.mapBoundsSync = false;
+    this.activeMapPois = new Set();
+    this.poiMarkers = [];
+    this.campusCenterMarker = null;
+    this.campusRadiusCircle = null;
+    this.showCampusRadius = true;
+    this.isMobileMapActive = false;
+    this.activeHoverPreviewId = null;
+    this.hoveredPinId = null;
+    this.currentTileLayerObj = null;
 
     this.searchDebounceTimer = null;
     this.mapDebounceTimer = null;
@@ -402,13 +413,29 @@ class HostelKhojoApp {
       if (layout) layout.className = "explorer-layout grid-view";
       if (gridBtn) gridBtn.classList.add("active");
       if (splitBtn) splitBtn.classList.remove("active");
+      this.isMobileMapActive = false;
+      layout?.classList.remove("mobile-map-active");
     }
+  }
+
+  quickFilterGender(gender) {
+    const genderEl = document.getElementById("gender-filter");
+    if (genderEl) genderEl.value = gender;
+    
+    // Update chip active states
+    document.querySelectorAll(".split-chip-filter").forEach(btn => {
+      const isMatch = (gender === "all" && btn.textContent.trim() === "All") || btn.textContent.toLowerCase().includes(gender.toLowerCase());
+      btn.classList.toggle("active", isMatch);
+    });
+
+    this.applyFilters();
   }
 
   /* RENDER HOSTEL CARDS */
   renderHostels() {
     const grid = document.getElementById("hostels-grid");
     const countNum = document.getElementById("results-count-num");
+    const splitStatus = document.getElementById("split-list-status");
     if (!grid) return;
 
     if (!Array.isArray(this.filteredHostels)) {
@@ -416,11 +443,15 @@ class HostelKhojoApp {
     }
 
     if (countNum) countNum.innerText = this.filteredHostels.length;
+    if (splitStatus) {
+      const searchVal = document.getElementById("search-input")?.value.trim();
+      splitStatus.innerHTML = `<i class="fa-solid fa-location-dot" style="color: var(--primary);"></i> Showing ${this.filteredHostels.length} verified stays ${searchVal ? 'near <b>' + this.escapeHtml(searchVal) + '</b>' : 'in India'}`;
+    }
 
     if (this.filteredHostels.length === 0) {
       grid.innerHTML = `
         <div class="empty-state" style="grid-column: 1 / -1; padding: 48px 24px; text-align: center; background: var(--bg-surface); border: 2px dashed var(--border-color); border-radius: var(--radius-lg); margin: 20px 0;">
-          <i class="fa-solid fa-building-circle-check" style="font-size: 3.5rem; color: var(--accent-primary); margin-bottom: 16px;"></i>
+          <i class="fa-solid fa-building-circle-check" style="font-size: 3.5rem; color: var(--primary); margin-bottom: 16px;"></i>
           <h3>No Hostels Listed in This Search Yet</h3>
           <p class="text-muted" style="max-width: 500px; margin: 8px auto 20px auto;">Are you a Hostel or PG Owner? List your property now to connect directly with 100,000+ verified college students near your campus!</p>
           <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
@@ -436,16 +467,17 @@ class HostelKhojoApp {
       return;
     }
 
-
     grid.innerHTML = this.filteredHostels.map(h => {
       const isSaved = this.savedIds.includes(h.id);
       const isComparing = this.comparisonIds.includes(h.id);
-      const genderClass = h.gender.toLowerCase().replace(/[^a-z]/g, '');
+      const genderClass = (h.gender || "Boys").toLowerCase().replace(/[^a-z]/g, '');
 
       return `
-        <div class="hostel-card" id="card-${h.id}" onmouseenter="app.highlightMapPin('${h.id}')" onmouseleave="app.unhighlightMapPin('${h.id}')">
+        <div class="hostel-card" id="card-${h.id}" 
+             onmouseenter="app.highlightMapPin('${h.id}')" 
+             onmouseleave="app.unhighlightMapPin('${h.id}')">
           <div class="card-media">
-            <img src="${h.imageMain}" alt="${h.name}" loading="lazy" />
+            <img src="${h.imageMain || 'assets/images/exterior1.png'}" alt="${this.escapeHtml(h.name)}" loading="lazy" />
             <div class="card-badges-top">
               <span class="badge-gender ${genderClass}">${h.gender}</span>
               ${h.verified ? `<span class="badge-verified"><i class="fa-solid fa-circle-check"></i> Verified</span>` : ''}
@@ -457,38 +489,37 @@ class HostelKhojoApp {
 
           <div class="card-body">
             <div class="card-header-row">
-              <h3 class="card-title">${h.name}</h3>
+              <h3 class="card-title">${this.escapeHtml(h.name)}</h3>
               <div class="card-rating">
-                <i class="fa-solid fa-star"></i> ${h.rating}
+                <i class="fa-solid fa-star"></i> ${h.rating || 4.8}
               </div>
             </div>
 
             <div class="card-location">
-              <i class="fa-solid fa-location-dot"></i> ${h.university} (${h.distance} km)
+              <i class="fa-solid fa-location-dot"></i> 
+              <span>${this.escapeHtml(h.university || h.city)}</span>
+              ${h.distance ? `<span class="card-distance-badge"><i class="fa-solid fa-person-walking"></i> ${h.distance} km</span>` : ''}
             </div>
 
             <div class="card-amenities">
-              ${h.amenities.slice(0, 4).map(a => `<span class="amenity-chip"><i class="fa-solid fa-check"></i> ${a}</span>`).join('')}
-              ${h.amenities.length > 4 ? `<span class="amenity-chip">+${h.amenities.length - 4} more</span>` : ''}
+              ${(Array.isArray(h.amenities) ? h.amenities : []).slice(0, 4).map(a => `<span class="amenity-chip"><i class="fa-solid fa-check"></i> ${this.escapeHtml(a)}</span>`).join('')}
+              ${Array.isArray(h.amenities) && h.amenities.length > 4 ? `<span class="amenity-chip">+${h.amenities.length - 4} more</span>` : ''}
             </div>
 
-            <div class="card-occupancies" style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px;">
+            <div class="card-occupancies" style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; margin-bottom: 10px;">
               ${(Array.isArray(h.roomSharing) && h.roomSharing.length > 0 ? h.roomSharing : ['1 Occupancy', '2 Occupancy']).map(occ => `
-                <span style="font-size: 0.72rem; font-weight: 600; background: rgba(99, 102, 241, 0.08); color: var(--primary); padding: 2px 7px; border-radius: 4px; border: 1px solid rgba(99, 102, 241, 0.2);">
-                  <i class="fa-solid fa-bed font-xs"></i> ${occ}
+                <span style="font-size: 0.72rem; font-weight: 700; background: rgba(79, 70, 229, 0.08); color: var(--primary); padding: 2px 7px; border-radius: 4px; border: 1px solid rgba(79, 70, 229, 0.2);">
+                  <i class="fa-solid fa-bed font-xs"></i> ${this.escapeHtml(occ)}
                 </span>
               `).join('')}
-              <span style="font-size: 0.72rem; font-weight: 600; background: rgba(16, 185, 129, 0.08); color: var(--success-green); padding: 2px 7px; border-radius: 4px; border: 1px solid rgba(16, 185, 129, 0.2);" title="Security Deposit">
+              <span style="font-size: 0.72rem; font-weight: 700; background: rgba(16, 185, 129, 0.08); color: var(--success-green); padding: 2px 7px; border-radius: 4px; border: 1px solid rgba(16, 185, 129, 0.2);" title="Security Deposit">
                 <i class="fa-solid fa-shield-halved font-xs"></i> Dep: ₹${Number(h.deposit || 5000).toLocaleString('en-IN')}
-              </span>
-              <span style="font-size: 0.72rem; font-weight: 600; background: rgba(245, 158, 11, 0.08); color: var(--warning-amber); padding: 2px 7px; border-radius: 4px; border: 1px solid rgba(245, 158, 11, 0.2);" title="Registration Fee">
-                <i class="fa-solid fa-file-invoice-dollar font-xs"></i> Reg: ${h.registrationFee && h.registrationFee > 0 ? '₹' + Number(h.registrationFee).toLocaleString('en-IN') : 'Free'}
               </span>
             </div>
 
             <div class="card-footer-row">
               <div class="card-price">
-                <span class="price-num">₹${h.rent.toLocaleString('en-IN')}</span>
+                <span class="price-num">₹${Number(h.rent).toLocaleString('en-IN')}</span>
                 <span class="price-unit">/month</span>
               </div>
 
@@ -515,6 +546,7 @@ class HostelKhojoApp {
     this.updateBudgetLabel("15000");
     this.activePills.clear();
     document.querySelectorAll(".pill-btn").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".split-chip-filter").forEach(b => b.classList.toggle("active", b.textContent.trim() === "All"));
     this.applyFilters();
   }
 
@@ -524,10 +556,10 @@ class HostelKhojoApp {
     if (!pinsLayer) return;
 
     pinsLayer.innerHTML = this.filteredHostels.map(h => {
-      const pinGenderClass = h.gender.toLowerCase().replace(/[^a-z]/g, '');
+      const pinGenderClass = (h.gender || "Boys").toLowerCase().replace(/[^a-z]/g, '');
       return `
         <div class="map-pin pin-${pinGenderClass}" id="pin-${h.id}" 
-             style="top: ${h.mapCoords.top}%; left: ${h.mapCoords.left}%;"
+             style="top: ${h.mapCoords?.top || 50}%; left: ${h.mapCoords?.left || 50}%;"
              onclick="app.openHostelDetail('${h.id}')"
              onmouseenter="app.highlightCard('${h.id}')">
           ₹${(h.rent / 1000).toFixed(1)}k
@@ -537,21 +569,105 @@ class HostelKhojoApp {
   }
 
   highlightMapPin(id) {
-    const pin = document.getElementById(`pin-${id}`);
-    if (pin) pin.classList.add("active");
+    this.hoveredPinId = id;
+    
+    // 1. Highlight Leaflet Pin
+    const pinBubble = document.getElementById(`leaflet-pin-${id}`);
+    if (pinBubble) {
+      const parentMarkerEl = pinBubble.closest('.custom-osm-pin');
+      if (parentMarkerEl) {
+        parentMarkerEl.classList.add("active");
+        parentMarkerEl.style.zIndex = "9999";
+      }
+    }
+
+    // 2. Highlight Simulated Canvas Pin if active
+    const simPin = document.getElementById(`pin-${id}`);
+    if (simPin) simPin.classList.add("active");
   }
 
   unhighlightMapPin(id) {
-    const pin = document.getElementById(`pin-${id}`);
-    if (pin) pin.classList.remove("active");
+    if (this.hoveredPinId === id) this.hoveredPinId = null;
+
+    // 1. Unhighlight Leaflet Pin
+    const pinBubble = document.getElementById(`leaflet-pin-${id}`);
+    if (pinBubble) {
+      const parentMarkerEl = pinBubble.closest('.custom-osm-pin');
+      if (parentMarkerEl) {
+        parentMarkerEl.classList.remove("active");
+        parentMarkerEl.style.zIndex = "";
+      }
+    }
+
+    // 2. Unhighlight Simulated Canvas Pin
+    const simPin = document.getElementById(`pin-${id}`);
+    if (simPin) simPin.classList.remove("active");
   }
 
   highlightCard(id) {
+    document.querySelectorAll(".hostel-card.active-hovered").forEach(c => c.classList.remove("active-hovered"));
     const card = document.getElementById(`card-${id}`);
     if (card) {
+      card.classList.add("active-hovered");
       card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      card.style.borderColor = "var(--accent-primary)";
-      setTimeout(() => { card.style.borderColor = ""; }, 1500);
+      setTimeout(() => {
+        card.classList.remove("active-hovered");
+      }, 2500);
+    }
+  }
+
+  showMapHoverPreview(id, latlng = null) {
+    const h = this.hostels.find(item => item.id === id);
+    const previewContainer = document.getElementById("map-hover-preview-card");
+    if (!h || !previewContainer) return;
+
+    this.activeHoverPreviewId = id;
+    const directionsUrl = h.mapLink || `https://www.google.com/maps/dir/?api=1&destination=${h.lat || 28.6922},${h.lng || 77.2100}`;
+
+    previewContainer.innerHTML = `
+      <div class="map-preview-img-wrap">
+        <img src="${h.imageMain || 'assets/images/exterior1.png'}" alt="${this.escapeHtml(h.name)}" />
+        <button class="map-preview-close-btn" onclick="app.hideMapHoverPreview()" title="Close Preview">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+        <span class="badge-gender ${h.gender ? h.gender.toLowerCase() : 'boys'}" style="position: absolute; bottom: 8px; left: 8px; font-size: 0.68rem; padding: 2px 8px;">
+          ${h.gender}
+        </span>
+      </div>
+      <div class="map-preview-content">
+        <div class="map-preview-header">
+          <div class="map-preview-title">${this.escapeHtml(h.name)}</div>
+          <div class="card-rating font-xs"><i class="fa-solid fa-star"></i> ${h.rating || 4.8}</div>
+        </div>
+        <div class="map-preview-sub">
+          <i class="fa-solid fa-location-dot" style="color: var(--primary);"></i>
+          <span>${this.escapeHtml(h.university || h.city)} (${h.distance} km)</span>
+        </div>
+        <div class="map-preview-footer">
+          <div class="map-preview-price">₹${Number(h.rent).toLocaleString('en-IN')}<span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 500;">/mo</span></div>
+          <div style="display: flex; gap: 6px;">
+            <a href="${directionsUrl}" target="_blank" class="map-preview-btn btn-outline" style="color: #059669; border: 1px solid #059669; text-decoration: none; padding: 4px 8px; font-size: 0.74rem;">
+              <i class="fa-solid fa-diamond-turn-right"></i> Route
+            </a>
+            <button class="map-preview-btn btn-primary" onclick="app.openHostelDetail('${h.id}')" style="padding: 4px 10px; font-size: 0.74rem;">
+              View Details
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    previewContainer.style.display = "block";
+    this.highlightCard(id);
+    this.highlightMapPin(id);
+  }
+
+  hideMapHoverPreview() {
+    const previewContainer = document.getElementById("map-hover-preview-card");
+    if (previewContainer) previewContainer.style.display = "none";
+    if (this.activeHoverPreviewId) {
+      this.unhighlightMapPin(this.activeHoverPreviewId);
+      this.activeHoverPreviewId = null;
     }
   }
 
@@ -1201,23 +1317,72 @@ class HostelKhojoApp {
     this.mapProvider = provider;
     localStorage.setItem("hostelkhojo_map_provider", provider);
 
-    const gmapsBtn = document.getElementById("map-mode-gmaps-btn");
-    const canvasBtn = document.getElementById("map-mode-canvas-btn");
+    const streetBtn = document.getElementById("map-layer-street-btn");
+    const canvasBtn = document.getElementById("map-layer-canvas-btn");
     const gmapsCanvas = document.getElementById("google-map-canvas");
     const simulatedMap = document.getElementById("simulated-map");
 
     if (provider === "osm" || provider === "google") {
-      gmapsBtn?.classList.add("active");
+      streetBtn?.classList.add("active");
       canvasBtn?.classList.remove("active");
       if (gmapsCanvas) gmapsCanvas.style.display = "block";
       if (simulatedMap) simulatedMap.style.display = "none";
       this.renderOpenStreetMap();
     } else {
       canvasBtn?.classList.add("active");
-      gmapsBtn?.classList.remove("active");
+      streetBtn?.classList.remove("active");
       if (gmapsCanvas) gmapsCanvas.style.display = "none";
       if (simulatedMap) simulatedMap.style.display = "block";
       this.renderMapPins();
+    }
+  }
+
+  setMapTileLayer(layerType) {
+    this.currentMapTileLayer = layerType;
+    this.setMapProvider("osm");
+
+    document.querySelectorAll(".map-layer-btn").forEach(b => b.classList.remove("active"));
+    const btn = document.getElementById(`map-layer-${layerType}-btn`);
+    if (btn) btn.classList.add("active");
+
+    if (!this.leafletMap || typeof L === "undefined") return;
+
+    if (this.currentTileLayerObj) {
+      this.leafletMap.removeLayer(this.currentTileLayerObj);
+    }
+
+    let tileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+    let attribution = '&copy; OpenStreetMap contributors | Hostel Khojo 🇮🇳';
+    let maxZoom = 19;
+    let subdomains = ['a', 'b', 'c'];
+
+    if (layerType === "satellite") {
+      tileUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+      attribution = '&copy; Esri & Maxar Earth Imagery | Hostel Khojo';
+      maxZoom = 19;
+      subdomains = ['a', 'b', 'c'];
+    } else if (layerType === "dark") {
+      tileUrl = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+      attribution = '&copy; CartoDB DarkMatter | Hostel Khojo';
+      maxZoom = 20;
+      subdomains = ['a', 'b', 'c', 'd'];
+    } else if (layerType === "street") {
+      // Crisp Voyager / OpenStreetMap
+      tileUrl = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+      attribution = '&copy; CartoDB Voyager | OpenStreetMap | Hostel Khojo';
+      maxZoom = 20;
+      subdomains = ['a', 'b', 'c', 'd'];
+    }
+
+    try {
+      this.currentTileLayerObj = L.tileLayer(tileUrl, {
+        maxZoom,
+        attribution,
+        subdomains
+      }).addTo(this.leafletMap);
+      this.showToast(`Switched map to ${layerType.toUpperCase()} layer`, "info");
+    } catch (e) {
+      console.warn("Tile layer switch error:", e);
     }
   }
 
@@ -1235,7 +1400,16 @@ class HostelKhojoApp {
     let centerLat = 28.6922;
     let centerLng = 77.2100;
 
-    if (this.filteredHostels.length > 0) {
+    const searchInput = document.getElementById("search-input");
+    const searchQuery = searchInput ? searchInput.value.trim().toLowerCase() : "";
+    let detectedCampusName = "Campus Zone";
+
+    if (searchQuery) {
+      const cityCoords = this.getCityCoordinates(searchQuery);
+      centerLat = cityCoords.lat;
+      centerLng = cityCoords.lng;
+      detectedCampusName = searchInput.value.trim();
+    } else if (this.filteredHostels.length > 0) {
       const validCoordsHostels = this.filteredHostels.filter(h => h.lat && h.lng);
       if (validCoordsHostels.length > 0) {
         const sumLat = validCoordsHostels.reduce((acc, h) => acc + h.lat, 0);
@@ -1248,82 +1422,316 @@ class HostelKhojoApp {
     try {
       if (!this.leafletMap) {
         this.leafletMap = L.map(canvas, {
-          zoomControl: true,
+          zoomControl: false,
           scrollWheelZoom: true
-        }).setView([centerLat, centerLng], 11);
+        }).setView([centerLat, centerLng], 13);
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          maxZoom: 19,
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | Hostel Khojo 🇮🇳'
+        // Add custom positioned zoom controls
+        L.control.zoom({ position: 'bottomleft' }).addTo(this.leafletMap);
+
+        // Add default tile layer
+        const defaultTileUrl = (document.documentElement.getAttribute("data-theme") === "dark" || this.currentMapTileLayer === "dark")
+          ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+          : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+
+        this.currentTileLayerObj = L.tileLayer(defaultTileUrl, {
+          maxZoom: 20,
+          attribution: '&copy; CartoDB | OpenStreetMap | Hostel Khojo 🇮🇳'
         }).addTo(this.leafletMap);
+
+        // Listen for map move/zoom for "Search as map moves"
+        this.leafletMap.on('moveend', () => this.handleMapMoveEnd());
       } else {
         this.leafletMap.setView([centerLat, centerLng]);
       }
 
+      // Clear existing hostel markers
       if (this.leafletMarkers) {
         this.leafletMarkers.forEach(m => this.leafletMap.removeLayer(m));
         this.leafletMarkers = [];
       }
 
-      const bounds = [];
+      // Clear existing campus landmark
+      if (this.campusCenterMarker) {
+        this.leafletMap.removeLayer(this.campusCenterMarker);
+        this.campusCenterMarker = null;
+      }
+      if (this.campusRadiusCircle) {
+        this.leafletMap.removeLayer(this.campusRadiusCircle);
+        this.campusRadiusCircle = null;
+      }
 
+      // Render Campus Anchor Pin & 1.2km Walkable Radius Circle
+      if (this.showCampusRadius) {
+        const campusIcon = L.divIcon({
+          className: 'campus-anchor-wrapper',
+          html: `
+            <div class="campus-anchor-pin">
+              <div class="campus-anchor-badge">
+                <i class="fa-solid fa-graduation-cap"></i>
+              </div>
+              <div class="campus-anchor-title">${this.escapeHtml(detectedCampusName)}</div>
+            </div>
+          `,
+          iconSize: [120, 64],
+          iconAnchor: [60, 32]
+        });
+
+        this.campusCenterMarker = L.marker([centerLat, centerLng], { icon: campusIcon, zIndexOffset: 500 }).addTo(this.leafletMap);
+
+        this.campusRadiusCircle = L.circle([centerLat, centerLng], {
+          radius: 1200, // 1.2 km
+          color: '#4f46e5',
+          weight: 2,
+          dashArray: '6, 8',
+          fillColor: '#4f46e5',
+          fillOpacity: 0.05
+        }).addTo(this.leafletMap);
+      }
+
+      const bounds = [];
+      if (this.showCampusRadius) bounds.push([centerLat, centerLng]);
+
+      // Render Custom Speech-Bubble Price Markers
       this.filteredHostels.forEach(h => {
         if (!h.lat || !h.lng) return;
 
         bounds.push([h.lat, h.lng]);
-
-        let badgeBg = "#3b82f6";
-        if (h.gender === "Girls") badgeBg = "#ec4899";
-        if (h.gender === "Co-ed") badgeBg = "#8b5cf6";
+        const genderClass = (h.gender || "Boys").toLowerCase().replace(/[^a-z]/g, '');
+        const rentK = (h.rent / 1000).toFixed(1);
+        const isHovered = this.hoveredPinId === h.id;
 
         const customIcon = L.divIcon({
-          className: 'custom-osm-pin',
+          className: `custom-osm-pin pin-${genderClass} ${isHovered ? 'active' : ''}`,
           html: `
-            <div style="background: ${badgeBg}; color: white; padding: 4px 8px; border-radius: 12px; font-weight: 700; font-size: 11px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); border: 2px solid white; text-align: center; white-space: nowrap;">
-              ₹${(h.rent / 1000).toFixed(1)}k
+            <div class="custom-pin-bubble" id="leaflet-pin-${h.id}">
+              <i class="fa-solid ${genderClass === 'girls' ? 'fa-venus' : (genderClass === 'boys' ? 'fa-mars' : 'fa-venus-mars')}" style="font-size: 0.72rem;"></i>
+              <span>₹${rentK}k</span>
             </div>
           `,
-          iconSize: [54, 26],
-          iconAnchor: [27, 13]
+          iconSize: [64, 32],
+          iconAnchor: [32, 32]
         });
 
         const marker = L.marker([h.lat, h.lng], { icon: customIcon }).addTo(this.leafletMap);
 
-        const directionsUrl = h.mapLink || `https://www.google.com/maps/dir/?api=1&destination=${h.lat},${h.lng}`;
-
-        const popupContent = `
-          <div class="gmaps-infowindow">
-            <img src="${h.imageMain || 'assets/images/exterior1.png'}" alt="${h.name}" />
-            <h4>${h.name}</h4>
-            <p><i class="fa-solid fa-location-dot"></i> ${h.university || h.city}</p>
-            <div class="gmaps-infowindow-meta">
-              <span>₹${Number(h.rent).toLocaleString('en-IN')}/mo</span>
-              <span>⭐ ${h.rating || 4.8}</span>
-            </div>
-            <div style="display: flex; gap: 6px;">
-              <button onclick="app.openHostelDetail('${h.id}')" class="gmaps-infowindow-btn" style="flex: 1;">
-                View Details
-              </button>
-              <a href="${directionsUrl}" target="_blank" class="gmaps-infowindow-btn" style="background: #059669; flex: 1; display: inline-flex; align-items: center; justify-content: center; text-decoration: none;">
-                Directions
-              </a>
-            </div>
-          </div>
-        `;
-
-        marker.bindPopup(popupContent);
-        marker.on("click", () => {
+        marker.on("mouseover", () => {
           this.highlightCard(h.id);
+          this.highlightMapPin(h.id);
+        });
+
+        marker.on("mouseout", () => {
+          this.unhighlightMapPin(h.id);
+        });
+
+        marker.on("click", () => {
+          this.showMapHoverPreview(h.id, marker.getLatLng());
         });
 
         this.leafletMarkers.push(marker);
       });
 
+      // Render Student POI Markers (Metro, Food, Libraries)
+      this.renderMapPois(centerLat, centerLng);
+
       if (bounds.length > 1) {
-        this.leafletMap.fitBounds(bounds, { padding: [30, 30] });
+        this.leafletMap.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
       }
+
+      this.leafletMap.invalidateSize();
     } catch (e) {
       console.warn("Leaflet Map render notice:", e);
+    }
+  }
+
+  handleMapMoveEnd() {
+    if (!this.mapBoundsSync || !this.leafletMap) return;
+
+    const bounds = this.leafletMap.getBounds();
+    const visibleHostels = (this.hostels || []).filter(h => {
+      if (!h.lat || !h.lng) return true;
+      return bounds.contains([h.lat, h.lng]);
+    });
+
+    this.filteredHostels = visibleHostels;
+    this.renderHostels();
+  }
+
+  toggleMapBoundsFilter(enabled) {
+    this.mapBoundsSync = enabled;
+    if (enabled) {
+      this.handleMapMoveEnd();
+      this.showToast("List is now synced with visible map area 🗺️", "info");
+    } else {
+      this.applyFilters();
+      this.showToast("Map sync disabled. Showing all search results.", "info");
+    }
+  }
+
+  toggleMapPoi(poiType) {
+    const btn = document.querySelector(`.map-poi-pill[data-poi="${poiType}"]`);
+    if (this.activeMapPois.has(poiType)) {
+      this.activeMapPois.delete(poiType);
+      btn?.classList.remove("active");
+    } else {
+      this.activeMapPois.add(poiType);
+      btn?.classList.add("active");
+    }
+
+    if (this.leafletMap) {
+      const center = this.leafletMap.getCenter();
+      this.renderMapPois(center.lat, center.lng);
+    }
+  }
+
+  renderMapPois(centerLat, centerLng) {
+    if (!this.leafletMap || typeof L === "undefined") return;
+
+    // Clear old POIs
+    if (this.poiMarkers) {
+      this.poiMarkers.forEach(m => this.leafletMap.removeLayer(m));
+      this.poiMarkers = [];
+    }
+
+    if (this.activeMapPois.size === 0) return;
+
+    // Simulated realistic student POIs around campus center
+    const poiConfigs = {
+      metro: [
+        { name: "Vishwa Vidyalaya Metro (Yellow Line)", dLat: 0.004, dLng: -0.003, icon: "fa-train-subway", color: "#eab308" },
+        { name: "GTB Nagar Metro Station", dLat: -0.005, dLng: 0.004, icon: "fa-train-subway", color: "#eab308" }
+      ],
+      food: [
+        { name: "Hudson Lane Student Cafes & Food Street", dLat: 0.003, dLng: 0.005, icon: "fa-utensils", color: "#f97316" },
+        { name: "Chache Di Hatti & Student Mess Hub", dLat: -0.003, dLng: -0.004, icon: "fa-bowl-food", color: "#f97316" }
+      ],
+      library: [
+        { name: "Central Student Reading Hall & Library", dLat: 0.002, dLng: -0.002, icon: "fa-book-open-reader", color: "#3b82f6" },
+        { name: "24x7 Silent Study Hub", dLat: -0.004, dLng: 0.002, icon: "fa-book-bookmark", color: "#3b82f6" }
+      ],
+      health: [
+        { name: "Apollo 24/7 Student Pharmacy & Clinic", dLat: -0.002, dLng: 0.006, icon: "fa-notes-medical", color: "#ef4444" },
+        { name: "Campus Health & Wellness Centre", dLat: 0.005, dLng: 0.001, icon: "fa-hospital", color: "#ef4444" }
+      ]
+    };
+
+    this.activeMapPois.forEach(type => {
+      const items = poiConfigs[type] || [];
+      items.forEach(poi => {
+        const poiLat = centerLat + poi.dLat;
+        const poiLng = centerLng + poi.dLng;
+
+        const iconHtml = `
+          <div class="poi-marker-icon" style="color: ${poi.color}; border-color: ${poi.color};" title="${this.escapeHtml(poi.name)}">
+            <i class="fa-solid ${poi.icon}"></i>
+          </div>
+        `;
+
+        const markerIcon = L.divIcon({
+          className: 'poi-div-icon',
+          html: iconHtml,
+          iconSize: [28, 28],
+          iconAnchor: [14, 14]
+        });
+
+        const m = L.marker([poiLat, poiLng], { icon: markerIcon }).addTo(this.leafletMap);
+        m.bindPopup(`
+          <div style="padding: 8px 10px; font-size: 0.8rem; font-weight: 700;">
+            <div style="color: ${poi.color}; margin-bottom: 2px;"><i class="fa-solid ${poi.icon}"></i> ${this.escapeHtml(poi.name)}</div>
+            <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 500;">Verified Student Point of Interest</div>
+          </div>
+        `);
+        this.poiMarkers.push(m);
+      });
+    });
+  }
+
+  toggleCampusRadiusCircle() {
+    this.showCampusRadius = !this.showCampusRadius;
+    const btn = document.getElementById("campus-radius-toggle-btn");
+    btn?.classList.toggle("active", this.showCampusRadius);
+
+    if (this.campusRadiusCircle && this.leafletMap) {
+      if (this.showCampusRadius) {
+        this.campusRadiusCircle.addTo(this.leafletMap);
+        if (this.campusCenterMarker) this.campusCenterMarker.addTo(this.leafletMap);
+        this.showToast("Campus 1.2km Walkable Radius visible 🎯", "info");
+      } else {
+        this.leafletMap.removeLayer(this.campusRadiusCircle);
+        if (this.campusCenterMarker) this.leafletMap.removeLayer(this.campusCenterMarker);
+        this.showToast("Campus Walkable Radius hidden", "info");
+      }
+    }
+  }
+
+  locateUserOnMap() {
+    if (!navigator.geolocation) {
+      this.showToast("Geolocation is not supported by your browser.", "warning");
+      return;
+    }
+
+    this.showToast("Locating your GPS position...", "info");
+
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+
+        if (this.leafletMap) {
+          this.leafletMap.flyTo([lat, lng], 15, { duration: 1.2 });
+
+          const gpsIcon = L.divIcon({
+            className: 'user-gps-pin',
+            html: `
+              <div style="width: 22px; height: 22px; border-radius: 50%; background: #3b82f6; border: 3px solid #ffffff; box-shadow: 0 0 16px rgba(59, 130, 246, 0.8); animation: pulse-animation 2s infinite;"></div>
+            `,
+            iconSize: [22, 22],
+            iconAnchor: [11, 11]
+          });
+
+          L.marker([lat, lng], { icon: gpsIcon }).addTo(this.leafletMap)
+            .bindPopup(`<div style="padding: 6px 10px; font-weight: 700; font-size: 0.8rem;">📍 You Are Here</div>`)
+            .openPopup();
+        }
+
+        this.showToast("Found your location! Showing nearby student hostels 📍", "success");
+      },
+      err => {
+        this.showToast("Could not access GPS location. Please check location permissions.", "warning");
+      },
+      { timeout: 8000, enableHighAccuracy: true }
+    );
+  }
+
+  recenterExplorerMap() {
+    if (!this.leafletMap) return;
+
+    if (this.leafletMarkers && this.leafletMarkers.length > 0) {
+      const group = new L.featureGroup(this.leafletMarkers);
+      this.leafletMap.fitBounds(group.getBounds(), { padding: [40, 40], maxZoom: 16 });
+      this.showToast("Map view reset to fit all stays", "info");
+    } else {
+      this.renderOpenStreetMap();
+    }
+  }
+
+  toggleMobileSplitView() {
+    this.isMobileMapActive = !this.isMobileMapActive;
+    const layout = document.getElementById("explorer-layout");
+    const label = document.getElementById("mob-switch-label");
+    const icon = document.getElementById("mob-switch-icon");
+
+    if (this.isMobileMapActive) {
+      layout?.classList.add("mobile-map-active");
+      if (label) label.innerText = "View List";
+      if (icon) icon.className = "fa-solid fa-list-ul";
+      setTimeout(() => {
+        if (this.leafletMap) this.leafletMap.invalidateSize();
+      }, 150);
+    } else {
+      layout?.classList.remove("mobile-map-active");
+      if (label) label.innerText = "View Map";
+      if (icon) icon.className = "fa-solid fa-map-location-dot";
     }
   }
 
@@ -4847,6 +5255,11 @@ class HostelKhojoApp {
     document.documentElement.setAttribute("data-theme", next);
     localStorage.setItem("hostelkhojo_theme", next);
     this.updateThemeIcon(next);
+
+    // Sync map tile layer if not on satellite mode
+    if (this.leafletMap && this.currentMapTileLayer !== "satellite") {
+      this.setMapTileLayer(next === "dark" ? "dark" : "street");
+    }
   }
 
   updateThemeIcon(theme) {

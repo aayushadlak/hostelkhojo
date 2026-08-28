@@ -194,18 +194,18 @@
       <div class="toolbar-card">
         <div class="results-meta">
           <h2 id="results-count-text">Found <span id="results-count-num">0</span> Verified Stays</h2>
-          <span class="location-tag" id="active-location-tag"><i class="fa-solid fa-circle-check"></i> Showing Verified
-            Hostels & PGs in India</span>
+          <span class="location-tag" id="active-location-tag"><i class="fa-solid fa-circle-check"></i> Showing Verified Hostels & PGs in India</span>
         </div>
 
         <div class="toolbar-controls">
           <!-- View switchers -->
           <div class="view-toggle-group">
-            <button class="view-btn active" id="view-grid-btn" onclick="app.setViewMode('grid')" title="Grid View">
+            <button class="view-btn active" id="view-grid-btn" onclick="app.setViewMode('grid')" title="Standard 3-Column Grid View">
               <i class="fa-solid fa-grip"></i> Grid
             </button>
-            <button class="view-btn" id="view-split-btn" onclick="app.setViewMode('split')" title="Map & Grid View">
+            <button class="view-btn" id="view-split-btn" onclick="app.setViewMode('split')" title="Interactive Split Map & List Explorer">
               <i class="fa-solid fa-map-location-dot"></i> Split Map
+              <span class="split-view-badge">Live</span>
             </button>
           </div>
 
@@ -216,8 +216,8 @@
               <option value="recommended">Recommended & Featured</option>
               <option value="price-asc">Rent: Low to High</option>
               <option value="price-desc">Rent: High to Low</option>
-              <option value="rating-desc">Highest Rated</option>
-              <option value="distance-asc">Closest to Campus</option>
+              <option value="rating-desc">Highest Rated ⭐</option>
+              <option value="distance-asc">Closest to Campus 🚶</option>
             </select>
           </div>
         </div>
@@ -226,43 +226,97 @@
       <!-- HOSTELS DISPLAY LAYOUT (GRID / SPLIT MAP) -->
       <div class="explorer-layout grid-view" id="explorer-layout">
 
-        <!-- CARDS GRID -->
-        <div class="hostels-grid" id="hostels-grid">
-          <!-- Dynamically populated by JS -->
+        <!-- CARDS LIST / GRID PANE -->
+        <div class="hostels-list-pane" id="hostels-list-pane">
+          <div class="split-list-sticky-bar" id="split-list-sticky-bar">
+            <span id="split-list-status"><i class="fa-solid fa-location-dot" style="color: var(--primary);"></i> Showing properties near target campus</span>
+            <div class="split-list-quick-filters">
+              <button class="split-chip-filter" onclick="app.quickFilterGender('all')">All</button>
+              <button class="split-chip-filter" onclick="app.quickFilterGender('Boys')"><i class="fa-solid fa-mars" style="color: var(--boys-blue);"></i> Boys</button>
+              <button class="split-chip-filter" onclick="app.quickFilterGender('Girls')"><i class="fa-solid fa-venus" style="color: var(--girls-pink);"></i> Girls</button>
+              <button class="split-chip-filter" onclick="app.quickFilterGender('Co-ed')"><i class="fa-solid fa-venus-mars" style="color: var(--coed-purple);"></i> Co-ed</button>
+            </div>
+          </div>
+          <div class="hostels-grid" id="hostels-grid">
+            <!-- Dynamically populated by JS -->
+          </div>
         </div>
 
-        <!-- INTERACTIVE MAP CONTAINER (LIVE OPENSTREETMAP & CANVAS PINS) -->
+        <!-- INTERACTIVE MAP CONTAINER (SPLIT PANE ENGINE) -->
         <div class="map-container" id="map-container">
+          
+          <!-- MAP HEADER CONTROLS -->
           <div class="map-header">
             <div class="map-title">
               <span class="map-live-dot"></span>
-              <i class="fa-solid fa-map-location-dot" style="color: var(--primary);"></i> Campus Proximity Map
+              <i class="fa-solid fa-map-location-dot" style="color: var(--primary);"></i> Campus Proximity & Transit Map
             </div>
 
-            <div class="map-segmented-control">
-              <button class="map-segmented-btn active" id="map-mode-gmaps-btn" onclick="app.setMapProvider('osm')"
-                title="Switch to 100% Free Live Map (OpenStreetMap)">
-                <i class="fa-solid fa-earth-asia" style="color: #4285F4;"></i> Live Map
+            <!-- Tile Layer Switchers -->
+            <div class="map-layer-segmented-control">
+              <button class="map-layer-btn active" id="map-layer-street-btn" onclick="app.setMapTileLayer('street')" title="Street Roadmap">
+                <i class="fa-solid fa-map"></i> Streets
               </button>
-              <button class="map-segmented-btn" id="map-mode-canvas-btn" onclick="app.setMapProvider('canvas')"
-                title="Switch to Canvas Pins">
-                <i class="fa-solid fa-compass" style="color: var(--primary);"></i> Canvas Pins
+              <button class="map-layer-btn" id="map-layer-satellite-btn" onclick="app.setMapTileLayer('satellite')" title="Satellite Imagery">
+                <i class="fa-solid fa-earth-americas"></i> Satellite
+              </button>
+              <button class="map-layer-btn" id="map-layer-dark-btn" onclick="app.setMapTileLayer('dark')" title="Dark Midnight Map">
+                <i class="fa-solid fa-moon"></i> Midnight
+              </button>
+              <button class="map-layer-btn" id="map-layer-canvas-btn" onclick="app.setMapProvider('canvas')" title="Canvas Pins Mode">
+                <i class="fa-solid fa-compass"></i> Canvas
               </button>
             </div>
 
+            <!-- Map Legend -->
             <div class="map-legend">
-              <span class="legend-item"><span class="dot pin-boys"></span> Boys</span>
-              <span class="legend-item"><span class="dot pin-girls"></span> Girls</span>
+              <span class="legend-item"><span class="dot pin-boys"></span> Boys PG</span>
+              <span class="legend-item"><span class="dot pin-girls"></span> Girls PG</span>
               <span class="legend-item"><span class="dot pin-coed"></span> Co-ed</span>
             </div>
           </div>
 
-          <!-- LIVE INTERACTIVE MAP CANVAS -->
-          <div id="google-map-canvas"
-            style="width: 100%; height: 100%; min-height: 500px; display: block; overflow: hidden; z-index: 1;">
+          <!-- FLOATING TOP BAR: SEARCH AS MAP MOVES & STUDENT POI PILLS -->
+          <div class="map-floating-top-bar" id="map-floating-top-bar">
+            <label class="map-search-bounds-toggle" title="Auto-filter listings when you pan or zoom the map">
+              <input type="checkbox" id="map-bounds-sync" onchange="app.toggleMapBoundsFilter(this.checked)" />
+              <i class="fa-solid fa-arrows-rotate"></i>
+              <span>Search as map moves</span>
+            </label>
+
+            <div class="map-poi-pills">
+              <button class="map-poi-pill" data-poi="metro" onclick="app.toggleMapPoi('metro')" title="Show Nearby Metro & Transit Stations">
+                <i class="fa-solid fa-train-subway"></i> Metro
+              </button>
+              <button class="map-poi-pill" data-poi="food" onclick="app.toggleMapPoi('food')" title="Show Student Cafes & Mess Points">
+                <i class="fa-solid fa-utensils"></i> Food Hubs
+              </button>
+              <button class="map-poi-pill" data-poi="library" onclick="app.toggleMapPoi('library')" title="Show Libraries & Reading Rooms">
+                <i class="fa-solid fa-book-open-reader"></i> Libraries
+              </button>
+              <button class="map-poi-pill" data-poi="health" onclick="app.toggleMapPoi('health')" title="Show Pharmacies & Clinics">
+                <i class="fa-solid fa-notes-medical"></i> Health
+              </button>
+            </div>
           </div>
 
-          <!-- SIMULATED CANVAS MAP -->
+          <!-- FLOATING ACTION BUTTONS (BOTTOM RIGHT) -->
+          <div class="map-floating-actions">
+            <button class="map-float-btn" onclick="app.locateUserOnMap()" title="Find Hostels Near My GPS Location">
+              <i class="fa-solid fa-location-crosshairs"></i>
+            </button>
+            <button class="map-float-btn" onclick="app.recenterExplorerMap()" title="Fit all hostels in view">
+              <i class="fa-solid fa-expand"></i>
+            </button>
+            <button class="map-float-btn" id="campus-radius-toggle-btn" onclick="app.toggleCampusRadiusCircle()" title="Toggle 1.2km Walkable Campus Radius">
+              <i class="fa-solid fa-circle-notch"></i>
+            </button>
+          </div>
+
+          <!-- LIVE INTERACTIVE LEAFLET / OSM CANVAS -->
+          <div id="google-map-canvas" class="split-map-canvas"></div>
+
+          <!-- SIMULATED CANVAS MAP FALLBACK -->
           <div class="simulated-map" id="simulated-map" style="display: none;">
             <div class="map-campus-center" style="top: 45%; left: 50%;">
               <i class="fa-solid fa-university"></i>
@@ -274,8 +328,22 @@
 
             <div id="map-pins-layer"></div>
           </div>
+
+          <!-- GLASSMORPHIC HOVER / CLICK PREVIEW CARD OVERLAY -->
+          <div class="map-hover-preview-card" id="map-hover-preview-card" style="display: none;">
+            <!-- Rendered dynamically by JS -->
+          </div>
+
         </div>
 
+      </div>
+
+      <!-- MOBILE FLOATING MAP / LIST VIEW SWITCHER PILL -->
+      <div class="mobile-floating-view-switch" id="mobile-floating-view-switch">
+        <button class="mobile-map-switch-btn" id="mobile-map-switch-btn" onclick="app.toggleMobileSplitView()">
+          <i class="fa-solid fa-map-location-dot" id="mob-switch-icon"></i>
+          <span id="mob-switch-label">View Map</span>
+        </button>
       </div>
 
     </div>
