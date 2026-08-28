@@ -49,7 +49,7 @@
   <meta http-equiv="Expires" content="0" />
 
   <!-- Main Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=27.0&t=20260825_gcloud_active" />
+  <link rel="stylesheet" href="styles.css?v=29.0&t=20260828_clean_view" />
 </head>
 
 <body>
@@ -228,15 +228,6 @@
 
         <!-- CARDS LIST / GRID PANE -->
         <div class="hostels-list-pane" id="hostels-list-pane">
-          <div class="split-list-sticky-bar" id="split-list-sticky-bar">
-            <span id="split-list-status"><i class="fa-solid fa-location-dot" style="color: var(--primary);"></i> Showing properties near target campus</span>
-            <div class="split-list-quick-filters">
-              <button class="split-chip-filter" onclick="app.quickFilterGender('all')">All</button>
-              <button class="split-chip-filter" onclick="app.quickFilterGender('Boys')"><i class="fa-solid fa-mars" style="color: var(--boys-blue);"></i> Boys</button>
-              <button class="split-chip-filter" onclick="app.quickFilterGender('Girls')"><i class="fa-solid fa-venus" style="color: var(--girls-pink);"></i> Girls</button>
-              <button class="split-chip-filter" onclick="app.quickFilterGender('Co-ed')"><i class="fa-solid fa-venus-mars" style="color: var(--coed-purple);"></i> Co-ed</button>
-            </div>
-          </div>
           <div class="hostels-grid" id="hostels-grid">
             <!-- Dynamically populated by JS -->
           </div>
@@ -336,14 +327,6 @@
 
         </div>
 
-      </div>
-
-      <!-- MOBILE FLOATING MAP / LIST VIEW SWITCHER PILL -->
-      <div class="mobile-floating-view-switch" id="mobile-floating-view-switch">
-        <button class="mobile-map-switch-btn" id="mobile-map-switch-btn" onclick="app.toggleMobileSplitView()">
-          <i class="fa-solid fa-map-location-dot" id="mob-switch-icon"></i>
-          <span id="mob-switch-label">View Map</span>
-        </button>
       </div>
 
     </div>
@@ -1948,7 +1931,7 @@
   </nav>
 
   <!-- Main JavaScript App Logic -->
-  <script src="app.js?v=28.0&t=20260825_live_pan_fixed"></script>
+  <script src="app.js?v=29.0&t=20260828_clean_view"></script>
 </body>
 
 </html>
