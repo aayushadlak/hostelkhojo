@@ -49,7 +49,7 @@
   <meta http-equiv="Expires" content="0" />
 
   <!-- Main Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=31.0&t=20260828_clean_gmaps_tiles" />
+  <link rel="stylesheet" href="styles.css?v=32.0&t=20260828_no_overlap_bar" />
 </head>
 
 <body>
@@ -240,7 +240,7 @@
           <div class="map-header">
             <div class="map-title">
               <span class="map-live-dot"></span>
-              <i class="fa-solid fa-map-location-dot" style="color: var(--primary);"></i> Campus Proximity & Transit Map
+              <i class="fa-solid fa-map-location-dot" style="color: var(--primary);"></i> Campus Map
             </div>
 
             <!-- Tile Layer Switchers -->
@@ -254,21 +254,11 @@
               <button class="map-layer-btn" id="map-layer-dark-btn" onclick="app.setMapTileLayer('dark')" title="Dark Midnight Map">
                 <i class="fa-solid fa-moon"></i> Midnight
               </button>
-              <button class="map-layer-btn" id="map-layer-canvas-btn" onclick="app.setMapProvider('canvas')" title="Canvas Pins Mode">
-                <i class="fa-solid fa-compass"></i> Canvas
-              </button>
-            </div>
-
-            <!-- Map Legend -->
-            <div class="map-legend">
-              <span class="legend-item"><span class="dot pin-boys"></span> Boys PG</span>
-              <span class="legend-item"><span class="dot pin-girls"></span> Girls PG</span>
-              <span class="legend-item"><span class="dot pin-coed"></span> Co-ed</span>
             </div>
           </div>
 
-          <!-- FLOATING TOP BAR: SEARCH AS MAP MOVES & STUDENT POI PILLS -->
-          <div class="map-floating-top-bar" id="map-floating-top-bar">
+          <!-- MAP SUBBAR: SEARCH AS MAP MOVES & POI PILLS -->
+          <div class="map-subbar" id="map-subbar">
             <label class="map-search-bounds-toggle" title="Auto-filter listings when you pan or zoom the map">
               <input type="checkbox" id="map-bounds-sync" onchange="app.toggleMapBoundsFilter(this.checked)" />
               <i class="fa-solid fa-arrows-rotate"></i>
@@ -1931,7 +1921,7 @@
   </nav>
 
   <!-- Main JavaScript App Logic -->
-  <script src="app.js?v=31.0&t=20260828_clean_gmaps_tiles"></script>
+  <script src="app.js?v=32.0&t=20260828_no_overlap_bar"></script>
 </body>
 
 </html>
