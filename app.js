@@ -2349,13 +2349,7 @@ class HostelKhojoApp {
       const data = await res.json().catch(() => ({}));
 
       if (res.ok) {
-        this.showToast(`Verification OTP sent to ${email}! ✉️`, "success");
-        if (data.dev_otp) {
-          console.log(`[Dev OTP Code]: ${data.dev_otp}`);
-          this.showToast(`[Dev Mode] Verification OTP: ${data.dev_otp}`, "info");
-          const otpInput = document.getElementById("admin-otp-code");
-          if (otpInput) otpInput.value = data.dev_otp;
-        }
+        this.showToast(`Verification code sent to your Gmail (${email}). Please check your inbox (and spam folder)! ✉️`, "success");
         this.switchAdminOTPStep(2);
         this.startAdminOTPCountdown(data.cooldown_seconds || 60);
       } else {

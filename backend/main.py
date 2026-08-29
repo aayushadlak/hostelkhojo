@@ -176,19 +176,18 @@ def register_user(user_in: UserRegister, db: Session = Depends(get_db)):
 ADMIN_OTP_STORE = {}
 
 def send_admin_otp_email(to_email: str, otp_code: str) -> bool:
-    smtp_host = os.getenv("SMTP_HOST", "smtp.gmail.com")
+    smtp_host = os.getenv("SMTP_HOST", "smtp.gmail.com").strip()
     smtp_port = int(os.getenv("SMTP_PORT", "587"))
     smtp_user = os.getenv("SMTP_USER", os.getenv("GMAIL_USER", "")).strip()
     smtp_password = os.getenv("SMTP_PASSWORD", os.getenv("GMAIL_APP_PASSWORD", "")).strip()
     smtp_from = os.getenv("SMTP_FROM", f"Hostel Khojo Super Admin <{smtp_user}>" if smtp_user else "Hostel Khojo Super Admin <admin@hostelkhojo.in>").strip()
 
-    print(f"\n==================================================")
-    print(f"[SUPER ADMIN OTP] Verification Code for {to_email}: {otp_code}")
-    print(f"==================================================\n")
-
     if not smtp_user or not smtp_password:
-        print("[SMTP Notice] SMTP credentials (SMTP_USER / SMTP_PASSWORD) not configured in .env. OTP displayed above in server console for development.")
-        return False
+        print(f"[SMTP Error] SMTP_USER and SMTP_PASSWORD are not configured. Cannot dispatch OTP to {to_email}.")
+        raise HTTPException(
+            status_code=500,
+            detail="Gmail SMTP is not configured on the server. Please set SMTP_USER and SMTP_PASSWORD (or GMAIL_APP_PASSWORD) in environment variables to deliver OTP via Gmail."
+        )
 
     try:
         msg = MIMEMultipart("alternative")
@@ -255,9 +254,14 @@ def send_admin_otp_email(to_email: str, otp_code: str) -> bool:
 
         print(f"[OK] Real Super Admin Gmail OTP email dispatched to {to_email}")
         return True
+    except HTTPException:
+        raise
     except Exception as e:
-        print(f"[Notice] Failed to dispatch email via SMTP ({e}). Local console OTP fallback active.")
-        return False
+        print(f"[Error] Failed to dispatch email via SMTP to {to_email}: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to dispatch OTP to Gmail: {str(e)}. Please check your SMTP settings in server environment."
+        )
 
 
 # SUPER ADMIN GMAIL OTP ENDPOINTS
@@ -277,6 +281,10 @@ def send_admin_otp(otp_in: AdminSendOTP, db: Session = Depends(get_db)):
     # Generate secure 6-digit numeric OTP
     otp_code = f"{random.randint(100000, 999999)}"
 
+    # Dispatch email strictly to Gmail
+    send_admin_otp_email(email, otp_code)
+
+    # Save to store after successful email dispatch
     ADMIN_OTP_STORE[email] = {
         "otp": otp_code,
         "expires_at": now + 600, # 10 minutes
@@ -284,21 +292,12 @@ def send_admin_otp(otp_in: AdminSendOTP, db: Session = Depends(get_db)):
         "last_sent_at": now
     }
 
-    email_sent = send_admin_otp_email(email, otp_code)
-
-    resp = {
+    return {
         "status": "success",
-        "message": f"Verification code sent to {email}.",
+        "message": f"Verification code has been sent directly to your Gmail inbox ({email}). Please check your inbox.",
         "email": email,
-        "cooldown_seconds": 60,
-        "email_sent": email_sent
+        "cooldown_seconds": 60
     }
-    smtp_user = os.getenv("SMTP_USER", os.getenv("GMAIL_USER", "")).strip()
-    if not smtp_user or not email_sent:
-        resp["dev_otp"] = otp_code
-        resp["dev_notice"] = "OTP logged in server console for development mode."
-
-    return resp
 
 
 @app.post("/api/auth/admin/verify-otp", response_model=Token)
