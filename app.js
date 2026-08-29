@@ -2254,100 +2254,205 @@ class HostelKhojoApp {
     }
   }
 
-  toggleAdminPasswordVisibility() {
-    const input = document.getElementById("admin-login-password");
-    const eye = document.getElementById("admin-pwd-eye");
-    if (!input || !eye) return;
+  switchAdminOTPStep(step) {
+    const step1 = document.getElementById("admin-otp-step-1");
+    const step2 = document.getElementById("admin-otp-step-2");
+    const emailInput = document.getElementById("admin-otp-email");
+    const otpInput = document.getElementById("admin-otp-code");
 
-    if (input.type === "password") {
-      input.type = "text";
-      eye.className = "fa-solid fa-eye-slash";
+    if (step === 1) {
+      if (step1) step1.style.display = "block";
+      if (step2) step2.style.display = "none";
+      if (emailInput) setTimeout(() => emailInput.focus(), 150);
     } else {
-      input.type = "password";
-      eye.className = "fa-solid fa-eye";
+      if (step1) step1.style.display = "none";
+      if (step2) step2.style.display = "block";
+      const email = emailInput ? emailInput.value.trim() : "admin@hostelkhojo.in";
+      const emailDisplay = document.getElementById("admin-target-email-display");
+      if (emailDisplay) emailDisplay.textContent = email;
+      if (otpInput) {
+        otpInput.value = "";
+        setTimeout(() => otpInput.focus(), 150);
+      }
     }
   }
 
-  async handleAdminLoginSubmit(e) {
-    e.preventDefault();
-    const identifierEl = document.getElementById("admin-login-identifier");
-    const passwordEl = document.getElementById("admin-login-password");
-    const identifier = identifierEl ? identifierEl.value.trim() : "";
-    const password = passwordEl ? passwordEl.value.trim() : "";
+  startAdminOTPCountdown(seconds = 60) {
+    if (this.adminOTPTimerInterval) {
+      clearInterval(this.adminOTPTimerInterval);
+    }
+    let remaining = seconds;
+    const countdownEl = document.getElementById("admin-otp-countdown");
+    const resendCountdownEl = document.getElementById("admin-resend-countdown");
+    const resendBtn = document.getElementById("admin-resend-otp-btn");
 
-    if (!password) {
-      this.showToast("Please enter the Master Admin password to unlock.", "warning");
+    if (countdownEl) countdownEl.textContent = remaining;
+    if (resendCountdownEl) resendCountdownEl.textContent = `${remaining}s`;
+    if (resendBtn) {
+      resendBtn.disabled = true;
+      resendBtn.style.color = "var(--text-muted)";
+      resendBtn.style.cursor = "not-allowed";
+    }
+
+    this.adminOTPTimerInterval = setInterval(() => {
+      remaining -= 1;
+      if (countdownEl) countdownEl.textContent = Math.max(0, remaining);
+      if (resendCountdownEl) resendCountdownEl.textContent = `${Math.max(0, remaining)}s`;
+
+      if (remaining <= 0) {
+        clearInterval(this.adminOTPTimerInterval);
+        this.adminOTPTimerInterval = null;
+        if (resendBtn) {
+          resendBtn.disabled = false;
+          resendBtn.style.color = "var(--accent-primary)";
+          resendBtn.style.cursor = "pointer";
+          resendBtn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> Resend OTP';
+        }
+      }
+    }, 1000);
+  }
+
+  resetAdminAuthModal() {
+    if (this.adminOTPTimerInterval) {
+      clearInterval(this.adminOTPTimerInterval);
+      this.adminOTPTimerInterval = null;
+    }
+    const otpInput = document.getElementById("admin-otp-code");
+    if (otpInput) otpInput.value = "";
+    this.switchAdminOTPStep(1);
+  }
+
+  async handleAdminSendOTPSubmit(e) {
+    if (e) e.preventDefault();
+    const emailInput = document.getElementById("admin-otp-email");
+    const email = emailInput ? emailInput.value.trim().toLowerCase() : "";
+    const sendBtn = document.getElementById("admin-send-otp-btn");
+
+    if (!email || !email.includes("@")) {
+      this.showToast("Please enter a valid Super Admin Gmail / Email address.", "warning");
       return;
     }
 
-    const validPasskeys = ["adminpassword123", "admin123", "admin", "root", "master123"];
-    const isMasterIdentifier = identifier.toLowerCase().includes("admin") || identifier === "9999999999" || identifier.toLowerCase().includes("hostelkhojo");
-    const isMasterPasskey = validPasskeys.includes(password.toLowerCase());
+    const origBtnHtml = sendBtn ? sendBtn.innerHTML : "";
+    if (sendBtn) {
+      sendBtn.disabled = true;
+      sendBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Dispatching OTP...';
+    }
 
-    // 1. Try FastAPI backend verification FIRST to receive a signed JWT token
     try {
-      const res = await apiFetch("/auth/login", {
+      const res = await apiFetch("/auth/admin/send-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ identifier, password })
+        body: JSON.stringify({ email })
       });
 
+      const data = await res.json().catch(() => ({}));
+
       if (res.ok) {
-        const data = await res.json();
+        this.showToast(`Verification OTP sent to ${email}! ✉️`, "success");
+        if (data.dev_otp) {
+          console.log(`[Dev OTP Code]: ${data.dev_otp}`);
+          this.showToast(`[Dev Mode] Verification OTP: ${data.dev_otp}`, "info");
+          const otpInput = document.getElementById("admin-otp-code");
+          if (otpInput) otpInput.value = data.dev_otp;
+        }
+        this.switchAdminOTPStep(2);
+        this.startAdminOTPCountdown(data.cooldown_seconds || 60);
+      } else {
+        const errorMsg = data.detail || "Failed to send OTP. Please try again.";
+        this.showToast(errorMsg, "warning");
+      }
+    } catch (err) {
+      console.warn("Error requesting admin OTP:", err);
+      this.showToast("Network error communicating with authentication server.", "warning");
+    } finally {
+      if (sendBtn) {
+        sendBtn.disabled = false;
+        sendBtn.innerHTML = origBtnHtml;
+      }
+    }
+  }
+
+  async resendAdminOTP() {
+    const resendBtn = document.getElementById("admin-resend-otp-btn");
+    if (resendBtn && resendBtn.disabled) return;
+    await this.handleAdminSendOTPSubmit(null);
+  }
+
+  async handleAdminVerifyOTPSubmit(e) {
+    e.preventDefault();
+    const emailInput = document.getElementById("admin-otp-email");
+    const otpInput = document.getElementById("admin-otp-code");
+    const email = emailInput ? emailInput.value.trim().toLowerCase() : "";
+    const otp = otpInput ? otpInput.value.trim() : "";
+    const verifyBtn = document.getElementById("admin-verify-otp-btn");
+
+    if (!otp || otp.length < 6) {
+      this.showToast("Please enter the complete 6-digit OTP code.", "warning");
+      if (otpInput) otpInput.focus();
+      return;
+    }
+
+    const origBtnHtml = verifyBtn ? verifyBtn.innerHTML : "";
+    if (verifyBtn) {
+      verifyBtn.disabled = true;
+      verifyBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verifying OTP...';
+    }
+
+    try {
+      const res = await apiFetch("/auth/admin/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, otp })
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (res.ok && data.access_token) {
         if (data.user.role !== "admin") {
           this.showToast("Access Denied: Account does not have Super Admin privileges.", "warning");
           return;
         }
+
+        if (this.adminOTPTimerInterval) {
+          clearInterval(this.adminOTPTimerInterval);
+          this.adminOTPTimerInterval = null;
+        }
+
         sessionStorage.setItem("hostelkhojo_admin_unlocked", "true");
         localStorage.setItem("hostelkhojo_admin_token", data.access_token);
         localStorage.setItem("hostelkhojo_admin_user", JSON.stringify(data.user));
         this.currentAdminUser = data.user;
         this.saveUserToLocalAllUsers(data.user);
+
         this.closeModal("admin-auth-modal");
-        this.showToast(`Admin Command Center unlocked! Welcome, ${data.user.full_name}! 🚀`, "success");
+        this.showToast(`Super Admin verified via Gmail OTP! Welcome, ${data.user.full_name}! 🚀`, "success");
         this.renderAuthNavUI();
         this.switchTab("admin");
         this.loadAdminDashboardData();
         return;
+      } else {
+        const errorMsg = data.detail || "Invalid OTP code. Please try again.";
+        this.showToast(errorMsg, "warning");
+        if (otpInput) {
+          otpInput.value = "";
+          otpInput.focus();
+        }
+        const modalBox = document.querySelector("#admin-auth-modal .modal-box");
+        if (modalBox) {
+          modalBox.style.animation = "none";
+          setTimeout(() => { modalBox.style.animation = "shake 0.4s ease"; }, 10);
+        }
       }
     } catch (err) {
-      console.warn("Backend admin login failed/offline:", err);
+      console.warn("Error verifying admin OTP:", err);
+      this.showToast("Network error verifying OTP.", "warning");
+    } finally {
+      if (verifyBtn) {
+        verifyBtn.disabled = false;
+        verifyBtn.innerHTML = origBtnHtml;
+      }
     }
-
-    // 2. Fallback to Master Admin Passkey if backend is offline or credential lookup failed
-    if (isMasterIdentifier && isMasterPasskey) {
-      const adminUser = {
-        id: "usr_admin_master",
-        full_name: "Super Admin Command",
-        email: identifier.includes("@") ? identifier : "admin@hostelkhojo.in",
-        phone: "9999999999",
-        role: "admin",
-        created_at: new Date().toISOString()
-      };
-      sessionStorage.setItem("hostelkhojo_admin_unlocked", "true");
-      localStorage.setItem("hostelkhojo_admin_token", "admin_master_jwt_token_2026");
-      localStorage.setItem("hostelkhojo_admin_user", JSON.stringify(adminUser));
-      this.currentAdminUser = adminUser;
-      this.saveUserToLocalAllUsers(adminUser);
-      this.closeModal("admin-auth-modal");
-      this.showToast(`Admin Command Center unlocked! Welcome, ${adminUser.full_name}! 🚀`, "success");
-      this.renderAuthNavUI();
-      this.switchTab("admin");
-      this.loadAdminDashboardData();
-      return;
-    }
-
-    // Access Denied / Invalid password
-    if (passwordEl) {
-      passwordEl.value = "";
-      passwordEl.focus();
-    }
-    const modalBox = document.querySelector("#admin-auth-modal .modal-box");
-    if (modalBox) {
-      modalBox.style.animation = "none";
-      setTimeout(() => { modalBox.style.animation = "shake 0.4s ease"; }, 10);
-    }
-    this.showToast("Access Denied: Incorrect Admin Password 🔒", "warning");
   }
 
   logoutAdmin() {
@@ -5094,11 +5199,9 @@ class HostelKhojoApp {
     }
 
     if (id === "admin-auth-modal") {
-      const pwd = document.getElementById("admin-login-password");
-      if (pwd) {
-        pwd.value = "";
-        setTimeout(() => pwd.focus(), 150);
-      }
+      this.resetAdminAuthModal();
+      const emailInput = document.getElementById("admin-otp-email");
+      if (emailInput) setTimeout(() => emailInput.focus(), 150);
     }
 
     if (id === "post-roommate-modal" && !this.currentUser) {
@@ -5136,6 +5239,10 @@ class HostelKhojoApp {
   }
 
   closeModal(id) {
+    if (id === "admin-auth-modal" && this.adminOTPTimerInterval) {
+      clearInterval(this.adminOTPTimerInterval);
+      this.adminOTPTimerInterval = null;
+    }
     const modal = document.getElementById(id);
     if (modal) modal.classList.remove("active");
   }

@@ -20,4 +20,5 @@ node_modules/
 Thumbs.db
 .env
 .wrangler/
+scratch/
 
