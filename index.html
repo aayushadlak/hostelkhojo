@@ -1793,78 +1793,46 @@
     </div>
   </div>
 
-  <!-- MODAL: ADMIN MASTER AUTHENTICATION (GMAIL OTP 2-STEP VERIFICATION) -->
+  <!-- MODAL: ADMIN MASTER AUTHENTICATION (PASSWORD PROTECTED LOCK) -->
   <div class="modal-backdrop" id="admin-auth-modal">
     <div class="modal-box modal-sm text-center"
       style="border: 1.5px solid rgba(220, 38, 38, 0.4); box-shadow: 0 16px 40px rgba(220, 38, 38, 0.15);">
       <button class="modal-close" onclick="app.closeModal('admin-auth-modal')">&times;</button>
-      
       <div
         style="width: 64px; height: 64px; border-radius: 50%; background: var(--danger-red-bg); color: var(--danger-red); font-size: 1.8rem; display: flex; align-items: center; justify-content: center; margin: 0 auto 14px auto;">
-        <i class="fa-solid fa-shield-halved" id="admin-modal-icon"></i>
+        <i class="fa-solid fa-lock"></i>
       </div>
-      
       <h2 class="modal-title"
         style="margin-bottom: 4px; display: flex; align-items: center; justify-content: center; gap: 8px;">
-        Super Admin Lock <span class="badge badge-rose"><i class="fa-solid fa-envelope"></i> Gmail OTP</span>
+        Super Admin Lock <span class="badge badge-rose">Protected</span>
       </h2>
-      
-      <!-- STEP 1: ENTER GMAIL ADDRESS -->
-      <div id="admin-otp-step-1">
-        <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 20px;">
-          Enter your registered Admin Gmail address to receive a secure 6-digit login verification code.
-        </p>
+      <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 20px;">Enter authorized Master Admin password to unlock the Control Panel.
+      </p>
 
-        <form id="admin-send-otp-form" onsubmit="app.handleAdminSendOTPSubmit(event)">
-          <div class="form-group text-left" style="text-align: left;">
-            <label><i class="fa-brands fa-google" style="color: #ea4335;"></i> Super Admin Gmail Address</label>
-            <input type="email" id="admin-otp-email" required placeholder="admin@hostelkhojo.in"
-              class="form-control" value="admin@hostelkhojo.in" autocomplete="email" />
-          </div>
-
-          <button type="submit" id="admin-send-otp-btn" class="btn btn-primary btn-block btn-lg"
-            style="background: var(--danger-deep); border-color: var(--danger-deep); margin-top: 16px;">
-            <i class="fa-solid fa-paper-plane"></i> Send Verification OTP
-          </button>
-        </form>
-      </div>
-
-      <!-- STEP 2: ENTER 6-DIGIT OTP CODE -->
-      <div id="admin-otp-step-2" style="display: none;">
-        <div style="background: rgba(225, 29, 72, 0.08); border: 1px solid rgba(225, 29, 72, 0.2); border-radius: 8px; padding: 10px 14px; margin-bottom: 18px; font-size: 0.85rem; display: flex; align-items: center; justify-content: space-between;">
-          <span style="color: var(--text-primary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap; max-width: 260px;">
-            <i class="fa-solid fa-envelope-circle-check" style="color: var(--danger-red); margin-right: 6px;"></i>
-            OTP sent to: <strong id="admin-target-email-display">admin@hostelkhojo.in</strong>
-          </span>
-          <button type="button" onclick="app.switchAdminOTPStep(1)" style="background: none; border: none; color: var(--accent-primary); font-size: 0.8rem; font-weight: 600; cursor: pointer; text-decoration: underline; padding: 0;">Change</button>
+      <form id="admin-login-form" onsubmit="app.handleAdminLoginSubmit(event)">
+        <div class="form-group text-left" style="text-align: left;">
+          <label><i class="fa-solid fa-envelope"></i> Admin Email / Username / Phone</label>
+          <input type="text" id="admin-login-identifier" required placeholder="admin@hostelkhojo.in"
+            class="form-control" value="admin@hostelkhojo.in" autocomplete="username" />
         </div>
 
-        <form id="admin-verify-otp-form" onsubmit="app.handleAdminVerifyOTPSubmit(event)">
-          <div class="form-group text-left" style="text-align: left;">
-            <label style="display: flex; justify-content: space-between; align-items: center;">
-              <span><i class="fa-solid fa-key"></i> 6-Digit OTP Code</span>
-              <span id="admin-otp-timer-badge" style="font-size: 0.78rem; color: var(--text-muted); font-weight: normal;">Expires in: <strong id="admin-otp-countdown">60</strong>s</span>
-            </label>
-            <input type="text" id="admin-otp-code" required placeholder="1 2 3 4 5 6"
-              maxlength="6" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code"
-              class="form-control admin-otp-input" />
-          </div>
-
-          <div style="display: flex; justify-content: space-between; align-items: center; margin: 12px 0 16px 0; font-size: 0.82rem;">
-            <span class="text-muted">Didn't receive code?</span>
-            <button type="button" id="admin-resend-otp-btn" onclick="app.resendAdminOTP()" disabled
-              style="background: transparent; border: none; color: var(--text-muted); font-weight: 600; cursor: not-allowed; font-size: 0.82rem; padding: 0;">
-              <i class="fa-solid fa-rotate-right"></i> Resend OTP (<span id="admin-resend-countdown">60s</span>)
+        <div class="form-group text-left" style="text-align: left;">
+          <label><i class="fa-solid fa-key"></i> Master Admin Password</label>
+          <div style="position: relative;">
+            <input type="password" id="admin-login-password" required placeholder="Enter admin password..."
+              class="form-control" style="padding-right: 42px;" autocomplete="current-password" />
+            <button type="button" onclick="app.toggleAdminPasswordVisibility()"
+              style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 4px;">
+              <i class="fa-solid fa-eye" id="admin-pwd-eye"></i>
             </button>
           </div>
+        </div>
 
-          <button type="submit" id="admin-verify-otp-btn" class="btn btn-primary btn-block btn-lg"
-            style="background: var(--danger-deep); border-color: var(--danger-deep);">
-            <i class="fa-solid fa-lock-open"></i> Verify & Unlock Command Center
-          </button>
-        </form>
-      </div>
-
+        <button type="submit" id="admin-unlock-btn" class="btn btn-primary btn-block btn-lg"
+          style="background: var(--danger-deep); border-color: var(--danger-deep); margin-top: 16px;">
+          <i class="fa-solid fa-lock-open"></i> Unlock Control Panel
+        </button>
+      </form>
     </div>
   </div>
 

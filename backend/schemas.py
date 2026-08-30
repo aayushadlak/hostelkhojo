@@ -32,13 +32,6 @@ class PasswordReset(BaseModel):
 class UserRoleUpdate(BaseModel):
     role: str
 
-class AdminSendOTP(BaseModel):
-    email: str
-
-class AdminVerifyOTP(BaseModel):
-    email: str
-    otp: str
-
 class UserResponse(BaseModel):
     id: str
     full_name: str

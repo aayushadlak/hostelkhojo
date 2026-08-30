@@ -4109,34 +4109,3 @@ button, input, select, textarea {
     margin-top: 0;
   }
 }
-
-/* ==========================================================================
-   SUPER ADMIN GMAIL OTP VERIFICATION STYLES
-   ========================================================================== */
-.admin-otp-input {
-  font-size: 1.6rem !important;
-  font-weight: 700 !important;
-  letter-spacing: 8px !important;
-  text-align: center !important;
-  font-family: Consolas, 'Courier New', monospace, sans-serif !important;
-  padding: 12px 16px !important;
-  border: 1.5px solid rgba(225, 29, 72, 0.4) !important;
-  background: var(--surface-low) !important;
-  color: var(--text-primary) !important;
-  border-radius: 10px !important;
-  transition: all 0.25s ease !important;
-}
-
-.admin-otp-input:focus {
-  border-color: #f43f5e !important;
-  box-shadow: 0 0 0 4px rgba(244, 63, 94, 0.2) !important;
-  outline: none !important;
-}
-
-.admin-otp-input::placeholder {
-  letter-spacing: 4px !important;
-  color: var(--text-muted) !important;
-  opacity: 0.6 !important;
-}
-
-
