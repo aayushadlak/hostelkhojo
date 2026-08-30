@@ -190,20 +190,19 @@ def send_admin_otp_email(to_email: str, otp_code: str) -> bool:
             detail="Gmail SMTP is not configured on the server. Please set SMTP_USER and SMTP_PASSWORD (or GMAIL_APP_PASSWORD) in environment variables to deliver OTP via Gmail."
         )
 
-    try:
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = f"Super Admin Verification Code: {otp_code} | Hostel Khojo"
-        msg["From"] = smtp_from
-        msg["To"] = to_email
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = f"Super Admin Verification Code: {otp_code} | Hostel Khojo"
+    msg["From"] = smtp_from
+    msg["To"] = to_email
 
-        text_content = (
-            f"Hostel Khojo Super Admin Verification\n\n"
-            f"Your One-Time Password (OTP) is: {otp_code}\n\n"
-            f"This code is valid for 10 minutes. Do NOT share this code with anyone.\n"
-            f"If you did not request this login, please contact Hostel Khojo support."
-        )
+    text_content = (
+        f"Hostel Khojo Super Admin Verification\n\n"
+        f"Your One-Time Password (OTP) is: {otp_code}\n\n"
+        f"This code is valid for 10 minutes. Do NOT share this code with anyone.\n"
+        f"If you did not request this login, please contact Hostel Khojo support."
+    )
 
-        html_content = f"""<!DOCTYPE html>
+    html_content = f"""<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
@@ -237,66 +236,66 @@ def send_admin_otp_email(to_email: str, otp_code: str) -> bool:
 </body>
 </html>"""
 
-        part1 = MIMEText(text_content, "plain", "utf-8")
-        part2 = MIMEText(html_content, "html", "utf-8")
-        msg.attach(part1)
-        msg.attach(part2)
+    part1 = MIMEText(text_content, "plain", "utf-8")
+    part2 = MIMEText(html_content, "html", "utf-8")
+    msg.attach(part1)
+    msg.attach(part2)
 
-        # Build list of ports to attempt (e.g. 465 SSL first or fallback to 587 STARTTLS)
-        ports_to_try = [smtp_port]
-        if smtp_port == 587 and 465 not in ports_to_try:
-            ports_to_try.append(465)
-        elif smtp_port == 465 and 587 not in ports_to_try:
-            ports_to_try.append(587)
+    # Build list of ports to attempt (e.g. 465 SSL first or fallback to 587 STARTTLS)
+    ports_to_try = [smtp_port]
+    if smtp_port == 587 and 465 not in ports_to_try:
+        ports_to_try.append(465)
+    elif smtp_port == 465 and 587 not in ports_to_try:
+        ports_to_try.append(587)
 
-        dispatch_errors = []
-        for port in ports_to_try:
-            server = None
+    dispatch_errors = []
+    for port in ports_to_try:
+        server = None
+        try:
+            context = ssl.create_default_context()
+            # Resolve IPv4 first to avoid [Errno 101] Network is unreachable on Linux cloud containers
+            resolved_ip = None
             try:
-                context = ssl.create_default_context()
-                # Resolve IPv4 first to avoid [Errno 101] Network is unreachable on Linux cloud containers
-                resolved_ip = None
+                ais = socket.getaddrinfo(smtp_host, port, socket.AF_INET, socket.SOCK_STREAM)
+                if ais:
+                    resolved_ip = ais[0][4][0]
+            except Exception:
+                pass
+
+            target_host = resolved_ip if resolved_ip else smtp_host
+
+            if port == 465:
+                server = smtplib.SMTP_SSL(target_host, port, timeout=12, context=context)
+                server.login(smtp_user, smtp_password)
+                server.sendmail(smtp_from, [to_email], msg.as_string())
+                server.quit()
+            else:
+                server = smtplib.SMTP(target_host, port, timeout=12)
+                server.ehlo()
+                server.starttls(context=context)
+                server.ehlo()
+                server.login(smtp_user, smtp_password)
+                server.sendmail(smtp_from, [to_email], msg.as_string())
+                server.quit()
+
+            print(f"[OK] Real Super Admin Gmail OTP email dispatched to {to_email} via port {port}")
+            return True
+        except Exception as port_err:
+            if server:
                 try:
-                    ais = socket.getaddrinfo(smtp_host, port, socket.AF_INET, socket.SOCK_STREAM)
-                    if ais:
-                        resolved_ip = ais[0][4][0]
+                    server.quit()
                 except Exception:
                     pass
+            dispatch_errors.append(f"Port {port}: {str(port_err)}")
+            print(f"[SMTP Notice] Port {port} dispatch failed: {port_err}")
+            continue
 
-                target_host = resolved_ip if resolved_ip else smtp_host
-
-                if port == 465:
-                    server = smtplib.SMTP_SSL(target_host, port, timeout=12, context=context)
-                    server.login(smtp_user, smtp_password)
-                    server.sendmail(smtp_from, [to_email], msg.as_string())
-                    server.quit()
-                else:
-                    server = smtplib.SMTP(target_host, port, timeout=12)
-                    server.ehlo()
-                    server.starttls(context=context)
-                    server.ehlo()
-                    server.login(smtp_user, smtp_password)
-                    server.sendmail(smtp_from, [to_email], msg.as_string())
-                    server.quit()
-
-                print(f"[OK] Real Super Admin Gmail OTP email dispatched to {to_email} via port {port}")
-                return True
-            except Exception as port_err:
-                if server:
-                    try:
-                        server.quit()
-                    except Exception:
-                        pass
-                dispatch_errors.append(f"Port {port}: {str(port_err)}")
-                print(f"[SMTP Notice] Port {port} dispatch failed: {port_err}")
-                continue
-
-        error_detail = "; ".join(dispatch_errors)
-        print(f"[Error] Failed to dispatch email via SMTP to {to_email}: {error_detail}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to dispatch OTP to Gmail: {error_detail}. Please check your SMTP settings in server environment."
-        )
+    error_detail = "; ".join(dispatch_errors)
+    print(f"[Error] Failed to dispatch email via SMTP to {to_email}: {error_detail}")
+    raise HTTPException(
+        status_code=500,
+        detail=f"Failed to dispatch OTP to Gmail: {error_detail}. Please check your SMTP settings in server environment."
+    )
 
 
 # SUPER ADMIN GMAIL OTP ENDPOINTS
