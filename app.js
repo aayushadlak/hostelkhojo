@@ -2242,13 +2242,17 @@ class HostelKhojoApp {
 
   async checkAdminSession() {
     try {
-      const isUnlocked = sessionStorage.getItem("hostelkhojo_admin_unlocked") === "true";
       const savedUserStr = localStorage.getItem("hostelkhojo_admin_user");
-      if (isUnlocked && savedUserStr) {
-        this.currentAdminUser = JSON.parse(savedUserStr);
-      } else {
-        this.currentAdminUser = null;
+      const savedToken = localStorage.getItem("hostelkhojo_admin_token");
+      if (savedUserStr && savedToken) {
+        const parsed = JSON.parse(savedUserStr);
+        if (parsed && parsed.role === "admin" && parsed.email && parsed.email.toLowerCase() === "hostelkhojo.in@gmail.com") {
+          this.currentAdminUser = parsed;
+          sessionStorage.setItem("hostelkhojo_admin_unlocked", "true");
+          return;
+        }
       }
+      this.currentAdminUser = null;
     } catch (e) {
       this.currentAdminUser = null;
     }
