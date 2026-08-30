@@ -2269,18 +2269,22 @@ class HostelKhojoApp {
   }
 
   async handleAdminLoginSubmit(e) {
-    e.preventDefault();
+    if (e) e.preventDefault();
     const identifierEl = document.getElementById("admin-login-identifier");
     const passwordEl = document.getElementById("admin-login-password");
     const unlockBtn = document.getElementById("admin-unlock-btn");
-    const identifier = identifierEl ? identifierEl.value.trim() : "";
-    if (identifier.toLowerCase() !== "hostelkhojo.in@gmail.com") {
+    const identifier = identifierEl ? identifierEl.value.trim() : "hostelkhojo.in@gmail.com";
+    const password = passwordEl ? passwordEl.value.trim() : "";
+
+    const identLower = identifier.toLowerCase();
+    if (identLower !== "hostelkhojo.in@gmail.com" && identLower !== "admin" && identLower !== "superadmin") {
       this.showToast("Access Denied: Super Admin login is restricted exclusively to hostelkhojo.in@gmail.com.", "warning");
       return;
     }
 
     if (!password) {
       this.showToast("Please enter the Master Admin password to unlock.", "warning");
+      if (passwordEl) passwordEl.focus();
       return;
     }
 
@@ -2294,7 +2298,7 @@ class HostelKhojoApp {
       const res = await apiFetch("/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ identifier, password })
+        body: JSON.stringify({ identifier: "hostelkhojo.in@gmail.com", password })
       });
 
       const data = await res.json().catch(() => ({}));
@@ -2318,7 +2322,7 @@ class HostelKhojoApp {
         this.loadAdminDashboardData();
         return;
       } else {
-        const errorMsg = data.detail || "Invalid Admin username or password.";
+        const errorMsg = data.detail || "Invalid Admin password.";
         this.showToast(errorMsg, "warning");
         if (passwordEl) {
           passwordEl.value = "";
