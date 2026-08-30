@@ -68,9 +68,9 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
             return admin_user
         return UserDB(
             id="usr_admin_master",
-            email="admin@hostelkhojo.in",
+            email="hostelkhojo.in@gmail.com",
             phone="9999999999",
-            full_name="Hostel Khojo Admin",
+            full_name="Hostel Khojo Super Admin",
             role="admin"
         )
 

@@ -75,19 +75,33 @@ def seed_database() -> None:
 
         db = SessionLocal()
 
-        existing_admin = db.query(UserDB).filter(UserDB.role == "admin").first()
-        if not existing_admin:
-            admin_user = UserDB(
-                id="usr_admin_master",
-                email="admin@hostelkhojo.in",
-                phone="9999999999",
-                password_hash=get_password_hash("adminpassword123"),
-                full_name="Hostel Khojo Admin",
-                role="admin"
-            )
-            db.add(admin_user)
+        admin_user = db.query(UserDB).filter(UserDB.email == "hostelkhojo.in@gmail.com").first()
+        if not admin_user:
+            existing_admin = db.query(UserDB).filter(UserDB.role == "admin").first()
+            if existing_admin:
+                existing_admin.email = "hostelkhojo.in@gmail.com"
+                existing_admin.full_name = "Hostel Khojo Super Admin"
+                existing_admin.password_hash = get_password_hash("adminpassword123")
+                db.commit()
+            else:
+                admin_user = UserDB(
+                    id="usr_admin_master",
+                    email="hostelkhojo.in@gmail.com",
+                    phone="9999999999",
+                    password_hash=get_password_hash("adminpassword123"),
+                    full_name="Hostel Khojo Super Admin",
+                    role="admin"
+                )
+                db.add(admin_user)
+                db.commit()
+            print("Default Super Admin account initialized: hostelkhojo.in@gmail.com / 9999999999")
+
+        # Demote any other account from admin role
+        other_admins = db.query(UserDB).filter(UserDB.role == "admin", UserDB.email != "hostelkhojo.in@gmail.com").all()
+        for oa in other_admins:
+            oa.role = "student"
+        if other_admins:
             db.commit()
-            print("Default Super Admin account initialized: admin@hostelkhojo.in / 9999999999")
 
         db.close()
     except Exception as admin_err:

@@ -2274,7 +2274,10 @@ class HostelKhojoApp {
     const passwordEl = document.getElementById("admin-login-password");
     const unlockBtn = document.getElementById("admin-unlock-btn");
     const identifier = identifierEl ? identifierEl.value.trim() : "";
-    const password = passwordEl ? passwordEl.value.trim() : "";
+    if (identifier.toLowerCase() !== "hostelkhojo.in@gmail.com") {
+      this.showToast("Access Denied: Super Admin login is restricted exclusively to hostelkhojo.in@gmail.com.", "warning");
+      return;
+    }
 
     if (!password) {
       this.showToast("Please enter the Master Admin password to unlock.", "warning");

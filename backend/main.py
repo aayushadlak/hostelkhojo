@@ -166,17 +166,41 @@ def register_user(user_in: UserRegister, db: Session = Depends(get_db)):
     user_res = UserResponse.from_orm(new_user)
     return Token(access_token=token, token_type="bearer", user=user_res)
 
+SUPER_ADMIN_EMAIL = "hostelkhojo.in@gmail.com"
+
 @app.post("/api/auth/login", response_model=Token)
 def login_user(user_in: UserLogin, db: Session = Depends(get_db)):
     ident = user_in.identifier.strip()
     ident_lower = ident.lower()
 
-    if ident_lower in ["admin", "superadmin", "root"]:
-        user = db.query(UserDB).filter(UserDB.role == "admin").first()
+    if ident_lower in ["admin", "superadmin", "root", SUPER_ADMIN_EMAIL]:
+        user = db.query(UserDB).filter(UserDB.email == SUPER_ADMIN_EMAIL).first()
+        if not user:
+            user = UserDB(
+                id="usr_admin_master",
+                email=SUPER_ADMIN_EMAIL,
+                phone="9999999999",
+                password_hash=get_password_hash("adminpassword123"),
+                full_name="Hostel Khojo Super Admin",
+                role="admin"
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
     else:
         user = db.query(UserDB).filter(
             (UserDB.email == ident) | (UserDB.email == ident_lower) | (UserDB.phone == ident)
         ).first()
+
+    # Enforce: Only hostelkhojo.in@gmail.com can log in with Super Admin role
+    if user and user.role == "admin" and user.email.lower() != SUPER_ADMIN_EMAIL:
+        user.role = "student"
+        db.commit()
+        db.refresh(user)
+        raise HTTPException(
+            status_code=403,
+            detail="Super Admin access is restricted exclusively to hostelkhojo.in@gmail.com."
+        )
 
     valid_admin_passwords = ["adminpassword123", "admin123", "admin", "root", "master123", "admin@123", "hostelkhojo", "849201"]
     is_valid_admin_pwd = (
@@ -197,7 +221,11 @@ def google_login(google_in: GoogleLogin, db: Session = Depends(get_db)):
     email = google_in.email.strip().lower()
     user = db.query(UserDB).filter(UserDB.email == email).first()
 
-    target_role = google_in.role if google_in.role in ["owner", "admin"] else "student"
+    # Only hostelkhojo.in@gmail.com can ever receive admin role through Google Auth
+    if email == SUPER_ADMIN_EMAIL:
+        target_role = "admin"
+    else:
+        target_role = google_in.role if google_in.role == "owner" else "student"
 
     if not user:
         new_user = UserDB(
@@ -213,13 +241,16 @@ def google_login(google_in: GoogleLogin, db: Session = Depends(get_db)):
         db.refresh(new_user)
         user = new_user
     else:
-        # Upgrade role to owner if logging in through owner portal
-        if target_role == "owner" and user.role == "student":
+        if email == SUPER_ADMIN_EMAIL and user.role != "admin":
+            user.role = "admin"
+            db.commit()
+            db.refresh(user)
+        elif target_role == "owner" and user.role == "student":
             user.role = "owner"
             db.commit()
             db.refresh(user)
 
-    token = create_access_token(data={"sub": user.id})
+    token = create_access_token(data={"sub": user.id, "role": user.role})
     user_res = UserResponse.from_orm(user)
     return Token(access_token=token, token_type="bearer", user=user_res)
 
